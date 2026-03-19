@@ -4,6 +4,13 @@ import { showDialog } from '../utils/dialog'
 import { useTimeStore } from './time'
 import { useScenesStore } from './scenes'
 import { restartGame } from '../utils/gameSystem'
+import { toast } from '../utils/toast'
+
+// 食物营养值映射（食用后恢复的饱食度）
+const FOOD_NUTRITION: Record<string, number> = {
+  apple: 20,
+  berry: 10
+}
 
 type Gender = 'male' | 'female'
 
@@ -114,6 +121,44 @@ export const useCharacterStore = defineStore('character', {
       if (result === 'restart') {
         await restartGame()
       }
+    },
+
+    // 将物品添加到背包
+    addToInventory(id: string, name: string, icon: string, quantity: number = 1) {
+      const existing = this.inventory.find(item => item.id === id)
+      if (existing) {
+        existing.quantity += quantity
+      } else {
+        this.inventory.push({ id, name, icon, quantity })
+      }
+    },
+
+    // 食用背包中的食物
+    eatFood(itemId: string) {
+      const nutrition = FOOD_NUTRITION[itemId]
+      if (nutrition === undefined) return
+
+      const item = this.inventory.find(i => i.id === itemId)
+      if (!item || item.quantity <= 0) {
+        toast({ message: '背包里没有可以食用的食物', type: 'warning' })
+        return
+      }
+
+      item.quantity -= 1
+      if (item.quantity === 0) {
+        this.inventory = this.inventory.filter(i => i.id !== itemId)
+      }
+
+      const prevSatiety = this.satiety
+      this.satiety = Math.min(100, this.satiety + nutrition)
+      const restored = this.satiety - prevSatiety
+
+      const foodNames: Record<string, string> = {
+        apple: '苹果',
+        berry: '浆果'
+      }
+      const foodName = foodNames[itemId] ?? item.name
+      gameLog({ text: `吃了一个${foodName}，饱食度恢复了 ${restored} 点`, type: 'SYSTEM' })
     },
 
     // 重置游戏

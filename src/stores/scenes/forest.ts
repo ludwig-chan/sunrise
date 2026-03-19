@@ -27,6 +27,10 @@ const INITIAL_STOCK = {
   apple: {
     current: 20,
     max: 20
+  },
+  berry: {
+    current: 30,
+    max: 30
   }
 } as const;
 
@@ -188,6 +192,42 @@ export const useForestSceneStore = defineStore('forestScene', {
       }
     },
 
+    async gatherFood() {
+      const character = useCharacterStore();
+      const gathered: string[] = [];
+
+      // 尝试采集苹果
+      try {
+        const appleAmount = await getStockAmount(this.scene.stock, 'apple', 2);
+        character.addToInventory('apple', '苹果', '🍎', appleAmount);
+        gathered.push(`${appleAmount}个苹果`);
+      } catch {
+        // 苹果库存不足，跳过
+      }
+
+      // 尝试采集浆果
+      try {
+        const berryAmount = await getStockAmount(this.scene.stock, 'berry', 3);
+        character.addToInventory('berry', '浆果', '🫐', berryAmount);
+        gathered.push(`${berryAmount}把浆果`);
+      } catch {
+        // 浆果库存不足，跳过
+      }
+
+      if (gathered.length === 0) {
+        toast({
+          message: '这片区域的食物已经被采集完了，需要等待自然恢复',
+          type: 'warning'
+        });
+        return;
+      }
+
+      toast({
+        message: `采集到了${gathered.join('和')}，已放入背包`,
+        type: 'success'
+      });
+    },
+
     getActionConfig() {
       const equipment = useEquipmentStore();
       return [
@@ -213,6 +253,13 @@ export const useForestSceneStore = defineStore('forestScene', {
           duration: 3,
           energyCost: 20, // 采矿需要大量体力
           handler: async () => await this.withEnergyCost(20, async () => await this.mineOre())
+        },
+        {
+          name: 'gatherFood',
+          text: '采集食物',
+          duration: 3,
+          energyCost: 5, // 采集食物消耗较少体力
+          handler: async () => await this.withEnergyCost(5, async () => await this.gatherFood())
         }
       ];
     },
