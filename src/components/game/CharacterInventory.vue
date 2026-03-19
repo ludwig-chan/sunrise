@@ -2,7 +2,12 @@
   <div class="inventory">
     <div class="inventory-grid">
       <div v-for="i in 24" :key="i" class="inventory-slot">
-        <div v-if="character.inventory[i-1]" class="item">
+        <div
+          v-if="character.inventory[i-1]"
+          class="item"
+          :class="{ 'edible': isEdible(character.inventory[i-1].id) }"
+          @click="handleItemClick(character.inventory[i-1])"
+        >
           <span class="item-icon">{{ character.inventory[i-1].icon }}</span>
           <div class="item-info">
             <span class="item-name">{{ character.inventory[i-1].name }}</span>
@@ -10,6 +15,7 @@
               x{{ character.inventory[i-1].quantity }}
             </span>
           </div>
+          <span v-if="isEdible(character.inventory[i-1].id)" class="eat-hint">点击食用</span>
         </div>
         <div v-else class="empty-slot">
           <span>空</span>
@@ -22,7 +28,27 @@
 <script setup lang="ts">
 import { useCharacterStore } from '../../stores/character'
 
+interface InventoryItem {
+  id: string;
+  name: string;
+  icon: string;
+  quantity: number;
+  description?: string;
+}
+
 const character = useCharacterStore()
+
+const EDIBLE_ITEMS = new Set(['apple', 'berry'])
+
+function isEdible(itemId: string): boolean {
+  return EDIBLE_ITEMS.has(itemId)
+}
+
+function handleItemClick(item: InventoryItem) {
+  if (isEdible(item.id)) {
+    character.eatFood(item.id)
+  }
+}
 </script>
 
 <style scoped>
@@ -62,6 +88,15 @@ const character = useCharacterStore()
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
+  position: relative;
+}
+
+.item.edible {
+  cursor: pointer;
+}
+
+.item.edible:hover .eat-hint {
+  display: block;
 }
 
 .item-icon {
@@ -85,6 +120,21 @@ const character = useCharacterStore()
 .item-quantity {
   color: #666;
   font-size: 0.75rem;
+}
+
+.eat-hint {
+  display: none;
+  position: absolute;
+  bottom: -0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .empty-slot {
