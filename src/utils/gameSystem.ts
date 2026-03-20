@@ -12,7 +12,8 @@ export async function restartGame() {
   const timeStore = useTimeStore()
   timeStore.$patch({
     timestamp: 0,
-    weather: 'SUNNY'
+    weather: 'SUNNY',
+    paused: true
   })
 
   // 重置所有场景

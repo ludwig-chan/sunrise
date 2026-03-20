@@ -4,6 +4,7 @@ import type { GameScene, GameBuildingRecipe } from './types';
 import { useEquipmentStore } from '../equipment';
 import { useCharacterStore } from '../character';
 import { useScenesStore } from '../scenes';
+import { useTimeStore } from '../time';
 import { getOrCreateResource } from '../../utils/resourceUtils';
 import { toast } from '../../utils/toast';
 
@@ -126,8 +127,14 @@ export const useBaseSceneStore = defineStore('baseScene', {
       if (!this.checkEnergy(cost)) {
         return;
       }
-      await action();
-      this.consumeEnergy(cost);
+      const timeStore = useTimeStore();
+      timeStore.resumeGame();
+      try {
+        await action();
+        this.consumeEnergy(cost);
+      } finally {
+        timeStore.pauseGame();
+      }
     },    // 探索
     async explore() {
       const scenes = useScenesStore();

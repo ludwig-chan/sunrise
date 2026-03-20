@@ -62,7 +62,7 @@ export const useTimeStore = defineStore('time', {
   state: () => ({
     timestamp: 0, // 游戏总小时数
     weather: 'SUNNY' as Weather,
-    paused: false, // 游戏是否暂停
+    paused: true, // 游戏是否暂停
     timeInterval: null as ReturnType<typeof setInterval> | null,
     timeSpeed: 10000, // 每小时的实际毫秒数,默认10秒
   }),
