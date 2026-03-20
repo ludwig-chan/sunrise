@@ -9,8 +9,8 @@
       </div>
     </div>
     <div v-else class="empty-state">
-      <p>暂无可用建筑</p>
-      <p class="empty-hint">继续探索或完成任务以解锁建筑</p>
+      <p>暂无已建建筑</p>
+      <p class="empty-hint">通过「建造」按钮建造新建筑</p>
     </div>
   </section>
 </template>

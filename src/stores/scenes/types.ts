@@ -6,6 +6,16 @@ export interface GameAction {
   handler: () => Promise<void>;
   disabled?: boolean | (() => boolean);
   tooltip?: string;
+  group?: string; // 用于 UI 分组，同组按钮横排显示
+}
+
+export interface GameBuildingRecipe {
+  type: string;
+  name: string;
+  description: string;
+  cost: { [resourceType: string]: number };
+  duration: number; // 建造耗时（游戏天数）
+  energyCost: number;
 }
 
 export interface GameResource {

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { useBaseSceneStore } from './scenes/base';
 import { useForestSceneStore } from './scenes/forest';
-import type { GameScene } from './scenes/types';
+import type { GameScene, GameBuildingRecipe } from './scenes/types';
 
 export const useScenesStore = defineStore('scenes', {
   state: () => ({
@@ -31,6 +31,16 @@ export const useScenesStore = defineStore('scenes', {
 
     currentActions(): GameScene['actions'] {
       return this.currentScene.actions;
+    },
+
+    currentBuildingRecipes(): GameBuildingRecipe[] {
+      const baseScene = useBaseSceneStore();
+      const forestScene = useForestSceneStore();
+      switch (this.currentSceneId) {
+        case 'base': return baseScene.buildingRecipes;
+        case 'forest': return forestScene.buildingRecipes;
+        default: return [];
+      }
     }
   },
   actions: {
@@ -60,6 +70,20 @@ export const useScenesStore = defineStore('scenes', {
     unlockScene(sceneId: string) {
       if (!this.unlockedScenes.includes(sceneId)) {
         this.unlockedScenes.push(sceneId);
+      }
+    },
+
+    // 在当前场景建造建筑
+    async buildInCurrentScene(recipeType: string) {
+      const baseScene = useBaseSceneStore();
+      const forestScene = useForestSceneStore();
+      switch (this.currentSceneId) {
+        case 'base':
+          await baseScene.build(recipeType);
+          break;
+        case 'forest':
+          await forestScene.build(recipeType);
+          break;
       }
     }
   },
