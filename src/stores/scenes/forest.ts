@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import type { GameScene, GameResource, GameBuildingRecipe } from './types';
 import { useEquipmentStore } from '../equipment';
 import { useCharacterStore } from '../character';
+import { useTimeStore } from '../time';
 import { 
   type ResourceInfo, 
   getStockAmount, 
@@ -126,8 +127,14 @@ export const useForestSceneStore = defineStore('forestScene', {
       if (!this.checkEnergy(cost)) {
         return;
       }
-      await action();
-      this.consumeEnergy(cost);
+      const timeStore = useTimeStore();
+      timeStore.resumeGame();
+      try {
+        await action();
+        this.consumeEnergy(cost);
+      } finally {
+        timeStore.pauseGame();
+      }
     },
 
     async chopWood() {
