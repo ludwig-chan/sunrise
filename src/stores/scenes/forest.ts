@@ -36,9 +36,10 @@ const INITIAL_STOCK = {
 
 const FOREST_RESOURCES: readonly ResourceInfo[] = [
   { id: 'branch', type: 'branch', name: '树枝' },
-  { id: 'ore', type: 'ore', name: '矿石' },
-  { id: 'apple', type: 'apple', name: '苹果' }
+  { id: 'ore', type: 'ore', name: '矿石' }
 ];
+
+const FOOD_GATHER_FAILURE_RATE = 0.4;
 
 export const useForestSceneStore = defineStore('forestScene', {
   state: () => ({
@@ -194,6 +195,16 @@ export const useForestSceneStore = defineStore('forestScene', {
 
     async gatherFood() {
       const character = useCharacterStore();
+
+      // 60% 概率找到食物，40% 概率一无所获
+      if (Math.random() < FOOD_GATHER_FAILURE_RATE) {
+        toast({
+          message: '找了一圈，没有发现可以吃的东西',
+          type: 'info'
+        });
+        return;
+      }
+
       const gathered: string[] = [];
 
       // 尝试采集苹果
@@ -256,7 +267,7 @@ export const useForestSceneStore = defineStore('forestScene', {
         },
         {
           name: 'gatherFood',
-          text: '采集食物',
+          text: '觅食',
           duration: 3,
           energyCost: 5, // 采集食物消耗较少体力
           handler: async () => await this.withEnergyCost(5, async () => await this.gatherFood())
