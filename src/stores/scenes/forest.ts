@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { GameScene, GameResource } from './types';
+import type { GameScene, GameResource, GameBuildingRecipe } from './types';
 import { useEquipmentStore } from '../equipment';
 import { useCharacterStore } from '../character';
 import { 
@@ -10,6 +10,33 @@ import {
   calculateExploreResources 
 } from '../../utils/resourceUtils';
 import { toast } from '../../utils/toast';
+
+// 树林可建造的建筑配方
+export const FOREST_BUILDING_RECIPES: GameBuildingRecipe[] = [
+  {
+    type: 'woodenHut',
+    name: '木屋',
+    description: '提供庇护所，可以休息恢复体力',
+    cost: { wood: 20, branch: 5 },
+    duration: 5,
+    energyCost: 30
+  },
+  {
+    type: 'trap',
+    name: '陷阱',
+    description: '自动捕捉小动物，提供食物',
+    cost: { branch: 3 },
+    duration: 1,
+    energyCost: 5
+  }
+];
+
+const RESOURCE_NAMES: { [key: string]: string } = {
+  wood: '木材',
+  ore: '矿石',
+  branch: '树枝',
+  apple: '苹果'
+};
 
 const INITIAL_STOCK = {
   wood: {
@@ -48,19 +75,24 @@ export const useForestSceneStore = defineStore('forestScene', {
       name: '树林',
       resources: [],
       actions: [],
+      buildings: [],
       stock: JSON.parse(JSON.stringify(INITIAL_STOCK))
     } as GameScene
   }),
 
   getters: {
     resources: (state) => state.scene.resources,
-    actions: (state) => state.scene.actions
+    actions: (state) => state.scene.actions,
+    buildingRecipes: (): GameBuildingRecipe[] => FOREST_BUILDING_RECIPES
   },
 
   actions: {
     reset() {
       // 清空已收集的资源
       this.scene.resources = []
+
+      // 重置建筑
+      this.scene.buildings = []
       
       // 重置库存到初始状态
       this.scene.stock = JSON.parse(JSON.stringify(INITIAL_STOCK))
@@ -242,6 +274,44 @@ export const useForestSceneStore = defineStore('forestScene', {
       });
     },
 
+    // 建造建筑
+    async build(recipeType: string) {
+      const recipe = FOREST_BUILDING_RECIPES.find(r => r.type === recipeType);
+      if (!recipe) return;
+
+      // 检查是否已建造
+      if (this.scene.buildings.some(b => b.type === recipeType)) {
+        toast({ message: '该建筑已经建好了', type: 'warning' });
+        return;
+      }
+
+      // 检查材料是否足够
+      const missing: string[] = [];
+      for (const [resourceType, required] of Object.entries(recipe.cost)) {
+        const resource = this.scene.resources.find(r => r.id === resourceType);
+        const current = resource?.count ?? 0;
+        if (current < required) {
+          const name = RESOURCE_NAMES[resourceType] ?? resourceType;
+          missing.push(`${name} x${required - current}`);
+        }
+      }
+
+      if (missing.length > 0) {
+        toast({ message: `材料不足：还需要 ${missing.join('、')}`, type: 'warning' });
+        return;
+      }
+
+      // 扣除材料
+      for (const [resourceType, required] of Object.entries(recipe.cost)) {
+        const resource = this.scene.resources.find(r => r.id === resourceType);
+        if (resource) resource.count -= required;
+      }
+
+      // 添加建筑
+      this.scene.buildings.push({ name: recipe.name, type: recipe.type, level: 1 });
+      toast({ message: `${recipe.name}建造成功！`, type: 'success' });
+    },
+
     getActionConfig() {
       const equipment = useEquipmentStore();
       return [
@@ -250,22 +320,17 @@ export const useForestSceneStore = defineStore('forestScene', {
           text: '砍伐',
           duration: 5,
           energyCost: 15, // 砍树需要较多体力
+          group: 'gather',
           handler: async () => await this.withEnergyCost(15, async () => await this.chopWood()),
           disabled: equipment.axeCount === 0,
           tooltip: '需要斧头才能砍伐'
-        },
-        {
-          name: 'explore',
-          text: '探索',
-          duration: 3,
-          energyCost: 10, // 探索消耗中等体力
-          handler: async () => await this.withEnergyCost(10, async () => await this.explore())
         },
         {
           name: 'mineOre',
           text: '采矿',
           duration: 3,
           energyCost: 20, // 采矿需要大量体力
+          group: 'gather',
           handler: async () => await this.withEnergyCost(20, async () => await this.mineOre())
         },
         {
@@ -273,7 +338,15 @@ export const useForestSceneStore = defineStore('forestScene', {
           text: '觅食',
           duration: 3,
           energyCost: 5, // 采集食物消耗较少体力
+          group: 'gather',
           handler: async () => await this.withEnergyCost(5, async () => await this.gatherFood())
+        },
+        {
+          name: 'explore',
+          text: '探索',
+          duration: 3,
+          energyCost: 10, // 探索消耗中等体力
+          handler: async () => await this.withEnergyCost(10, async () => await this.explore())
         }
       ];
     },
