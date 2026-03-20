@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 import type { GameScene, GameResource, GameBuildingRecipe } from './types';
 import { useEquipmentStore } from '../equipment';
-import { useCharacterStore } from '../character';
 import { 
   type ResourceInfo, 
   getStockAmount, 
@@ -19,7 +18,7 @@ export const FOREST_BUILDING_RECIPES: GameBuildingRecipe[] = [
     description: '提供庇护所，可以休息恢复体力',
     cost: { wood: 20, branch: 5 },
     duration: 5,
-    energyCost: 30
+    energyCost: 20
   },
   {
     type: 'trap',
@@ -27,7 +26,7 @@ export const FOREST_BUILDING_RECIPES: GameBuildingRecipe[] = [
     description: '自动捕捉小动物，提供食物',
     cost: { branch: 3 },
     duration: 1,
-    energyCost: 5
+    energyCost: 4
   }
 ];
 
@@ -35,7 +34,8 @@ const RESOURCE_NAMES: { [key: string]: string } = {
   wood: '木材',
   ore: '矿石',
   branch: '树枝',
-  apple: '苹果'
+  apple: '苹果',
+  berry: '浆果'
 };
 
 const INITIAL_STOCK = {
@@ -130,6 +130,11 @@ export const useForestSceneStore = defineStore('forestScene', {
     },
 
     async chopWood() {
+      const equipment = useEquipmentStore();
+      if (!equipment.useAxe()) {
+        return;
+      }
+
       try {
         const amount = await getStockAmount(this.scene.stock, 'wood');
         const woodResource = getOrCreateResource(this.scene.resources, {
@@ -229,8 +234,6 @@ export const useForestSceneStore = defineStore('forestScene', {
     },
 
     async gatherFood() {
-      const character = useCharacterStore();
-
       // 60% 概率找到食物，40% 概率一无所获
       if (Math.random() < FOOD_GATHER_FAILURE_RATE) {
         toast({
@@ -245,7 +248,12 @@ export const useForestSceneStore = defineStore('forestScene', {
       // 尝试采集苹果
       try {
         const appleAmount = await getStockAmount(this.scene.stock, 'apple', 2);
-        character.addToInventory('apple', '苹果', '🍎', appleAmount);
+        const appleResource = getOrCreateResource(this.scene.resources, {
+          id: 'apple',
+          type: 'apple',
+          name: '苹果'
+        });
+        appleResource.count += appleAmount;
         gathered.push(`${appleAmount}个苹果`);
       } catch {
         // 苹果库存不足，跳过
@@ -254,7 +262,12 @@ export const useForestSceneStore = defineStore('forestScene', {
       // 尝试采集浆果
       try {
         const berryAmount = await getStockAmount(this.scene.stock, 'berry', 3);
-        character.addToInventory('berry', '浆果', '🫐', berryAmount);
+        const berryResource = getOrCreateResource(this.scene.resources, {
+          id: 'berry',
+          type: 'berry',
+          name: '浆果'
+        });
+        berryResource.count += berryAmount;
         gathered.push(`${berryAmount}把浆果`);
       } catch {
         // 浆果库存不足，跳过
@@ -269,7 +282,7 @@ export const useForestSceneStore = defineStore('forestScene', {
       }
 
       toast({
-        message: `采集到了${gathered.join('和')}，已放入背包`,
+        message: `采集到了${gathered.join('和')}`,
         type: 'success'
       });
     },
@@ -319,9 +332,9 @@ export const useForestSceneStore = defineStore('forestScene', {
           name: 'chopWood',
           text: '砍伐',
           duration: 5,
-          energyCost: 15, // 砍树需要较多体力
+          energyCost: 10, // 砍树需要较多体力
           group: 'gather',
-          handler: async () => await this.withEnergyCost(15, async () => await this.chopWood()),
+          handler: async () => await this.withEnergyCost(10, async () => await this.chopWood()),
           disabled: equipment.axeCount === 0,
           tooltip: '需要斧头才能砍伐'
         },
@@ -329,9 +342,9 @@ export const useForestSceneStore = defineStore('forestScene', {
           name: 'mineOre',
           text: '采矿',
           duration: 3,
-          energyCost: 20, // 采矿需要大量体力
+          energyCost: 12, // 采矿需要大量体力
           group: 'gather',
-          handler: async () => await this.withEnergyCost(20, async () => await this.mineOre())
+          handler: async () => await this.withEnergyCost(12, async () => await this.mineOre())
         },
         {
           name: 'gatherFood',
@@ -345,8 +358,8 @@ export const useForestSceneStore = defineStore('forestScene', {
           name: 'explore',
           text: '探索',
           duration: 3,
-          energyCost: 10, // 探索消耗中等体力
-          handler: async () => await this.withEnergyCost(10, async () => await this.explore())
+          energyCost: 8, // 探索消耗中等体力
+          handler: async () => await this.withEnergyCost(8, async () => await this.explore())
         }
       ];
     },
