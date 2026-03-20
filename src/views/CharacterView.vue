@@ -5,6 +5,7 @@
     <h1>{{ character.name }}</h1>
 
     <CharacterProfile />
+    <!-- 库存已移至主界面底部，请返回主界面查看 -->
   </div>
 </template>
 
