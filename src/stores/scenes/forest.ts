@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import type { GameScene, GameResource, GameBuildingRecipe } from './types';
 import { useEquipmentStore } from '../equipment';
+import { useCharacterStore } from '../character';
 import { 
   type ResourceInfo, 
   getStockAmount, 
