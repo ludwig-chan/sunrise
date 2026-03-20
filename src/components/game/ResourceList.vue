@@ -22,16 +22,16 @@ defineProps<{
 <style scoped>
 .resources-list {
   list-style: none;
-  padding: 0;
+  padding: 8px;
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 8px;
   margin: 0;
 }
 
 .resource-item {
-  width: 40px;
-  height: 40px;
+  width: 60px;
+  height: 60px;
   background-color: white;
   border-radius: 4px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -39,23 +39,26 @@ defineProps<{
   justify-content: center;
   align-items: center;
   text-align: center;
-  padding: 4px;
+  padding: 6px;
   font-size: 12px;
   position: relative;
+  box-sizing: border-box;
 }
 
 .item-name {
   word-break: break-word;
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .item-count {
   position: absolute;
-  bottom: 2px;
-  right: 2px;
-  background-color: rgba(0, 0, 0, 0.1);
-  padding: 1px 3px;
-  border-radius: 2px;
-  font-size: 9px;
+  bottom: 3px;
+  right: 3px;
+  background-color: rgba(0, 0, 0, 0.15);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: bold;
 }
 </style>

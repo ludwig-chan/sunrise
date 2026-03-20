@@ -51,6 +51,10 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
       // 重置库存到初始状态
       this.scene.stock = JSON.parse(JSON.stringify(INITIAL_STOCK))
+
+      // 重置动作列表，然后重新初始化
+      this.scene.actions = []
+      this.initializeScene()
     },
 
     // 检查体力值是否足够
