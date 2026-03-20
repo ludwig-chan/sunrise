@@ -6,21 +6,13 @@ import { useScenesStore } from './scenes'
 import { restartGame } from '../utils/gameSystem'
 import { toast } from '../utils/toast'
 
-// 食物营养值映射（食用后恢复的饱食度）
-const FOOD_NUTRITION: Record<string, number> = {
-  apple: 20,
-  berry: 10
+// 食物效果映射（食用后同时恢复体力和饱食度）
+const FOOD_EFFECTS: Record<string, { energy: number; satiety: number }> = {
+  apple: { energy: 30, satiety: 10 },
+  berry: { energy: 15, satiety: 5 }
 }
 
 type Gender = 'male' | 'female'
-
-interface InventoryItem {
-  id: string;
-  name: string;
-  icon: string;
-  quantity: number;
-  description?: string;
-}
 
 interface CharacterState {
   name: string;
@@ -33,7 +25,6 @@ interface CharacterState {
   mood: number;
   hygiene: number;
   mana: number;
-  inventory: InventoryItem[];
 }
 
 export const useCharacterStore = defineStore('character', {
@@ -47,8 +38,7 @@ export const useCharacterStore = defineStore('character', {
     satiety: 100,
     mood: 100,
     hygiene: 100,
-    mana: 100,
-    inventory: []
+    mana: 100
   }),
 
   actions: {
@@ -64,7 +54,7 @@ export const useCharacterStore = defineStore('character', {
     
     // 处理每小时状态变化
     async hourlyUpdate() {
-      // 降低饱食度并影响体力
+      // 饱食度消耗：每小时 -1
       if (this.satiety > 0) {
         this.satiety = Math.max(0, this.satiety - 1)
         
@@ -75,14 +65,17 @@ export const useCharacterStore = defineStore('character', {
             type: 'SYSTEM'
           })
         }
-        
-        // 饱食度低于20时，降低体力
-        if (this.satiety < 20) {
-          this.energy = Math.max(0, this.energy - 2)
-        }
+      }
+
+      // 体力自然恢复/消耗（基于饱食度）
+      if (this.satiety === 0) {
+        this.energy = Math.max(0, this.energy - 8)
+      } else if (this.satiety < 20) {
+        this.energy = Math.max(0, this.energy - 3)
+      } else if (this.satiety < 50) {
+        this.energy = Math.min(100, this.energy + 2)
       } else {
-        // 饱食度为0时，大幅降低体力
-        this.energy = Math.max(0, this.energy - 5)
+        this.energy = Math.min(100, this.energy + 5)
       }
 
       // 体力影响健康值
@@ -123,42 +116,34 @@ export const useCharacterStore = defineStore('character', {
       }
     },
 
-    // 将物品添加到背包
-    addToInventory(id: string, name: string, icon: string, quantity: number = 1) {
-      const existing = this.inventory.find(item => item.id === id)
-      if (existing) {
-        existing.quantity += quantity
-      } else {
-        this.inventory.push({ id, name, icon, quantity })
-      }
-    },
-
-    // 食用背包中的食物
+    // 食用场景资源中的食物
     eatFood(itemId: string) {
-      const nutrition = FOOD_NUTRITION[itemId]
-      if (nutrition === undefined) return
+      const effects = FOOD_EFFECTS[itemId]
+      if (!effects) return
 
-      const item = this.inventory.find(i => i.id === itemId)
-      if (!item || item.quantity <= 0) {
-        toast({ message: '背包里没有可以食用的食物', type: 'warning' })
+      const scenes = useScenesStore()
+      const resource = scenes.currentScene.resources.find(r => r.id === itemId)
+
+      if (!resource || resource.count <= 0) {
+        toast({ message: '没有可以食用的食物', type: 'warning' })
         return
       }
 
-      item.quantity -= 1
-      if (item.quantity === 0) {
-        this.inventory = this.inventory.filter(i => i.id !== itemId)
-      }
+      resource.count -= 1
 
+      const prevEnergy = this.energy
       const prevSatiety = this.satiety
-      this.satiety = Math.min(100, this.satiety + nutrition)
-      const restored = this.satiety - prevSatiety
+      this.energy = Math.min(100, this.energy + effects.energy)
+      this.satiety = Math.min(100, this.satiety + effects.satiety)
+      const restoredEnergy = this.energy - prevEnergy
+      const restoredSatiety = this.satiety - prevSatiety
 
       const foodNames: Record<string, string> = {
         apple: '苹果',
         berry: '浆果'
       }
-      const foodName = foodNames[itemId] ?? item.name
-      gameLog({ text: `吃了一个${foodName}，饱食度恢复了 ${restored} 点`, type: 'SYSTEM' })
+      const foodName = foodNames[itemId] ?? resource.name
+      gameLog({ text: `吃了一个${foodName}，体力恢复了 ${restoredEnergy} 点，饱食度恢复了 ${restoredSatiety} 点`, type: 'SYSTEM' })
     },
 
     // 重置游戏

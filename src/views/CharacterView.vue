@@ -4,35 +4,17 @@
     <div class="settings-button" @click="goToSettings">⚙️</div>
     <h1>{{ character.name }}</h1>
 
-    <Tabs v-model="activeTab" :tabs="tabs">
-      <template #profile>
-        <CharacterProfile />
-      </template>
-
-      <template #inventory>
-        <CharacterInventory />
-      </template>
-    </Tabs>
+    <CharacterProfile />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCharacterStore } from '../stores/character'
-import Tabs from '../components/common/Tabs.vue'
 import CharacterProfile from '../components/game/CharacterProfile.vue'
-import CharacterInventory from '../components/game/CharacterInventory.vue'
 
 const router = useRouter()
 const character = useCharacterStore()
-
-const activeTab = ref('profile')
-
-const tabs = [
-  { key: 'profile', title: '个人信息' },
-  { key: 'inventory', title: '背包' }
-]
 
 const goBack = () => {
   router.back()

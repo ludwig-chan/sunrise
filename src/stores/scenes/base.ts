@@ -15,7 +15,7 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     description: '提供温暖和光源',
     cost: { branch: 5 },
     duration: 1,
-    energyCost: 10
+    energyCost: 7
   },
   {
     type: 'cookingTable',
@@ -23,7 +23,7 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     description: '可以烹饪各种食物',
     cost: { wood: 8, ore: 3 },
     duration: 2,
-    energyCost: 20
+    energyCost: 14
   },
   {
     type: 'storageBox',
@@ -31,7 +31,7 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     description: '增加物品储存空间',
     cost: { wood: 10 },
     duration: 2,
-    energyCost: 15
+    energyCost: 10
   }
 ];
 
