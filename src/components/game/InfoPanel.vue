@@ -24,5 +24,7 @@ defineProps<{
 .info-panel {
   border-radius: 8px;
   flex: 1;
+  padding: 0.5rem;
+  box-sizing: border-box;
 }
 </style>

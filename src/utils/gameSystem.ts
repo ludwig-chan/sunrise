@@ -19,6 +19,9 @@ export async function restartGame() {
   const scenes = useScenesStore()
   scenes.resetAllScenes()
 
+  // 重新初始化场景动作
+  scenes.initializeScenes()
+
   // 重置角色状态
   const character = useCharacterStore()
   character.$reset()

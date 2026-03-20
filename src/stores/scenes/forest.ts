@@ -64,6 +64,9 @@ export const useForestSceneStore = defineStore('forestScene', {
       
       // 重置库存到初始状态
       this.scene.stock = JSON.parse(JSON.stringify(INITIAL_STOCK))
+
+      // 重置动作列表
+      this.scene.actions = []
     },
 
     // 检查体力值是否足够

@@ -52,6 +52,8 @@ export const useScenesStore = defineStore('scenes', {
       
       // 重置解锁状态，只保留基地场景
       this.unlockedScenes = ['base'];
+      // 重置当前场景为基地
+      this.currentSceneId = 'base';
     },
 
     // 解锁新场景
