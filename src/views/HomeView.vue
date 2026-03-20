@@ -3,10 +3,14 @@
     <header class="header">
       <GameDateTime />
       <PlayerStatus />
+      <EquipmentBar />
     </header>
     <div class="middle-section">
       <OperationArea />
     </div>
+    <footer class="footer">
+      <InventoryPanel />
+    </footer>
   </main>
 </template>
 
@@ -16,6 +20,8 @@ import { useTimeStore } from '@/stores/time'
 import GameDateTime from '@/components/game/GameDateTime.vue'
 import PlayerStatus from '@/components/game/PlayerStatus.vue'
 import OperationArea from '@/components/game/OperationArea.vue'
+import EquipmentBar from '@/components/game/EquipmentBar.vue'
+import InventoryPanel from '@/components/game/InventoryPanel.vue'
 
 const timeStore = useTimeStore()
 
@@ -54,5 +60,10 @@ onUnmounted(() => {
   display: flex;
   overflow: auto;
   gap: 1rem;
+}
+
+.footer {
+  flex: 0 0 auto;
+  width: 100%;
 }
 </style>
