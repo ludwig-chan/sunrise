@@ -9,21 +9,36 @@
       <OperationArea />
     </div>
     <footer class="footer">
-      <InventoryPanel />
+      <ScenePanel v-model="scenesStore.currentSceneId" :scenes="scenesList" />
     </footer>
   </main>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, computed } from 'vue'
 import { useTimeStore } from '@/stores/time'
+import { useScenesStore } from '@/stores/scenes'
+import { useBaseSceneStore } from '@/stores/scenes/base'
+import { useForestSceneStore } from '@/stores/scenes/forest'
 import GameDateTime from '@/components/game/GameDateTime.vue'
 import PlayerStatus from '@/components/game/PlayerStatus.vue'
 import OperationArea from '@/components/game/OperationArea.vue'
 import EquipmentBar from '@/components/game/EquipmentBar.vue'
-import InventoryPanel from '@/components/game/InventoryPanel.vue'
+import ScenePanel from '@/components/game/ScenePanel.vue'
 
 const timeStore = useTimeStore()
+const scenesStore = useScenesStore()
+const baseStore = useBaseSceneStore()
+const forestStore = useForestSceneStore()
+
+// 组合已解锁场景信息
+const scenesList = computed(() => {
+  const allScenes = [
+    { id: baseStore.scene.id, name: baseStore.scene.name },
+    { id: forestStore.scene.id, name: forestStore.scene.name }
+  ];
+  return allScenes.filter(scene => scenesStore.unlockedScenes.includes(scene.id));
+});
 
 // 当进入游戏页面时启动时间系统
 onMounted(() => {
