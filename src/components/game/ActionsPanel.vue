@@ -20,11 +20,9 @@
     </template>
 
     <!-- 建造区域 -->
-    <div class="build-section">
-      <button class="build-open-btn" @click="showBuildModal = true">
-        🔨 建造
-      </button>
-    </div>
+    <ActionButton @click="showBuildModal = true">
+      🔨 建造
+    </ActionButton>
 
     <!-- 建造弹窗 -->
     <Teleport to="body">
@@ -173,28 +171,6 @@ async function handleBuild(recipe: GameBuildingRecipe) {
 
 .action-buttons--row :deep(.action-button) {
   flex: 1;
-}
-
-/* 建造区域 */
-.build-section {
-  margin-top: 0.25rem;
-}
-
-.build-open-btn {
-  width: 100%;
-  padding: 0.5rem 1rem;
-  border: 1px dashed rgba(255, 255, 255, 0.5);
-  border-radius: 4px;
-  background-color: rgba(74, 85, 104, 0.6);
-  color: white;
-  cursor: pointer;
-  font-size: 0.9rem;
-  text-align: left;
-  transition: background-color 0.2s;
-}
-
-.build-open-btn:hover {
-  background-color: rgba(74, 85, 104, 0.9);
 }
 
 /* 建造弹窗 */
