@@ -1,6 +1,5 @@
 <template>
   <div class="operation-area">
-    <InfoPanel :items="scenesStore.currentResources" />
     <div class="panels-container">
       <BuildingsPanel :buildings="scenesStore.currentScene.buildings" />
       <ActionsPanel :actions="scenesStore.currentActions" />
@@ -10,7 +9,6 @@
 </template>
 
 <script setup lang="ts">
-import InfoPanel from './InfoPanel.vue';
 import ActionsPanel from './ActionsPanel.vue';
 import BuildingsPanel from './BuildingsPanel.vue';
 import ScenePanel from './ScenePanel.vue';
