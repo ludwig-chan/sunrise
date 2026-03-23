@@ -21,30 +21,46 @@
 
     <!-- 建造区域 -->
     <div class="build-section">
-      <button class="build-toggle-btn" @click="showBuild = !showBuild">
-        🔨 建造 <span class="toggle-arrow">{{ showBuild ? '▲' : '▼' }}</span>
+      <button class="build-open-btn" @click="showBuildModal = true">
+        🔨 建造
       </button>
-      <div v-if="showBuild" class="build-list">
-        <div
-          v-for="recipe in scenes.currentBuildingRecipes"
-          :key="recipe.type"
-          class="build-item"
-        >
-          <div class="build-info">
-            <span class="build-name">{{ recipe.name }}</span>
-            <span class="build-desc">{{ recipe.description }}</span>
-            <span class="build-cost">{{ formatCost(recipe.cost) }}</span>
+    </div>
+
+    <!-- 建造弹窗 -->
+    <Teleport to="body">
+      <div v-if="showBuildModal" class="build-modal-overlay" @click.self="showBuildModal = false" @keydown.esc="showBuildModal = false">
+        <div class="build-modal">
+          <div class="build-modal-header">
+            <span class="build-modal-title">🔨 选择建造</span>
+            <button class="build-modal-close" aria-label="关闭弹窗" @click="showBuildModal = false">×</button>
           </div>
-          <button
-            class="build-btn"
-            :disabled="isBuilt(recipe.type)"
-            @click="handleBuild(recipe)"
-          >
-            {{ isBuilt(recipe.type) ? '✓ 已建造' : '建造' }}
-          </button>
+          <div class="build-modal-body">
+            <div v-if="scenes.currentBuildingRecipes.length === 0" class="build-modal-empty">
+              当前场景暂无可建造的建筑
+            </div>
+            <div
+              v-for="recipe in scenes.currentBuildingRecipes"
+              :key="recipe.type"
+              class="build-card"
+            >
+              <div class="build-card-info">
+                <span class="build-card-name">{{ recipe.name }}</span>
+                <span class="build-card-desc">{{ recipe.description }}</span>
+                <span class="build-card-cost">{{ formatCost(recipe.cost) }}</span>
+                <span class="build-card-energy">⚡ 体力：{{ recipe.energyCost }}</span>
+              </div>
+              <button
+                class="build-btn"
+                :disabled="isBuilt(recipe.type)"
+                @click="handleBuild(recipe)"
+              >
+                {{ isBuilt(recipe.type) ? '✓ 已建造' : '建造' }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </section>
 </template>
 
@@ -73,7 +89,7 @@ const props = defineProps<{
 
 const character = useCharacterStore();
 const scenes = useScenesStore();
-const showBuild = ref(false);
+const showBuildModal = ref(false);
 
 // 将 actions 按 group 分组，保持原始顺序
 const actionGroups = computed(() => {
@@ -128,6 +144,7 @@ async function handleBuild(recipe: GameBuildingRecipe) {
   await scenes.buildInCurrentScene(recipe.type);
   if (isBuilt(recipe.type)) {
     character.energy = Math.max(0, character.energy - recipe.energyCost);
+    showBuildModal.value = false;
   }
 }
 </script>
@@ -161,12 +178,9 @@ async function handleBuild(recipe: GameBuildingRecipe) {
 /* 建造区域 */
 .build-section {
   margin-top: 0.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
 }
 
-.build-toggle-btn {
+.build-open-btn {
   width: 100%;
   padding: 0.5rem 1rem;
   border: 1px dashed rgba(255, 255, 255, 0.5);
@@ -176,60 +190,120 @@ async function handleBuild(recipe: GameBuildingRecipe) {
   cursor: pointer;
   font-size: 0.9rem;
   text-align: left;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   transition: background-color 0.2s;
 }
 
-.build-toggle-btn:hover {
+.build-open-btn:hover {
   background-color: rgba(74, 85, 104, 0.9);
 }
 
-.toggle-arrow {
-  font-size: 0.75rem;
-  opacity: 0.8;
+/* 建造弹窗 */
+.build-modal-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
-.build-list {
+.build-modal {
+  min-width: 320px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  background: #1a202c;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  color: white;
 }
 
-.build-item {
+.build-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.4rem 0.6rem;
-  background-color: rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.build-modal-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.build-modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 0.25rem;
+  opacity: 0.7;
+}
+
+.build-modal-close:hover {
+  opacity: 1;
+}
+
+.build-modal-body {
+  overflow-y: auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
 }
 
-.build-info {
+.build-modal-empty {
+  font-size: 0.9rem;
+  color: #a0aec0;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.build-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  gap: 0.75rem;
+}
+
+.build-card-info {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-width: 0;
+  gap: 0.15rem;
 }
 
-.build-name {
+.build-card-name {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #e2e8f0;
 }
 
-.build-desc {
-  font-size: 0.75rem;
+.build-card-desc {
+  font-size: 0.78rem;
   color: #a0aec0;
-  margin-top: 0.1rem;
 }
 
-.build-cost {
-  font-size: 0.75rem;
+.build-card-cost {
+  font-size: 0.78rem;
   color: #fbd38d;
-  margin-top: 0.1rem;
+}
+
+.build-card-energy {
+  font-size: 0.78rem;
+  color: #90cdf4;
 }
 
 .build-btn {
