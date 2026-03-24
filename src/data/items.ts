@@ -26,7 +26,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     id: 'apple',
     name: '苹果',
     category: 'food',
-    icon: { type: 'iconify', name: 'game-icons:apple' },
+    icon: { type: 'svg', path: 'apple' },
     description: '树林里摘的野生苹果，清甜多汁，吃了心情也会好一些。',
     use: () => ({ energy: 30, satiety: 10, health: 5, mood: 8 })
   },
@@ -34,7 +34,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     id: 'berry',
     name: '浆果',
     category: 'food',
-    icon: { type: 'iconify', name: 'game-icons:berries' },
+    icon: { type: 'svg', path: 'berry' },
     description: '一把酸甜的野生浆果，量不多，但聊胜于无。',
     use: () => ({ energy: 15, satiety: 5, health: 2, mood: 3 })
   },
@@ -42,21 +42,21 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     id: 'wood',
     name: '木材',
     category: 'material',
-    icon: { type: 'iconify', name: 'game-icons:wood-pile' },
+    icon: { type: 'svg', path: 'wood' },
     description: '从树林砍下的原木，是建造和制作工具的基础材料。',
   },
   ore: {
     id: 'ore',
     name: '矿石',
     category: 'material',
-    icon: { type: 'iconify', name: 'game-icons:ore' },
+    icon: { type: 'svg', path: 'ore' },
     description: '从地里挖出的粗糙矿石，打造金属工具不可或缺。',
   },
   branch: {
     id: 'branch',
     name: '树枝',
     category: 'material',
-    icon: { type: 'iconify', name: 'game-icons:stick' },
+    icon: { type: 'svg', path: 'branch' },
     description: '捡来的细树枝，用途广泛，轻便易得。制作初级工具的必备材料。',
   },
 }
