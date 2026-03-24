@@ -1,16 +1,6 @@
 <template>
   <div class="character-detail">
-    <div class="back-button" @click="goBack">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges">
-        <rect x="0" y="6" width="2" height="4" fill="currentColor"/>
-        <rect x="2" y="4" width="2" height="8" fill="currentColor"/>
-        <rect x="4" y="2" width="2" height="12" fill="currentColor"/>
-        <rect x="6" y="0" width="2" height="16" fill="currentColor"/>
-        <rect x="8" y="4" width="8" height="2" fill="currentColor"/>
-        <rect x="8" y="10" width="8" height="2" fill="currentColor"/>
-        <rect x="6" y="7" width="10" height="2" fill="currentColor"/>
-      </svg>
-    </div>
+    <div class="back-button" @click="goBack">←</div>
     <div class="h1-wrapper"><h1>{{ character.name }}</h1></div>
 
     <Tabs v-model="activeTab" :tabs="tabs">
