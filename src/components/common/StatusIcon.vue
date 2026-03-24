@@ -1,87 +1,73 @@
 <template>
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges">
-    <!-- health: pixel heart (redesigned) -->
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+
+    <!-- health: 爱心 -->
     <template v-if="type === 'health'">
-      <!-- row 1: two bumps top -->
-      <rect x="2" y="1" width="3" height="1" fill="currentColor"/>
-      <rect x="9" y="1" width="3" height="1" fill="currentColor"/>
-      <!-- row 2 -->
-      <rect x="1" y="2" width="4" height="1" fill="currentColor"/>
-      <rect x="8" y="2" width="4" height="1" fill="currentColor"/>
-      <!-- row 3 -->
-      <rect x="0" y="3" width="6" height="1" fill="currentColor"/>
-      <rect x="8" y="3" width="6" height="1" fill="currentColor"/>
-      <!-- row 4 (merge) -->
-      <rect x="0" y="4" width="14" height="1" fill="currentColor"/>
-      <!-- row 5 -->
-      <rect x="1" y="5" width="12" height="1" fill="currentColor"/>
-      <!-- row 6 -->
-      <rect x="2" y="6" width="10" height="1" fill="currentColor"/>
-      <!-- row 7 -->
-      <rect x="3" y="7" width="8" height="1" fill="currentColor"/>
-      <!-- row 8 -->
-      <rect x="4" y="8" width="6" height="1" fill="currentColor"/>
-      <!-- row 9 -->
-      <rect x="5" y="9" width="4" height="1" fill="currentColor"/>
-      <!-- row 10 -->
-      <rect x="6" y="10" width="2" height="1" fill="currentColor"/>
+      <path
+        d="M8 13.5 C8 13.5 1.5 9 1.5 5.2 C1.5 3.2 3.1 1.5 5.2 1.5 C6.3 1.5 7.3 2 8 2.9 C8.7 2 9.7 1.5 10.8 1.5 C12.9 1.5 14.5 3.2 14.5 5.2 C14.5 9 8 13.5 8 13.5 Z"
+        fill="currentColor"
+      />
     </template>
-    <!-- energy: pixel lightning -->
+
+    <!-- energy: 闪电 -->
     <template v-else-if="type === 'energy'">
-      <rect x="8" y="0" width="4" height="2" fill="currentColor"/>
-      <rect x="6" y="2" width="4" height="2" fill="currentColor"/>
-      <rect x="4" y="4" width="8" height="2" fill="currentColor"/>
-      <rect x="3" y="6" width="10" height="2" fill="currentColor"/>
-      <rect x="5" y="8" width="6" height="2" fill="currentColor"/>
-      <rect x="4" y="10" width="6" height="2" fill="currentColor"/>
-      <rect x="3" y="12" width="6" height="2" fill="currentColor"/>
-      <rect x="2" y="14" width="4" height="2" fill="currentColor"/>
+      <path
+        d="M10 1.5 L4.5 8.5 H8.2 L6 14.5 L13 7 H9.2 Z"
+        fill="currentColor"
+      />
     </template>
-    <!-- satiety: pixel drumstick -->
+
+    <!-- satiety: 胃（肾形 + 上下管子） -->
     <template v-else-if="type === 'satiety'">
-      <rect x="10" y="0" width="4" height="2" fill="currentColor"/>
-      <rect x="12" y="2" width="2" height="4" fill="currentColor"/>
-      <rect x="10" y="4" width="4" height="2" fill="currentColor"/>
-      <rect x="8" y="4" width="4" height="4" fill="currentColor"/>
-      <rect x="6" y="6" width="6" height="4" fill="currentColor"/>
-      <rect x="4" y="8" width="6" height="4" fill="currentColor"/>
-      <rect x="2" y="10" width="6" height="4" fill="currentColor"/>
-      <rect x="2" y="12" width="4" height="2" fill="currentColor"/>
+      <!-- 上方管子 -->
+      <rect x="7" y="0.5" width="2.5" height="2.5" rx="1" fill="currentColor"/>
+      <!-- 肾形主体：左侧内凹，右侧圆润 -->
+      <path
+        d="M8.5 3
+           C8.5 3 11.5 3 12.5 5
+           C13.5 7 13 9.5 11.5 10.8
+           C10.2 12 8.5 12.5 8.5 12.5
+           C8.5 12.5 6.5 12.5 5.5 11.2
+           C4.8 10.2 5 9 5.5 8
+           C6 7 6.2 6.5 6 5.8
+           C5.8 5 6 3.5 8.5 3 Z"
+        fill="none" stroke="currentColor" stroke-width="1.3"
+      />
+      <!-- 下方管子 -->
+      <rect x="7" y="12.5" width="2.5" height="2.5" rx="1" fill="currentColor"/>
     </template>
-    <!-- mood: pixel smiley face -->
+
+    <!-- mood: 笑脸 -->
     <template v-else-if="type === 'mood'">
-      <rect x="4" y="1" width="8" height="2" fill="currentColor"/>
-      <rect x="2" y="3" width="4" height="2" fill="currentColor"/>
-      <rect x="10" y="3" width="4" height="2" fill="currentColor"/>
-      <rect x="1" y="5" width="14" height="6" fill="currentColor"/>
-      <rect x="2" y="11" width="12" height="2" fill="currentColor"/>
-      <rect x="4" y="13" width="8" height="2" fill="currentColor"/>
-      <rect x="4" y="6" width="2" height="2" fill="white"/>
-      <rect x="10" y="6" width="2" height="2" fill="white"/>
-      <rect x="4" y="9" width="8" height="1" fill="white"/>
-      <rect x="3" y="8" width="2" height="1" fill="white"/>
-      <rect x="11" y="8" width="2" height="1" fill="white"/>
+      <circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/>
+      <circle cx="5.5" cy="6.8" r="0.9" fill="currentColor"/>
+      <circle cx="10.5" cy="6.8" r="0.9" fill="currentColor"/>
+      <path
+        d="M5.2 9.8 C5.8 11.2 6.8 12 8 12 C9.2 12 10.2 11.2 10.8 9.8"
+        fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
+      />
     </template>
-    <!-- hygiene: pixel water drop -->
+
+    <!-- hygiene: 泡泡（多个圆圈） -->
     <template v-else-if="type === 'hygiene'">
-      <rect x="7" y="0" width="2" height="2" fill="currentColor"/>
-      <rect x="6" y="2" width="4" height="2" fill="currentColor"/>
-      <rect x="5" y="4" width="6" height="2" fill="currentColor"/>
-      <rect x="3" y="6" width="10" height="2" fill="currentColor"/>
-      <rect x="2" y="8" width="12" height="4" fill="currentColor"/>
-      <rect x="3" y="12" width="10" height="2" fill="currentColor"/>
-      <rect x="5" y="14" width="6" height="2" fill="currentColor"/>
+      <!-- 大泡泡（左下） -->
+      <circle cx="5.5" cy="11" r="3.8" fill="none" stroke="currentColor" stroke-width="1.2"/>
+      <!-- 中泡泡（右中） -->
+      <circle cx="10.5" cy="9" r="2.8" fill="none" stroke="currentColor" stroke-width="1.1"/>
+      <!-- 小泡泡（右上） -->
+      <circle cx="11" cy="4" r="1.8" fill="none" stroke="currentColor" stroke-width="1"/>
+      <!-- 小泡泡（中上） -->
+      <circle cx="6.5" cy="5.5" r="1.2" fill="none" stroke="currentColor" stroke-width="0.9"/>
     </template>
-    <!-- mana: pixel gem -->
+
+    <!-- mana: 四角星 -->
     <template v-else-if="type === 'mana'">
-      <rect x="4" y="1" width="8" height="2" fill="currentColor"/>
-      <rect x="2" y="3" width="12" height="2" fill="currentColor"/>
-      <rect x="1" y="5" width="14" height="4" fill="currentColor"/>
-      <rect x="2" y="9" width="12" height="2" fill="currentColor"/>
-      <rect x="4" y="11" width="8" height="2" fill="currentColor"/>
-      <rect x="6" y="13" width="4" height="2" fill="currentColor"/>
-      <rect x="7" y="15" width="2" height="1" fill="currentColor"/>
+      <path
+        d="M8 1 L9.2 6.8 L15 8 L9.2 9.2 L8 15 L6.8 9.2 L1 8 L6.8 6.8 Z"
+        fill="currentColor"
+      />
     </template>
+
   </svg>
 </template>
 
