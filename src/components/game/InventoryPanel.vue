@@ -17,7 +17,7 @@
       </label>
     </div>
 
-    <!-- 主体区：左侧格子 + 右侧详情 -->
+    <!-- 主体区：格子全宽 -->
     <div class="inventory-body">
       <!-- 物品格子区 -->
       <div class="grid-area">
@@ -34,24 +34,28 @@
         </template>
         <div v-else class="empty-hint">暂无物品</div>
       </div>
+    </div>
 
-      <!-- 右侧详情面板 -->
-      <div v-if="selectedItem" class="detail-panel">
-        <div class="detail-icon">
-          <ItemIcon :icon="selectedItem.icon" />
+    <!-- 底部详情抽屉 -->
+    <div :class="['detail-drawer', { open: selectedItem !== null }]">
+      <div v-if="selectedItem" class="drawer-content">
+        <div class="drawer-left">
+          <ItemIcon :icon="selectedItem.icon" class="drawer-icon" />
         </div>
-        <div class="detail-name">{{ selectedItem.name }}</div>
-        <div class="detail-count">× {{ selectedItem.count }}</div>
-        <div class="detail-desc">{{ selectedItem.description }}</div>
-        <button
-          v-if="selectedItem.hasUse"
-          class="use-btn"
-          :disabled="selectedItem.count <= 0"
-          @click="useItem(selectedItem)"
-        >使用</button>
-      </div>
-      <div v-else class="detail-placeholder">
-        <span>选择物品查看详情</span>
+        <div class="drawer-middle">
+          <div class="drawer-name">{{ selectedItem.name }}</div>
+          <div class="drawer-count">× {{ selectedItem.count }}</div>
+          <div class="drawer-desc">{{ selectedItem.description }}</div>
+        </div>
+        <div class="drawer-right">
+          <button class="close-btn" @click="selectedItem = null">✕</button>
+          <button
+            v-if="selectedItem.hasUse"
+            class="use-btn"
+            :disabled="selectedItem.count <= 0"
+            @click="useItem(selectedItem)"
+          >使用</button>
+        </div>
       </div>
     </div>
   </div>
@@ -59,14 +63,12 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useEquipmentStore } from '../../stores/equipment'
 import { useBaseSceneStore } from '../../stores/scenes/base'
 import { useForestSceneStore } from '../../stores/scenes/forest'
 import { useCharacterStore } from '../../stores/character'
 import { ITEM_DEFINITIONS, type ItemIcon as ItemIconType } from '../../data/items'
 import ItemIcon from '../common/ItemIcon.vue'
 
-const equipment = useEquipmentStore()
 const baseScene = useBaseSceneStore()
 const forestScene = useForestSceneStore()
 const characterStore = useCharacterStore()
@@ -84,7 +86,6 @@ interface DisplayItem {
 const CATEGORIES = [
   { key: 'food', label: '食物' },
   { key: 'material', label: '材料' },
-  { key: 'equipment', label: '装备' },
 ] as const
 
 type CategoryKey = typeof CATEGORIES[number]['key']
@@ -131,7 +132,7 @@ const aggregatedResources = computed(() => {
   return map
 })
 
-// 构建展示物品列表（资源 + 装备）
+// 构建展示物品列表（资源）
 const allDisplayItems = computed((): DisplayItem[] => {
   const items: DisplayItem[] = []
 
@@ -148,19 +149,6 @@ const allDisplayItems = computed((): DisplayItem[] => {
       description: def.description,
       hasUse: !!def.use,
       category: def.category,
-    })
-  }
-
-  // 装备：石斧
-  if (equipment.axe.durability > 0) {
-    items.push({
-      id: 'axe',
-      name: '石斧',
-      count: equipment.axeCount,
-      icon: { type: 'text', char: '🪓' },
-      description: `粗糙打磨的石斧，可用于砍伐树木。耐久度：${equipment.axe.durability}`,
-      hasUse: false,
-      category: 'equipment',
     })
   }
 
@@ -241,7 +229,6 @@ function useItem(item: DisplayItem) {
 /* 主体布局 */
 .inventory-body {
   display: flex;
-  gap: 0.6rem;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -302,60 +289,97 @@ function useItem(item: DisplayItem) {
   pointer-events: none;
 }
 
-/* 右侧详情面板 */
-.detail-panel {
-  width: 130px;
+/* 底部详情抽屉 */
+.detail-drawer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+  border-top: 1px solid transparent;
+}
+
+.detail-drawer.open {
+  max-height: 80px;
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+
+.drawer-content {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.2rem 0.2rem;
+}
+
+.drawer-left {
   flex-shrink: 0;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+}
+
+.drawer-icon {
+  width: 2rem;
+  height: 2rem;
+}
+
+.drawer-middle {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.4rem 0.5rem;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
-  overflow-y: auto;
+  gap: 0.1rem;
+  min-width: 0;
 }
 
-.detail-icon {
-  font-size: 2.4rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.4rem;
-  height: 2.4rem;
-}
-
-.detail-name {
+.drawer-name {
   font-size: 0.88rem;
   font-weight: 600;
   color: #2d3748;
-  text-align: center;
 }
 
-.detail-count {
+.drawer-count {
   font-size: 0.75rem;
   color: #718096;
 }
 
-.detail-desc {
-  font-size: 0.75rem;
+.drawer-desc {
+  font-size: 0.72rem;
   color: #4a5568;
-  text-align: center;
-  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drawer-right {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-end;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.1rem 0.25rem;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #666;
 }
 
 .use-btn {
-  margin-top: auto;
-  padding: 0.3rem 0.8rem;
+  padding: 0.25rem 0.7rem;
   background: rgba(72, 187, 120, 0.8);
   color: #fff;
   border: none;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   cursor: pointer;
   transition: background 0.15s;
-  width: 100%;
+  white-space: nowrap;
 }
 
 .use-btn:hover:not(:disabled) {
@@ -367,18 +391,6 @@ function useItem(item: DisplayItem) {
   cursor: not-allowed;
 }
 
-.detail-placeholder {
-  width: 130px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  color: #aaa;
-  text-align: center;
-  padding: 0.4rem;
-}
-
 .empty-hint {
   color: #aaa;
   font-size: 0.82rem;
@@ -386,4 +398,3 @@ function useItem(item: DisplayItem) {
   align-self: flex-start;
 }
 </style>
-

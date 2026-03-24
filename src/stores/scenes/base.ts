@@ -7,6 +7,7 @@ import { useScenesStore } from '../scenes';
 import { useTimeStore } from '../time';
 import { getOrCreateResource } from '../../utils/resourceUtils';
 import { toast } from '../../utils/toast';
+import { useGameLogStore } from '../gameLog';
 
 // 基地可建造的建筑配方
 export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
@@ -161,6 +162,12 @@ export const useBaseSceneStore = defineStore('baseScene', {
             message,
             type: 'success'
           });
+          useGameLogStore().addEntry({
+            text: message,
+            type: 'ITEM',
+            gameTimestamp: useTimeStore().timestamp,
+            timestamp: Date.now()
+          });
         } else {
           const messages = [
             "四周很安静，什么特别的都没有发现。",
@@ -173,6 +180,12 @@ export const useBaseSceneStore = defineStore('baseScene', {
             message,
             type: 'info'
           });
+          useGameLogStore().addEntry({
+            text: message,
+            type: 'ACTION',
+            gameTimestamp: useTimeStore().timestamp,
+            timestamp: Date.now()
+          });
         }
       } else {
         // 树林未解锁：保底机制
@@ -181,9 +194,16 @@ export const useBaseSceneStore = defineStore('baseScene', {
           // 第3次必定解锁，或随机提前解锁
           scenes.unlockScene('forest');
           this.exploreCount = 0;
+          const unlockMessage = "在远处发现了一片茂密的树林，看起来那里会有不少资源...";
           toast({
-            message: "在远处发现了一片茂密的树林，看起来那里会有不少资源...",
+            message: unlockMessage,
             type: 'info'
+          });
+          useGameLogStore().addEntry({
+            text: unlockMessage,
+            type: 'ACTION',
+            gameTimestamp: useTimeStore().timestamp,
+            timestamp: Date.now()
           });
         } else {
           // 未触发解锁：30%概率发现少量资源，否则普通消息
@@ -200,9 +220,16 @@ export const useBaseSceneStore = defineStore('baseScene', {
             });
             resource.count += amount;
 
+            const resourceMessage = `在附近发现了${amount}个${resource.name}！`;
             toast({
-              message: `在附近发现了${amount}个${resource.name}！`,
+              message: resourceMessage,
               type: 'success'
+            });
+            useGameLogStore().addEntry({
+              text: resourceMessage,
+              type: 'ITEM',
+              gameTimestamp: useTimeStore().timestamp,
+              timestamp: Date.now()
             });
           } else {
             const messages = [
@@ -215,6 +242,12 @@ export const useBaseSceneStore = defineStore('baseScene', {
             toast({
               message,
               type: 'info'
+            });
+            useGameLogStore().addEntry({
+              text: message,
+              type: 'ACTION',
+              gameTimestamp: useTimeStore().timestamp,
+              timestamp: Date.now()
             });
           }
         }
