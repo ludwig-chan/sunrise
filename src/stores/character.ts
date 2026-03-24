@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { gameLog } from '../utils/eventBus'
+import { gameLog, emitter } from '../utils/eventBus'
 import { showDialog } from '../utils/dialog'
 import { useBaseSceneStore } from './scenes/base'
 import { useForestSceneStore } from './scenes/forest'
@@ -102,6 +102,7 @@ export const useCharacterStore = defineStore('character', {
             text: '你的状态太虚弱了，游戏已自动暂停，请补充食物和休息后继续。',
             type: 'SYSTEM'
           })
+          emitter.emit('game-auto-paused')
         }
       }
 

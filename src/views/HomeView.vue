@@ -66,6 +66,7 @@ function resetInactivityTimer() {
       timeStore.pauseGame()
       wasAutoPaused.value = true
       gameLog({ text: '游戏已因长时间无操作自动暂停', type: 'SYSTEM' })
+      emitter.emit('game-auto-paused')
     }
   }, INACTIVITY_TIMEOUT)
 }

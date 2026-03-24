@@ -10,6 +10,7 @@ export type Events = {
   'game-message': string | GameMessage;
   'hour-passed': void;  // 每小时触发的事件
   'clear-messages': void;  // 清空消息事件
+  'game-auto-paused': void;  // 游戏自动暂停事件（血量过低或长时间无操作）
 }
 
 export const emitter = mitt<Events>()

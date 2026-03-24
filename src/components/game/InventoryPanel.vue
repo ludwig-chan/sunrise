@@ -44,7 +44,12 @@
         </div>
         <div class="drawer-middle">
           <div class="drawer-name">{{ selectedItem.name }}</div>
-          <div class="drawer-count">× {{ selectedItem.count }}</div>
+          <div v-if="selectedItem.effect" class="drawer-effect">
+            <span v-if="selectedItem.effect.health">❤️ +{{ selectedItem.effect.health }}</span>
+            <span v-if="selectedItem.effect.energy">💪 +{{ selectedItem.effect.energy }}</span>
+            <span v-if="selectedItem.effect.satiety">🍚 +{{ selectedItem.effect.satiety }}</span>
+            <span v-if="selectedItem.effect.mood">😊 +{{ selectedItem.effect.mood }}</span>
+          </div>
           <div class="drawer-desc">{{ selectedItem.description }}</div>
         </div>
         <div class="drawer-right">
@@ -66,7 +71,7 @@ import { ref, computed } from 'vue'
 import { useBaseSceneStore } from '../../stores/scenes/base'
 import { useForestSceneStore } from '../../stores/scenes/forest'
 import { useCharacterStore } from '../../stores/character'
-import { ITEM_DEFINITIONS, type ItemIcon as ItemIconType } from '../../data/items'
+import { ITEM_DEFINITIONS, type ItemIcon as ItemIconType, type ItemEffect } from '../../data/items'
 import ItemIcon from '../common/ItemIcon.vue'
 
 const baseScene = useBaseSceneStore()
@@ -81,6 +86,7 @@ interface DisplayItem {
   description: string
   hasUse: boolean
   category: string
+  effect?: ItemEffect
 }
 
 const CATEGORIES = [
@@ -149,6 +155,7 @@ const allDisplayItems = computed((): DisplayItem[] => {
       description: def.description,
       hasUse: !!def.use,
       category: def.category,
+      effect: def.use ? def.use() : undefined,
     })
   }
 
@@ -335,9 +342,11 @@ function useItem(item: DisplayItem) {
   color: #2d3748;
 }
 
-.drawer-count {
+.drawer-effect {
   font-size: 0.75rem;
   color: #718096;
+  display: flex;
+  gap: 0.5rem;
 }
 
 .drawer-desc {
