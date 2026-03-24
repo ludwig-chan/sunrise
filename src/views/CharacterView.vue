@@ -2,7 +2,7 @@
   <div class="character-detail">
     <div class="back-button" @click="goBack">⬅️</div>
     <div class="settings-button" @click="goToSettings">⚙️</div>
-    <h1>{{ character.name }}</h1>
+    <div class="h1-wrapper"><h1>{{ character.name }}</h1></div>
 
     <Tabs v-model="activeTab" :tabs="tabs">
       <template #profile>
@@ -78,7 +78,18 @@ const goToSettings = () => {
 h1 {
   text-align: center;
   margin-bottom: 2rem;
-  color: #333;
+  color: #fff;
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  padding: 0.2rem 1.2rem;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.h1-wrapper {
+  text-align: center;
 }
 
 .settings-button {
