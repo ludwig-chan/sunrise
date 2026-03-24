@@ -251,6 +251,7 @@ async function handleBuild(recipe: GameBuildingRecipe) {
   background-color: rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   gap: 0.75rem;
+  min-height: 5rem;
 }
 
 .build-card-info {
@@ -270,6 +271,8 @@ async function handleBuild(recipe: GameBuildingRecipe) {
 .build-card-desc {
   font-size: 0.78rem;
   color: #a0aec0;
+  height: 3em;
+  overflow-y: auto;
 }
 
 .build-card-cost {

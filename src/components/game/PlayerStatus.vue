@@ -55,19 +55,15 @@ const handleAvatarClick = () => {
   showMenu.value = true
 }
 
-// 监听每小时事件，以及自动暂停事件
+// 监听自动暂停事件
+const onAutoPaused = () => { showMenu.value = true }
+
 onMounted(() => {
-  emitter.on('hour-passed', () => {
-    character.hourlyUpdate()
-  })
-  emitter.on('game-auto-paused', () => {
-    showMenu.value = true
-  })
+  emitter.on('game-auto-paused', onAutoPaused)
 })
 
 onUnmounted(() => {
-  emitter.off('hour-passed')
-  emitter.off('game-auto-paused')
+  emitter.off('game-auto-paused', onAutoPaused)
 })
 </script>
 
