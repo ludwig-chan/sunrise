@@ -84,7 +84,7 @@ const clearMessages = async () => {
 }
 
 onMounted(() => {
-  // 从 store 恢复历史消息
+  // 从 store 恢复历史消息（组件内最多显示 100 条）
   messages.value = [...gameLogStore.entries].slice(-100)
 
   // 监听游戏消息
