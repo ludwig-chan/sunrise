@@ -2,17 +2,18 @@
   <div class="inventory-panel translucent-white">
     <!-- 过滤标签栏 -->
     <div class="filter-bar">
-      <label class="filter-label" :class="{ active: isAllActive }" @click.prevent="toggleAll">
-        <input type="checkbox" :checked="isAllActive" readonly /> 全部
-      </label>
       <label
         v-for="cat in CATEGORIES"
         :key="cat.key"
         class="filter-label"
         :class="{ active: activeCategories.has(cat.key) }"
-        @click.prevent="toggleCategory(cat.key)"
+        @click.prevent="selectOnlyCategory(cat.key)"
       >
-        <input type="checkbox" :checked="activeCategories.has(cat.key)" readonly /> {{ cat.label }}
+        <input
+          type="checkbox"
+          :checked="activeCategories.has(cat.key)"
+          @click.stop="toggleCategory(cat.key)"
+        /> {{ cat.label }}
       </label>
     </div>
 
@@ -91,10 +92,13 @@ type CategoryKey = typeof CATEGORIES[number]['key']
 const activeCategories = ref<Set<CategoryKey>>(new Set())
 const selectedItem = ref<DisplayItem | null>(null)
 
-const isAllActive = computed(() => activeCategories.value.size === 0)
-
-function toggleAll() {
-  activeCategories.value = new Set()
+// 单选：点击标签时只选此分类；若已经只选了它，则清空（显示全部）
+function selectOnlyCategory(cat: CategoryKey) {
+  if (activeCategories.value.size === 1 && activeCategories.value.has(cat)) {
+    activeCategories.value = new Set()
+  } else {
+    activeCategories.value = new Set([cat])
+  }
   selectedItem.value = null
 }
 
@@ -231,7 +235,6 @@ function useItem(item: DisplayItem) {
 }
 
 .filter-label input[type="checkbox"] {
-  pointer-events: none;
   margin: 0;
 }
 
