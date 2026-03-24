@@ -2,16 +2,18 @@
   <div class="inventory-panel translucent-white">
     <!-- 过滤标签栏 -->
     <div class="filter-bar">
-      <button
-        :class="['filter-btn', { active: isAllActive }]"
-        @click="toggleAll"
-      >全部</button>
-      <button
+      <label class="filter-label" :class="{ active: isAllActive }" @click.prevent="toggleAll">
+        <input type="checkbox" :checked="isAllActive" readonly /> 全部
+      </label>
+      <label
         v-for="cat in CATEGORIES"
         :key="cat.key"
-        :class="['filter-btn', { active: activeCategories.has(cat.key) }]"
-        @click="toggleCategory(cat.key)"
-      >{{ cat.label }}</button>
+        class="filter-label"
+        :class="{ active: activeCategories.has(cat.key) }"
+        @click.prevent="toggleCategory(cat.key)"
+      >
+        <input type="checkbox" :checked="activeCategories.has(cat.key)" readonly /> {{ cat.label }}
+      </label>
     </div>
 
     <!-- 主体区：左侧格子 + 右侧详情 -->
@@ -199,7 +201,10 @@ function useItem(item: DisplayItem) {
   padding-bottom: 0.3rem;
 }
 
-.filter-btn {
+.filter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   padding: 0.25rem 0.6rem;
   border: 1px solid rgba(0, 0, 0, 0.15);
   background: rgba(255, 255, 255, 0.3);
@@ -209,19 +214,25 @@ function useItem(item: DisplayItem) {
   color: #666;
   transition: all 0.15s;
   white-space: nowrap;
+  user-select: none;
 }
 
-.filter-btn:hover {
+.filter-label:hover {
   background: rgba(66, 153, 225, 0.15);
   border-color: #4299e1;
   color: #2b6cb0;
 }
 
-.filter-btn.active {
+.filter-label.active {
   background: rgba(66, 153, 225, 0.25);
   border-color: #3182ce;
   color: #2b6cb0;
   font-weight: 500;
+}
+
+.filter-label input[type="checkbox"] {
+  pointer-events: none;
+  margin: 0;
 }
 
 /* 主体布局 */
