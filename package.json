@@ -13,6 +13,7 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@iconify/vue": "^5.0.0",
     "mitt": "^3.0.1",
     "pinia": "^3.0.1",
     "pinia-plugin-persistedstate": "^4.2.0",
@@ -33,6 +34,7 @@
     "vite": "^6.2.4",
     "vite-plugin-pwa": "^1.0.0",
     "vite-plugin-vue-devtools": "^7.7.2",
+    "vite-svg-loader": "^5.1.1",
     "vitest": "^3.1.1",
     "vue-tsc": "^2.2.8",
     "workbox-window": "^7.3.0"

@@ -27,6 +27,7 @@ const scenesStore = useScenesStore();
 }
 
 .panels-container {
+  flex: 0 0 auto;
   display: flex;
   gap: 1rem;
   width: 100%;
@@ -38,5 +39,11 @@ const scenesStore = useScenesStore();
 
 :deep(.actions-panel) {
   flex: 1;
+}
+
+/* 让背包栏撑满剩余高度 */
+:deep(.inventory-panel) {
+  flex: 1;
+  min-height: 0;
 }
 </style>

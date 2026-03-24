@@ -20,10 +20,11 @@ export interface GameBuildingRecipe {
 
 export interface GameResource {
   id: string;
-  type: 'wood' | 'ore' | 'branch' | 'apple' | 'berry';
+  type: string;
   name: string;
   count: number;
   maxCount?: number;
+  description?: string;
 }
 
 export interface GameBuilding {

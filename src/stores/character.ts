@@ -1,16 +1,11 @@
 import { defineStore } from 'pinia'
-import { gameLog, emitter } from '../utils/eventBus'
+import { gameLog } from '../utils/eventBus'
 import { showDialog } from '../utils/dialog'
-import { useTimeStore } from './time'
-import { useScenesStore } from './scenes'
+import { useBaseSceneStore } from './scenes/base'
+import { useForestSceneStore } from './scenes/forest'
 import { restartGame } from '../utils/gameSystem'
 import { toast } from '../utils/toast'
-
-// 食物效果映射（食用后同时恢复体力和饱食度）
-const FOOD_EFFECTS: Record<string, { energy: number; satiety: number }> = {
-  apple: { energy: 30, satiety: 10 },
-  berry: { energy: 15, satiety: 5 }
-}
+import { ITEM_DEFINITIONS } from '../data/items'
 
 type Gender = 'male' | 'female'
 
@@ -118,11 +113,14 @@ export const useCharacterStore = defineStore('character', {
 
     // 食用场景资源中的食物
     eatFood(itemId: string) {
-      const effects = FOOD_EFFECTS[itemId]
-      if (!effects) return
+      const def = ITEM_DEFINITIONS[itemId]
+      if (!def?.use) return
 
-      const scenes = useScenesStore()
-      const resource = scenes.currentScene.resources.find(r => r.id === itemId)
+      const allResources = [
+        ...useBaseSceneStore().scene.resources,
+        ...useForestSceneStore().scene.resources,
+      ]
+      const resource = allResources.find(r => r.id === itemId)
 
       if (!resource || resource.count <= 0) {
         toast({ message: '没有可以食用的食物', type: 'warning' })
@@ -131,19 +129,23 @@ export const useCharacterStore = defineStore('character', {
 
       resource.count -= 1
 
-      const prevEnergy = this.energy
-      const prevSatiety = this.satiety
-      this.energy = Math.min(100, this.energy + effects.energy)
-      this.satiety = Math.min(100, this.satiety + effects.satiety)
-      const restoredEnergy = this.energy - prevEnergy
-      const restoredSatiety = this.satiety - prevSatiety
+      const effect = def.use()
 
-      const foodNames: Record<string, string> = {
-        apple: '苹果',
-        berry: '浆果'
-      }
-      const foodName = foodNames[itemId] ?? resource.name
-      gameLog({ text: `吃了一个${foodName}，体力恢复了 ${restoredEnergy} 点，饱食度恢复了 ${restoredSatiety} 点`, type: 'SYSTEM' })
+      const prev = { health: this.health, energy: this.energy, satiety: this.satiety, mood: this.mood }
+
+      if (effect.energy !== undefined)  this.energy  = Math.min(100, this.energy  + effect.energy)
+      if (effect.satiety !== undefined) this.satiety = Math.min(100, this.satiety + effect.satiety)
+      if (effect.health !== undefined)  this.health  = Math.min(100, this.health  + effect.health)
+      if (effect.mood !== undefined)    this.mood    = Math.min(100, this.mood    + effect.mood)
+
+      const parts: string[] = []
+      if (effect.energy  !== undefined && this.energy  - prev.energy  > 0) parts.push(`体力 +${this.energy  - prev.energy}`)
+      if (effect.satiety !== undefined && this.satiety - prev.satiety > 0) parts.push(`饱食 +${this.satiety - prev.satiety}`)
+      if (effect.health  !== undefined && this.health  - prev.health  > 0) parts.push(`血量 +${this.health  - prev.health}`)
+      if (effect.mood    !== undefined && this.mood    - prev.mood    > 0) parts.push(`心情 +${this.mood    - prev.mood}`)
+
+      const suffix = parts.length > 0 ? `，${parts.join('、')}` : ''
+      gameLog({ text: `吃了${def.name}${suffix}`, type: 'SYSTEM' })
     },
 
     // 重置游戏
