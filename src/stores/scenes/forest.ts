@@ -11,6 +11,7 @@ import {
   calculateExploreResources 
 } from '../../utils/resourceUtils';
 import { toast } from '../../utils/toast';
+import { useGameLogStore } from '../gameLog';
 
 // 树林可建造的建筑配方
 export const FOREST_BUILDING_RECIPES: GameBuildingRecipe[] = [
@@ -155,6 +156,12 @@ export const useForestSceneStore = defineStore('forestScene', {
           message: "获得了一个木材", 
           type: "success" 
         });
+        useGameLogStore().addEntry({
+          text: '获得了一个木材',
+          type: 'ITEM',
+          gameTimestamp: useTimeStore().timestamp,
+          timestamp: Date.now()
+        });
 
         // 如果库存耗尽，发出提示
         if (!hasStock(this.scene.stock, 'wood')) {
@@ -179,6 +186,12 @@ export const useForestSceneStore = defineStore('forestScene', {
         toast({ 
           message: "探索了一圈，但是什么都没有发现", 
           type: "info" 
+        });
+        useGameLogStore().addEntry({
+          text: '探索了一圈，但是什么都没有发现',
+          type: 'ACTION',
+          gameTimestamp: useTimeStore().timestamp,
+          timestamp: Date.now()
         });
         return;
       }
@@ -205,12 +218,24 @@ export const useForestSceneStore = defineStore('forestScene', {
           message: "探索了一圈，但是什么都没有发现", 
           type: "info" 
         });
+        useGameLogStore().addEntry({
+          text: '探索了一圈，但是什么都没有发现',
+          type: 'ACTION',
+          gameTimestamp: useTimeStore().timestamp,
+          timestamp: Date.now()
+        });
         return;
       }
       const resourcesText = gainedResources.join('、');
       toast({ 
         message: `探索发现了${resourcesText}`, 
         type: "success" 
+      });
+      useGameLogStore().addEntry({
+        text: `探索发现了${resourcesText}`,
+        type: 'ITEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
       });
     },
 
@@ -226,7 +251,14 @@ export const useForestSceneStore = defineStore('forestScene', {
         toast({ 
           message: "获得了一块矿石", 
           type: "success" 
-        });        // 如果库存耗尽，发出提示
+        });
+        useGameLogStore().addEntry({
+          text: '获得了一块矿石',
+          type: 'ITEM',
+          gameTimestamp: useTimeStore().timestamp,
+          timestamp: Date.now()
+        });
+        // 如果库存耗尽，发出提示
         if (!hasStock(this.scene.stock, 'ore')) {
           toast({ 
             message: "这片区域的矿石已经被开采殆尽了", 
@@ -247,6 +279,12 @@ export const useForestSceneStore = defineStore('forestScene', {
         toast({
           message: '找了一圈，没有发现可以吃的东西',
           type: 'info'
+        });
+        useGameLogStore().addEntry({
+          text: '找了一圈，没有发现可以吃的东西',
+          type: 'ACTION',
+          gameTimestamp: useTimeStore().timestamp,
+          timestamp: Date.now()
         });
         return;
       }
@@ -292,6 +330,12 @@ export const useForestSceneStore = defineStore('forestScene', {
       toast({
         message: `采集到了${gathered.join('和')}`,
         type: 'success'
+      });
+      useGameLogStore().addEntry({
+        text: `采集到了${gathered.join('和')}`,
+        type: 'ITEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
       });
     },
 
