@@ -61,6 +61,7 @@ import { seasonNames, type MessageType, messageTypeNames } from '@/utils/textMap
 import { confirm } from '@/utils/dialog'
 import type { Season } from '@/stores/time'
 import type { GameMessage } from '@/utils/eventBus'
+import { useGameLogStore } from '@/stores/gameLog'
 
 interface GameMessageWithTimestamp extends GameMessage {
   gameTimestamp: number;
@@ -71,16 +72,21 @@ interface GameMessageWithTimestamp extends GameMessage {
 const messages = ref<GameMessageWithTimestamp[]>([])
 const messagesContainer = ref<HTMLElement | null>(null)
 const timeStore = useTimeStore()
+const gameLogStore = useGameLogStore()
 const currentTime = ref(Date.now())
 
 // 清空所有消息
 const clearMessages = async () => {
   if (await confirm('要清空所有消息吗？')) {
     messages.value = []
+    gameLogStore.clearEntries()
   }
 }
 
 onMounted(() => {
+  // 从 store 恢复历史消息
+  messages.value = [...gameLogStore.entries].slice(-100)
+
   // 监听游戏消息
   emitter.on('game-message', message => {
     // 添加时间戳
@@ -88,11 +94,14 @@ onMounted(() => {
       ? { text: message, type: 'SYSTEM' as MessageType }
       : message
 
-    messages.value.push({
+    const entry = {
       ...gameMessage,
       gameTimestamp: timeStore.timestamp,
       timestamp: Date.now()
-    })
+    }
+
+    gameLogStore.addEntry(entry)
+    messages.value.push(entry)
 
     // 限制最多保留100条消息
     if (messages.value.length > 100) {
@@ -107,12 +116,12 @@ onMounted(() => {
   })
 })
 
+// 组件卸载时清理监听器和定时器
 onUnmounted(() => {
   emitter.off('game-message')
   emitter.off('clear-messages')
+  clearInterval(updateTimer)
 })
-
-// 搜索和筛选状态
 const searchText = ref('')
 const isFilterPanelVisible = ref(false)
 
@@ -206,12 +215,6 @@ const toggleFilter = (type: MessageType) => {
     selectedTypes.value.splice(index, 1);
   }
 };
-
-// 组件卸载时清理监听器和定时器
-onUnmounted(() => {
-  emitter.off('game-message')
-  clearInterval(updateTimer)
-})
 
 </script>
 

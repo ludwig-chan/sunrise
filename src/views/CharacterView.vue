@@ -4,18 +4,32 @@
     <div class="settings-button" @click="goToSettings">⚙️</div>
     <h1>{{ character.name }}</h1>
 
-    <CharacterProfile />
-    <!-- 库存已移至主界面底部，请返回主界面查看 -->
+    <Tabs v-model="activeTab" :tabs="tabs">
+      <template #profile>
+        <CharacterProfile />
+      </template>
+      <template #log>
+        <CharacterLog />
+      </template>
+    </Tabs>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCharacterStore } from '../stores/character'
 import CharacterProfile from '../components/game/CharacterProfile.vue'
+import CharacterLog from '../components/game/CharacterLog.vue'
+import Tabs from '../components/common/Tabs.vue'
 
 const router = useRouter()
 const character = useCharacterStore()
+const activeTab = ref('profile')
+const tabs = [
+  { key: 'profile', title: '属性' },
+  { key: 'log', title: '日志' },
+]
 
 const goBack = () => {
   router.back()
