@@ -305,7 +305,7 @@ function useItem(item: DisplayItem) {
 }
 
 .detail-drawer.open {
-  max-height: 80px;
+  max-height: 150px;
   border-top-color: rgba(0, 0, 0, 0.08);
 }
 
@@ -352,9 +352,8 @@ function useItem(item: DisplayItem) {
 .drawer-desc {
   font-size: 0.72rem;
   color: #4a5568;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .drawer-right {
