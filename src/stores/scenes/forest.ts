@@ -343,7 +343,7 @@ export const useForestSceneStore = defineStore('forestScene', {
           energyCost: 10, // 砍树需要较多体力
           group: 'gather',
           handler: async () => await this.withEnergyCost(10, async () => await this.chopWood()),
-          disabled: equipment.axeCount === 0,
+          disabled: equipment.slots.mainHand !== 'axe' && equipment.axeCount === 0,
           tooltip: '需要斧头才能砍伐'
         },
         {

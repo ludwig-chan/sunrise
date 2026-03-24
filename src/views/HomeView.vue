@@ -3,7 +3,6 @@
     <header class="header">
       <GameDateTime />
       <PlayerStatus />
-      <EquipmentBar />
     </header>
     <div class="middle-section">
       <OperationArea />
@@ -23,7 +22,6 @@ import { useForestSceneStore } from '@/stores/scenes/forest'
 import GameDateTime from '@/components/game/GameDateTime.vue'
 import PlayerStatus from '@/components/game/PlayerStatus.vue'
 import OperationArea from '@/components/game/OperationArea.vue'
-import EquipmentBar from '@/components/game/EquipmentBar.vue'
 import ScenePanel from '@/components/game/ScenePanel.vue'
 
 const timeStore = useTimeStore()
@@ -43,6 +41,7 @@ const scenesList = computed(() => {
 // 当进入游戏页面时启动时间系统
 onMounted(() => {
   timeStore.startTime()
+  timeStore.resumeGame()
 })
 
 // 当离开游戏页面时停止时间系统
