@@ -21,7 +21,7 @@
 
     <!-- 建造区域 -->
     <ActionButton @click="showBuildModal = true">
-      🔨 建造
+      建造
     </ActionButton>
 
     <!-- 建造弹窗 -->
@@ -29,7 +29,7 @@
       <div v-if="showBuildModal" class="build-modal-overlay" @click.self="showBuildModal = false" @keydown.esc="showBuildModal = false">
         <div class="build-modal">
           <div class="build-modal-header">
-            <span class="build-modal-title">🔨 选择建造</span>
+            <span class="build-modal-title">选择建造</span>
             <button class="build-modal-close" aria-label="关闭弹窗" @click="showBuildModal = false">×</button>
           </div>
           <div class="build-modal-body">

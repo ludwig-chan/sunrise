@@ -6,6 +6,10 @@ import { useForestSceneStore } from './scenes/forest'
 import { restartGame } from '../utils/gameSystem'
 import { toast } from '../utils/toast'
 import { ITEM_DEFINITIONS } from '../data/items'
+import { useTimeStore } from './time'
+
+// 挂机安全保护：血量降至此值时自动暂停，防止无人操作时角色死亡
+const HEALTH_AUTO_PAUSE_THRESHOLD = 20
 
 type Gender = 'male' | 'female'
 
@@ -87,6 +91,18 @@ export const useCharacterStore = defineStore('character', {
       } else if (this.energy > 70 && this.health < 100) {
         // 高体力时缓慢恢复健康值
         this.health = Math.min(100, this.health + 1)
+      }
+
+      // 挂机安全保护：血量跌至阈值时自动暂停
+      if (this.health <= HEALTH_AUTO_PAUSE_THRESHOLD) {
+        const timeStore = useTimeStore()
+        if (!timeStore.paused) {
+          timeStore.pauseGame()
+          gameLog({
+            text: '你的状态太虚弱了，游戏已自动暂停，请补充食物和休息后继续。',
+            type: 'SYSTEM'
+          })
+        }
       }
 
       // 检查是否死亡
