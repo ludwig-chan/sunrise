@@ -1,7 +1,16 @@
 <template>
   <div class="character-detail">
-    <div class="back-button" @click="goBack">⬅️</div>
-    <div class="settings-button" @click="goToSettings">⚙️</div>
+    <div class="back-button" @click="goBack">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges">
+        <rect x="0" y="6" width="2" height="4" fill="currentColor"/>
+        <rect x="2" y="4" width="2" height="8" fill="currentColor"/>
+        <rect x="4" y="2" width="2" height="12" fill="currentColor"/>
+        <rect x="6" y="0" width="2" height="16" fill="currentColor"/>
+        <rect x="8" y="4" width="8" height="2" fill="currentColor"/>
+        <rect x="8" y="10" width="8" height="2" fill="currentColor"/>
+        <rect x="6" y="7" width="10" height="2" fill="currentColor"/>
+      </svg>
+    </div>
     <div class="h1-wrapper"><h1>{{ character.name }}</h1></div>
 
     <Tabs v-model="activeTab" :tabs="tabs">
@@ -38,10 +47,6 @@ const tabs = [
 
 const goBack = () => {
   router.back()
-}
-
-const goToSettings = () => {
-  router.push('/settings')
 }
 </script>
 
@@ -92,25 +97,4 @@ h1 {
   text-align: center;
 }
 
-.settings-button {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.1);
-  color: #666;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 1.2rem;
-}
-
-.settings-button:hover {
-  background-color: rgba(0, 0, 0, 0.2);
-  color: #333;
-}
 </style>

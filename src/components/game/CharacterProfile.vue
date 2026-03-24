@@ -28,32 +28,32 @@
       <h2>状态详情</h2>
       <div class="status-grid">
         <div class="status-item">
-          <label>❤️</label>
+          <label><StatusIcon type="health" style="color: rgb(220, 53, 69)" /></label>
           <ProgressBar :value="character.health" color="rgb(220, 53, 69)" />
           <span>{{ character.health }}%</span>
         </div>
         <div class="status-item">
-          <label>💪</label>
+          <label><StatusIcon type="energy" style="color: rgb(0, 123, 255)" /></label>
           <ProgressBar :value="character.energy" color="rgb(0, 123, 255)" />
           <span>{{ character.energy }}%</span>
         </div>
         <div class="status-item">
-          <label>🍗</label>
+          <label><StatusIcon type="satiety" style="color: rgb(255, 153, 0)" /></label>
           <ProgressBar :value="character.satiety" color="rgb(255, 153, 0)" />
           <span>{{ character.satiety }}%</span>
         </div>
         <div class="status-item">
-          <label>😊</label>
+          <label><StatusIcon type="mood" style="color: rgb(147, 112, 219)" /></label>
           <ProgressBar :value="character.mood" color="rgb(147, 112, 219)" />
           <span>{{ character.mood }}%</span>
         </div>
         <div class="status-item">
-          <label>✨</label>
+          <label><StatusIcon type="hygiene" style="color: rgb(32, 178, 170)" /></label>
           <ProgressBar :value="character.hygiene" color="rgb(32, 178, 170)" />
           <span>{{ character.hygiene }}%</span>
         </div>
         <div class="status-item">
-          <label>🔮</label>
+          <label><StatusIcon type="mana" style="color: rgb(138, 43, 226)" /></label>
           <ProgressBar :value="character.mana" color="rgb(138, 43, 226)" />
           <span>{{ character.mana }}%</span>
         </div>
@@ -65,6 +65,7 @@
 <script setup lang="ts">
 import ProgressBar from '../common/ProgressBar.vue'
 import { useCharacterStore } from '../../stores/character'
+import StatusIcon from '../common/StatusIcon.vue'
 
 const character = useCharacterStore()
 </script>
