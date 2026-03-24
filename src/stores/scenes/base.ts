@@ -20,6 +20,14 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     energyCost: 7
   },
   {
+    type: 'woodenHut',
+    name: '木屋',
+    description: '提供庇护所，有了木屋可以睡觉恢复体力',
+    cost: { wood: 20, branch: 5 },
+    duration: 5,
+    energyCost: 20
+  },
+  {
     type: 'cookingTable',
     name: '烹饪台',
     description: '可以烹饪各种食物',
@@ -128,15 +136,11 @@ export const useBaseSceneStore = defineStore('baseScene', {
       if (!this.checkEnergy(cost)) {
         return;
       }
-      const timeStore = useTimeStore();
-      timeStore.resumeGame();
-      try {
-        await action();
-        this.consumeEnergy(cost);
-      } finally {
-        timeStore.pauseGame();
-      }
-    },    // 探索
+      await action();
+      this.consumeEnergy(cost);
+    },
+
+    // 探索
     async explore() {
       const scenes = useScenesStore();
 
@@ -290,10 +294,34 @@ export const useBaseSceneStore = defineStore('baseScene', {
       // 添加建筑
       this.scene.buildings.push({ name: recipe.name, type: recipe.type, level: 1 });
       toast({ message: `${recipe.name}建造成功！`, type: 'success' });
+
+      // 建造完成后刷新动作列表（例如建造木屋后出现睡觉按钮）
+      this.scene.actions = this.getActionConfig();
+    },
+
+    // 睡觉：消耗饱食度恢复体力
+    async sleep() {
+      const character = useCharacterStore();
+      const SATIETY_COST = 20;
+      const ENERGY_RESTORE = 30;
+      if (character.satiety <= SATIETY_COST) {
+        toast({ message: '太饿了，睡不着...', type: 'warning' });
+        return;
+      }
+      character.satiety = Math.max(0, character.satiety - SATIETY_COST);
+      character.energy = Math.min(100, character.energy + ENERGY_RESTORE);
+      const message = `睡了一觉，体力恢复了 +${ENERGY_RESTORE}，饱食度 -${SATIETY_COST}`;
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'SYSTEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
     },
     getActionConfig() {
       const equipment = useEquipmentStore();
-      return [
+      const actions = [
         {
           name: 'explore',
           text: '探索',
@@ -302,6 +330,16 @@ export const useBaseSceneStore = defineStore('baseScene', {
           handler: async () => await this.withEnergyCost(10, async () => await this.explore())
         }
       ];
+      if (this.scene.buildings.some(b => b.type === 'woodenHut')) {
+        actions.push({
+          name: 'sleep',
+          text: '睡觉',
+          duration: 5,
+          energyCost: 0,
+          handler: async () => await this.sleep()
+        });
+      }
+      return actions;
     },
 
     initializeScene() {

@@ -128,14 +128,8 @@ export const useForestSceneStore = defineStore('forestScene', {
       if (!this.checkEnergy(cost)) {
         return;
       }
-      const timeStore = useTimeStore();
-      timeStore.resumeGame();
-      try {
-        await action();
-        this.consumeEnergy(cost);
-      } finally {
-        timeStore.pauseGame();
-      }
+      await action();
+      this.consumeEnergy(cost);
     },
 
     async chopWood() {
