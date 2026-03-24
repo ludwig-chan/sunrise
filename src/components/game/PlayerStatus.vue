@@ -18,10 +18,12 @@
     <div class="stats-container">
       <div class="main-stats">
         <div class="status-item">
-          <ProgressBar :value="character.health" label="❤️" color="rgb(220, 53, 69)" />
+          <StatusIcon type="health" style="color: rgb(220, 53, 69)" />
+          <ProgressBar :value="character.health" color="rgb(220, 53, 69)" />
         </div>
         <div class="status-item">
-          <ProgressBar :value="character.energy" label="💪" color="rgb(0, 123, 255)" />
+          <StatusIcon type="energy" style="color: rgb(0, 123, 255)" />
+          <ProgressBar :value="character.energy" color="rgb(0, 123, 255)" />
         </div>
       </div>
     </div>
@@ -36,6 +38,7 @@ import { useEquipmentStore } from '../../stores/equipment'
 import { useTimeStore } from '../../stores/time'
 import ProgressBar from '../common/ProgressBar.vue'
 import PlayerMenuModal from './PlayerMenuModal.vue'
+import StatusIcon from '../common/StatusIcon.vue'
 import { emitter } from '../../utils/eventBus'
 import { onMounted, onUnmounted, computed } from 'vue'
 
@@ -143,5 +146,15 @@ onUnmounted(() => {
 .emoji {
   font-size: 28px;  /* 减小表情符号大小 */
   line-height: 1;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.status-item :deep(.progress-bar) {
+  flex-grow: 1;
 }
 </style>
