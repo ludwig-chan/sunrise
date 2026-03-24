@@ -1,6 +1,6 @@
 <template>
-  <div class="player-status translucent-white" @click="goToCharacterView">
-    <div class="avatar-section">
+  <div class="player-status translucent-white">
+    <div class="avatar-section" @click="handleAvatarClick">
       <div class="avatar">
         <div class="avatar-placeholder">
           <span class="emoji">{{ character.avatar }}</span>
@@ -26,24 +26,30 @@
       </div>
     </div>
   </div>
+  <PlayerMenuModal v-model="showMenu" @resume="timeStore.resumeGame()" />
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 import { useCharacterStore } from '../../stores/character'
 import { useEquipmentStore } from '../../stores/equipment'
+import { useTimeStore } from '../../stores/time'
 import ProgressBar from '../common/ProgressBar.vue'
+import PlayerMenuModal from './PlayerMenuModal.vue'
 import { emitter } from '../../utils/eventBus'
 import { onMounted, onUnmounted, computed } from 'vue'
 
-const router = useRouter()
 const character = useCharacterStore()
 const equipment = useEquipmentStore()
+const timeStore = useTimeStore()
 const mainHandIcon = computed(() => equipment.mainHandIcon)
 const offHandIcon = computed(() => equipment.offHandIcon)
 
-const goToCharacterView = () => {
-  router.push('/character')
+const showMenu = ref(false)
+
+const handleAvatarClick = () => {
+  timeStore.pauseGame()
+  showMenu.value = true
 }
 
 // 监听每小时事件
@@ -66,8 +72,6 @@ onUnmounted(() => {
   grid-template-columns: auto auto 1fr;
   gap: 1rem;  /* 减小间距 */
   align-items: center;
-  cursor: pointer;
-  transition: transform 0.2s;
 }
 
 .stats-container {
@@ -87,12 +91,8 @@ onUnmounted(() => {
   cursor: default;
 }
 
-.health-bar {
-  display: flex;
-  align-items: center;
-}
-
 .avatar-section {
+  cursor: pointer;
   flex-shrink: 0;
 }
 
