@@ -5,6 +5,16 @@ export type ItemIcon =
 
 export type ItemCategory = 'food' | 'material' | 'equipment'
 
+export type EquipSlot = 'mainHand' | 'offHand' | 'head' | 'body' | 'legs' | 'feet' | 'accessory'
+
+export interface EquipStats {
+  attack?: number        // 攻击力加成
+  defense?: number       // 防御力加成
+  gatherSpeed?: number   // 采集速度倍率加成（如 0.5 = +50%）
+  miningSpeed?: number   // 采矿速度倍率加成
+  energyCostMod?: number // 体力消耗修正（负数 = 减少消耗）
+}
+
 export interface ItemEffect {
   health?: number
   energy?: number
@@ -18,6 +28,8 @@ export interface ItemDefinition {
   category: ItemCategory
   icon: ItemIcon
   description: string
+  equipSlot?: EquipSlot   // 装备到哪个槽位
+  equipStats?: EquipStats // 装备后的属性加成
   use?: () => ItemEffect
 }
 
@@ -59,4 +71,40 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     icon: { type: 'svg', path: 'branch' },
     description: '捡来的细树枝，用途广泛，轻便易得。制作初级工具的必备材料。',
   },
+  axe: {
+    id: 'axe',
+    name: '石斧',
+    category: 'equipment',
+    icon: { type: 'text', char: '🪓' },
+    description: '粗糙打磨的石斧，可用于砍伐树木。',
+    equipSlot: 'mainHand',
+    equipStats: { gatherSpeed: 1.0, attack: 5 }
+  },
+  sword: {
+    id: 'sword',
+    name: '木剑',
+    category: 'equipment',
+    icon: { type: 'text', char: '⚔️' },
+    description: '用木头削成的简陋剑，能造成一定伤害。',
+    equipSlot: 'mainHand',
+    equipStats: { attack: 10 }
+  },
+  pickaxe: {
+    id: 'pickaxe',
+    name: '石镐',
+    category: 'equipment',
+    icon: { type: 'text', char: '⛏️' },
+    description: '用于开采矿石，效率更高。',
+    equipSlot: 'mainHand',
+    equipStats: { miningSpeed: 1.0, attack: 3 }
+  },
+  shield: {
+    id: 'shield',
+    name: '木盾',
+    category: 'equipment',
+    icon: { type: 'text', char: '🛡️' },
+    description: '简单的木制盾牌，提供基础防御。',
+    equipSlot: 'offHand',
+    equipStats: { defense: 8 }
+  }
 }

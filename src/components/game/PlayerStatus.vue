@@ -10,6 +10,10 @@
     <div class="basic-info">
       <div class="info-item name">{{ character.name }}</div>
       <div class="info-item">{{ character.age }}岁 · {{ character.gender === 'male' ? '♂' : '♀' }}</div>
+      <div class="info-item equip-icons" v-if="mainHandIcon || offHandIcon">
+        <span v-if="mainHandIcon">{{ mainHandIcon }}</span>
+        <span v-if="offHandIcon">{{ offHandIcon }}</span>
+      </div>
     </div>
     <div class="stats-container">
       <div class="main-stats">
@@ -27,12 +31,16 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useCharacterStore } from '../../stores/character'
+import { useEquipmentStore } from '../../stores/equipment'
 import ProgressBar from '../common/ProgressBar.vue'
 import { emitter } from '../../utils/eventBus'
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, computed } from 'vue'
 
 const router = useRouter()
 const character = useCharacterStore()
+const equipment = useEquipmentStore()
+const mainHandIcon = computed(() => equipment.mainHandIcon)
+const offHandIcon = computed(() => equipment.offHandIcon)
 
 const goToCharacterView = () => {
   router.push('/character')
@@ -103,6 +111,12 @@ onUnmounted(() => {
 
 .info-item {
   white-space: nowrap;
+}
+
+.info-item.equip-icons {
+  font-size: 0.9rem;
+  line-height: 1.2;
+  letter-spacing: 0.1rem;
 }
 
 .avatar {

@@ -8,6 +8,9 @@
       <template #profile>
         <CharacterProfile />
       </template>
+      <template #equipment>
+        <CharacterEquipment />
+      </template>
       <template #log>
         <CharacterLog />
       </template>
@@ -20,6 +23,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCharacterStore } from '../stores/character'
 import CharacterProfile from '../components/game/CharacterProfile.vue'
+import CharacterEquipment from '../components/game/CharacterEquipment.vue'
 import CharacterLog from '../components/game/CharacterLog.vue'
 import Tabs from '../components/common/Tabs.vue'
 
@@ -27,7 +31,8 @@ const router = useRouter()
 const character = useCharacterStore()
 const activeTab = ref('profile')
 const tabs = [
-  { key: 'profile', title: '属性' },
+  { key: 'profile', title: '状态' },
+  { key: 'equipment', title: '装备' },
   { key: 'log', title: '日志' },
 ]
 

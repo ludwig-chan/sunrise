@@ -23,22 +23,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
 import { useTimeStore } from '../../stores/time'
 import BlockWrapper from '../common/BlockWrapper.vue'
 import { seasonNames, weatherNames, periodNames } from '../../utils/textMapping'
 
 const timeStore = useTimeStore()
-
-onMounted(() => {
-  // 开始时间推进
-  timeStore.startTime()
-})
-
-onUnmounted(() => {
-  // 停止时间推进
-  timeStore.stopTime()
-})
 </script>
 
 <style scoped>
