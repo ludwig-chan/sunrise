@@ -41,8 +41,13 @@ defineEmits<{
 
 .tab-header {
   display: flex;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
   margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 8px 8px 0 0;
+  padding: 0 0.5rem;
 }
 
 .tab-button {
@@ -51,18 +56,19 @@ defineEmits<{
   background: none;
   cursor: pointer;
   font-size: 0.9rem;
-  color: #4a5568;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   border-bottom: 2px solid transparent;
   transition: all 0.2s;
 }
 
 .tab-button:hover {
-  color: #2d3748;
+  color: #fff;
 }
 
 .tab-button.active {
-  color: #2d3748;
-  border-bottom-color: #4299e1;
+  color: #fff;
+  border-bottom-color: rgba(255, 255, 255, 0.9);
 }
 
 .tab-content {
