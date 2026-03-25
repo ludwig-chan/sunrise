@@ -93,7 +93,8 @@ const formatSimpleTime = (gameTimestamp: number) => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  height: 400px;
+  height: 100%;
+  min-height: 0;
 }
 
 .log-toolbar {
@@ -156,6 +157,12 @@ const formatSimpleTime = (gameTimestamp: number) => {
   overflow-y: auto;
   font-size: 0.88rem;
   line-height: 1.5;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  min-height: 0;
 }
 
 .empty-hint {

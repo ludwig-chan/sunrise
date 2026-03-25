@@ -3,7 +3,7 @@
     <BackButton />
     <div class="h1-wrapper"><h1>{{ character.name }}</h1></div>
 
-    <Tabs v-model="activeTab" :tabs="tabs">
+    <Tabs v-model="activeTab" :tabs="tabs" class="character-tabs">
       <template #profile>
         <CharacterProfile />
       </template>
@@ -41,6 +41,9 @@ const tabs = [
   max-width: 800px;
   margin: 0 auto;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 h1 {
@@ -60,4 +63,8 @@ h1 {
   text-align: center;
 }
 
+.character-tabs {
+  flex: 1;
+  min-height: 0;
+}
 </style>
