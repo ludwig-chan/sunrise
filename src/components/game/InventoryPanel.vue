@@ -45,10 +45,10 @@
         <div class="drawer-middle">
           <div class="drawer-name">{{ selectedItem.name }}</div>
           <div v-if="selectedItem.effect" class="drawer-effect">
-            <span v-if="selectedItem.effect.health">❤️ +{{ selectedItem.effect.health }}</span>
-            <span v-if="selectedItem.effect.energy">💪 +{{ selectedItem.effect.energy }}</span>
-            <span v-if="selectedItem.effect.satiety">🍚 +{{ selectedItem.effect.satiety }}</span>
-            <span v-if="selectedItem.effect.mood">😊 +{{ selectedItem.effect.mood }}</span>
+            <span v-if="selectedItem.effect.health"><StatusIcon type="health" class="effect-icon" /> +{{ selectedItem.effect.health }}</span>
+            <span v-if="selectedItem.effect.energy"><StatusIcon type="energy" class="effect-icon" /> +{{ selectedItem.effect.energy }}</span>
+            <span v-if="selectedItem.effect.satiety"><StatusIcon type="satiety" class="effect-icon" /> +{{ selectedItem.effect.satiety }}</span>
+            <span v-if="selectedItem.effect.mood"><StatusIcon type="mood" class="effect-icon" /> +{{ selectedItem.effect.mood }}</span>
           </div>
           <div class="drawer-desc">{{ selectedItem.description }}</div>
         </div>
@@ -73,6 +73,7 @@ import { useForestSceneStore } from '../../stores/scenes/forest'
 import { useCharacterStore } from '../../stores/character'
 import { ITEM_DEFINITIONS, type ItemIcon as ItemIconType, type ItemEffect } from '../../data/items'
 import ItemIcon from '../common/ItemIcon.vue'
+import StatusIcon from '../common/StatusIcon.vue'
 
 const baseScene = useBaseSceneStore()
 const forestScene = useForestSceneStore()
@@ -347,6 +348,13 @@ function useItem(item: DisplayItem) {
   color: #718096;
   display: flex;
   gap: 0.5rem;
+}
+
+.effect-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  vertical-align: middle;
+  display: inline-block;
 }
 
 .drawer-desc {
