@@ -25,16 +25,21 @@ const handleBack = () => {
   display: flex;
   align-items: center;
   gap: 0.2rem;
-  background: none;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   border: none;
-  color: rgba(0, 0, 0, 0.55);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.9);
   cursor: pointer;
   font-size: 0.9rem;
-  padding: 0.3rem 0.5rem;
-  transition: color 0.2s;
+  padding: 0.3rem 0.7rem;
+  transition: background 0.2s, color 0.2s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 .back-button:hover {
-  color: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
 }
 </style>

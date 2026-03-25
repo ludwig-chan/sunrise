@@ -1,7 +1,7 @@
 <template>
   <div class="settings-view">
     <BackButton />
-    <h1>游戏设置</h1>
+    <div class="h1-wrapper"><h1>游戏设置</h1></div>
     
     <div class="settings-content">
       <div class="settings-section">
@@ -59,7 +59,18 @@ const handleResetGame = async () => {
 h1 {
   text-align: center;
   margin-bottom: 2rem;
-  color: #333;
+  color: #fff;
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  padding: 0.2rem 1.2rem;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.h1-wrapper {
+  text-align: center;
 }
 
 .settings-content {

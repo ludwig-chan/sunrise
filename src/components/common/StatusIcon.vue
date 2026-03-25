@@ -21,7 +21,7 @@
     <template v-else-if="type === 'satiety'">
       <!-- 上方管子 -->
       <rect x="7" y="0.5" width="2.5" height="2.5" rx="1" fill="currentColor"/>
-      <!-- 肾形主体：左侧内凹，右侧圆润 -->
+      <!-- 肾形主体：填充 -->
       <path
         d="M8.5 3
            C8.5 3 11.5 3 12.5 5
@@ -31,7 +31,7 @@
            C4.8 10.2 5 9 5.5 8
            C6 7 6.2 6.5 6 5.8
            C5.8 5 6 3.5 8.5 3 Z"
-        fill="none" stroke="currentColor" stroke-width="1.3"
+        fill="currentColor"
       />
       <!-- 下方管子 -->
       <rect x="7" y="12.5" width="2.5" height="2.5" rx="1" fill="currentColor"/>
@@ -48,16 +48,14 @@
       />
     </template>
 
-    <!-- hygiene: 泡泡（多个圆圈） -->
+    <!-- hygiene: 泡泡（3个不重叠的圆圈，大中小） -->
     <template v-else-if="type === 'hygiene'">
       <!-- 大泡泡（左下） -->
-      <circle cx="5.5" cy="11" r="3.8" fill="none" stroke="currentColor" stroke-width="1.2"/>
+      <circle cx="5" cy="11" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/>
       <!-- 中泡泡（右中） -->
-      <circle cx="10.5" cy="9" r="2.8" fill="none" stroke="currentColor" stroke-width="1.1"/>
+      <circle cx="11" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.1"/>
       <!-- 小泡泡（右上） -->
-      <circle cx="11" cy="4" r="1.8" fill="none" stroke="currentColor" stroke-width="1"/>
-      <!-- 小泡泡（中上） -->
-      <circle cx="6.5" cy="5.5" r="1.2" fill="none" stroke="currentColor" stroke-width="0.9"/>
+      <circle cx="10.5" cy="3" r="1.5" fill="none" stroke="currentColor" stroke-width="1"/>
     </template>
 
     <!-- mana: 四角星 -->

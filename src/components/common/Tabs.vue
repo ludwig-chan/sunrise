@@ -37,6 +37,8 @@ defineEmits<{
 <style scoped>
 .tabs {
   width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .tab-header {
@@ -72,6 +74,13 @@ defineEmits<{
 }
 
 .tab-content {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
   padding: 0.5rem 0;
+}
+
+.tab-content > div {
+  height: 100%;
 }
 </style>
