@@ -1,6 +1,6 @@
 <template>
   <div class="settings-view">
-    <div class="back-button" @click="goBack">⬅️</div>
+    <BackButton />
     <h1>游戏设置</h1>
     
     <div class="settings-content">
@@ -26,13 +26,10 @@
 import { useRouter } from 'vue-router'
 import { showDialog } from '@/utils/dialog'
 import { useCharacterStore } from '@/stores/character'
+import BackButton from '@/components/common/BackButton.vue'
 
 const router = useRouter()
 const characterStore = useCharacterStore()
-
-const goBack = () => {
-  router.back()
-}
 
 const handleResetGame = async () => {
   const result = await showDialog({
@@ -57,28 +54,6 @@ const handleResetGame = async () => {
   max-width: 800px;
   margin: 0 auto;
   position: relative;
-}
-
-.back-button {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.1);
-  color: #666;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 1.2rem;
-}
-
-.back-button:hover {
-  background-color: rgba(0, 0, 0, 0.2);
-  color: #333;
 }
 
 h1 {

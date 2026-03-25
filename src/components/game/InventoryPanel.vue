@@ -45,10 +45,10 @@
         <div class="drawer-middle">
           <div class="drawer-name">{{ selectedItem.name }}</div>
           <div v-if="selectedItem.effect" class="drawer-effect">
-            <span v-if="selectedItem.effect.health"><StatusIcon type="health" class="effect-icon" /> +{{ selectedItem.effect.health }}</span>
-            <span v-if="selectedItem.effect.energy"><StatusIcon type="energy" class="effect-icon" /> +{{ selectedItem.effect.energy }}</span>
-            <span v-if="selectedItem.effect.satiety"><StatusIcon type="satiety" class="effect-icon" /> +{{ selectedItem.effect.satiety }}</span>
-            <span v-if="selectedItem.effect.mood"><StatusIcon type="mood" class="effect-icon" /> +{{ selectedItem.effect.mood }}</span>
+            <span v-if="selectedItem.effect.health"><StatusIcon type="health" class="effect-icon" style="color: rgb(220, 53, 69)" /> +{{ selectedItem.effect.health }}</span>
+            <span v-if="selectedItem.effect.energy"><StatusIcon type="energy" class="effect-icon" style="color: rgb(0, 123, 255)" /> +{{ selectedItem.effect.energy }}</span>
+            <span v-if="selectedItem.effect.satiety"><StatusIcon type="satiety" class="effect-icon" style="color: rgb(255, 153, 0)" /> +{{ selectedItem.effect.satiety }}</span>
+            <span v-if="selectedItem.effect.mood"><StatusIcon type="mood" class="effect-icon" style="color: rgb(147, 112, 219)" /> +{{ selectedItem.effect.mood }}</span>
           </div>
           <div class="drawer-desc">{{ selectedItem.description }}</div>
         </div>
