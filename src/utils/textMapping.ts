@@ -55,5 +55,6 @@ export const resourceNames: Record<string, string> = {
   'appleSeed': '苹果种子',
   'bananaSeed': '香蕉种子',
   'watermelonSeed': '西瓜种子',
-  'durianSeed': '榴莲种子'
+  'durianSeed': '榴莲种子',
+  'raw_meat': '生肉'
 }
