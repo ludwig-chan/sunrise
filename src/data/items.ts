@@ -106,5 +106,13 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     description: '简单的木制盾牌，提供基础防御。',
     equipSlot: 'offHand',
     equipStats: { defense: 8 }
+  },
+  raw_meat: {
+    id: 'raw_meat',
+    name: '生肉',
+    category: 'food',
+    icon: { type: 'text', char: '🥩' },
+    description: '用陷阱捕获的小动物身上取下的生肉，需要烹饪后食用效果更佳。',
+    use: () => ({ energy: 10, satiety: 20, health: -5, mood: -3 })
   }
 }

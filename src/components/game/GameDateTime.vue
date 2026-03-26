@@ -13,7 +13,6 @@
         <span class="time-item">{{timeStore.hour}}时</span>
         <span class="time-separator">/</span>
         <span class="time-item">{{periodNames[timeStore.currentPeriod]}}</span>
-        <span v-if="timeStore.paused" class="paused-badge">[已暂停]</span>
       </span>
 
       <span class="weather-text">
@@ -62,10 +61,4 @@ const timeStore = useTimeStore()
   margin: 0 0.1rem;
 }
 
-.paused-badge {
-  font-size: 0.78rem;
-  color: #e53e3e;
-  margin-left: 0.25rem;
-  font-weight: 600;
-}
 </style>

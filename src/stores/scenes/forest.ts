@@ -12,6 +12,7 @@ import {
 } from '../../utils/resourceUtils';
 import { toast } from '../../utils/toast';
 import { useGameLogStore } from '../gameLog';
+import { emitter } from '../../utils/eventBus';
 
 // 树林可建造的建筑配方
 export const FOREST_BUILDING_RECIPES: GameBuildingRecipe[] = [
@@ -80,7 +81,9 @@ export const useForestSceneStore = defineStore('forestScene', {
       actions: [],
       buildings: [],
       stock: JSON.parse(JSON.stringify(INITIAL_STOCK))
-    } as GameScene
+    } as GameScene,
+    trapHoursElapsed: 0,
+    _trapListenerRegistered: false
   }),
 
   getters: {
@@ -102,6 +105,9 @@ export const useForestSceneStore = defineStore('forestScene', {
 
       // 重置动作列表
       this.scene.actions = []
+
+      // 重置陷阱计时
+      this.trapHoursElapsed = 0
     },
 
     // 检查体力值是否足够
@@ -416,6 +422,51 @@ export const useForestSceneStore = defineStore('forestScene', {
       // 初始化场景时设置默认库存
       if (!this.scene.stock) {
         this.scene.stock = JSON.parse(JSON.stringify(INITIAL_STOCK));
+      }
+
+      // 注册陷阱小时监听（防止重复注册）
+      if (!this._trapListenerRegistered) {
+        this._trapListenerRegistered = true;
+        emitter.on('hour-passed', () => {
+          const trapIndex = this.scene.buildings.findIndex(b => b.type === 'trap');
+          if (trapIndex === -1) {
+            this.trapHoursElapsed = 0;
+            return;
+          }
+          this.trapHoursElapsed++;
+          if (this.trapHoursElapsed >= 6) {
+            // 移除陷阱
+            this.scene.buildings.splice(trapIndex, 1);
+            this.trapHoursElapsed = 0;
+
+            if (Math.random() < 0.7) {
+              // 成功捕获
+              const meatCount = Math.floor(Math.random() * 3) + 1;
+              const meatResource = getOrCreateResource(this.scene.resources, {
+                id: 'raw_meat',
+                type: 'raw_meat',
+                name: '生肉'
+              });
+              meatResource.count += meatCount;
+              toast({ message: `陷阱触发！捕获了${meatCount}块生肉`, type: 'success' });
+              useGameLogStore().addEntry({
+                text: `陷阱触发！捕获了${meatCount}块生肉`,
+                type: 'ITEM',
+                gameTimestamp: useTimeStore().timestamp,
+                timestamp: Date.now()
+              });
+            } else {
+              // 失败，一无所获
+              toast({ message: '陷阱被触发了，但什么都没抓到', type: 'info' });
+              useGameLogStore().addEntry({
+                text: '陷阱被触发了，但什么都没抓到',
+                type: 'ACTION',
+                gameTimestamp: useTimeStore().timestamp,
+                timestamp: Date.now()
+              });
+            }
+          }
+        });
       }
     }
   },

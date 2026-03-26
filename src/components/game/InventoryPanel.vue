@@ -178,6 +178,11 @@ function selectItem(item: DisplayItem) {
 
 function useItem(item: DisplayItem) {
   characterStore.eatFood(item.id)
+  // 使用后若该物品已耗尽，自动关闭详情面板
+  const remaining = aggregatedResources.value.get(item.id)
+  if (!remaining || remaining.count <= 0) {
+    selectedItem.value = null
+  }
 }
 </script>
 
