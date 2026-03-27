@@ -1,6 +1,6 @@
 <template>
   <button
-    :class="['action-button', { 'counting-down': isCountingDown }]"
+    :class="['action-button', { 'cooling-down': isCountingDown }]"
     @click="handleClick"
     @mouseover="handleMouseOver"
     @mouseleave="handleMouseLeave"
@@ -10,7 +10,7 @@
   >
     <div
       v-if="isCountingDown"
-      class="progress-bar"
+      class="cooldown-bar"
       :style="{ width: `${progressPercentage}%` }"
     ></div>
     <div class="tooltip" v-show="showTooltip && tooltip">{{ formatTooltip }}</div>
@@ -51,27 +51,26 @@ const emit = defineEmits<{
 
 // 使用组合式函数
 const { showTooltip, handleMouseOver, handleMouseLeave } = useTooltip();
-const { isCountingDown, progressPercentage, startCountdown, cancelCountdown } = useCountdown(props.duration || 0);
+const { isCountingDown, progressPercentage, startCountdown } = useCountdown(props.duration || 0);
 
 // 配置触摸事件处理
 const { handleTouchStart, handleTouchEnd } = useTouchEvents({
   onLongPress: () => showTooltip.value = true,
   onLongPressEnd: () => showTooltip.value = false,
-  onDoubleTouch: cancelCountdown,
   onSingleTouch: () => {
-    if (!isCountingDown.value) {
-      // 在单触事件中也添加 beforeClick 检查
-      if (props.beforeClick && !props.beforeClick()) {
-        return;
-      }
-      startCountdown(() => emit('click'));
+    if (isCountingDown.value) {
+      return;
     }
+    // 在单触事件中也添加 beforeClick 检查
+    if (props.beforeClick && !props.beforeClick()) {
+      return;
+    }
+    startCountdown(() => emit('click'));
   }
 });
 
 const handleClick = () => {
   if (isCountingDown.value) {
-    cancelCountdown();
     return;
   }
   
@@ -166,16 +165,16 @@ const formatTooltip = computed(() => {
   opacity: 0.7;
 }
 
-.progress-bar {
+.cooldown-bar {
   position: absolute;
   left: 0;
   top: 0;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 160, 0, 0.35);
   transition: width 0.1s linear;
 }
 
-.progress-bar + * {
+.cooldown-bar + * {
   position: relative;
   z-index: 1;
 }
@@ -209,12 +208,14 @@ const formatTooltip = computed(() => {
   border-color: transparent transparent transparent rgba(0, 0, 0, 0.8);
 }
 
-.action-button.counting-down {
+.action-button.cooling-down {
   background-color: #4a5568;
-  opacity: 0.6;
+  opacity: 0.75;
+  cursor: not-allowed;
 }
 
-.action-button.counting-down:hover {
-  background-color: #e53e3e; /* 鼠标悬浮时变红，提示可以取消 */
+.action-button.cooling-down:hover {
+  background-color: #4a5568;
+  transform: none;
 }
 </style>
