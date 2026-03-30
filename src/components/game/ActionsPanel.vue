@@ -16,81 +16,68 @@
       </div>
     </div>
 
-    <!-- 分隔线 -->
-    <div v-if="activity.currentActivity" class="divider"></div>
-
-    <!-- 行动列表 -->
-    <div class="action-list">
-
-      <!-- 常规行动 -->
-      <div
-        v-for="action in props.actions"
-        :key="action.name"
-        class="action-item"
-      >
-        <span class="action-icon">{{ action.icon || '▶' }}</span>
-        <div class="action-info">
-          <span class="action-text">{{ action.text }}</span>
-          <span v-if="action.tooltip && action.disabled" class="action-condition">{{ action.tooltip }}</span>
-        </div>
-        <button
-          class="start-btn"
-          :disabled="activity.isBusy || !!action.disabled"
-          :title="action.disabled ? (action.tooltip ?? '') : ''"
-          @click="handleActionStart(action)"
-        >
-          {{ activity.isBusy ? '——' : '开始' }}
-        </button>
-      </div>
-
-      <!-- 建造行动 -->
-      <div v-if="scenes.currentBuildingRecipes.length > 0" class="action-item">
-        <span class="action-icon">🏗️</span>
-        <div class="action-info">
-          <span class="action-text">建造</span>
-        </div>
-        <button
-          class="start-btn"
-          :disabled="activity.isBusy"
-          @click="showBuildModal = true"
-        >
-          {{ activity.isBusy ? '——' : '开始' }}
-        </button>
-      </div>
-
+    <!-- 空闲中 -->
+    <div v-else class="idle-state">
+      <span class="idle-label">💤 空闲中，什么都没做</span>
+      <button class="select-action-btn" @click="showActionModal = true">选择行动 →</button>
     </div>
 
-    <!-- 建造弹窗 -->
+    <!-- 行动选择弹窗 -->
     <Teleport to="body">
-      <div v-if="showBuildModal" class="build-modal-overlay" @click.self="showBuildModal = false" @keydown.esc="showBuildModal = false">
-        <div class="build-modal">
-          <div class="build-modal-header">
-            <span class="build-modal-title">选择建造</span>
-            <button class="build-modal-close" aria-label="关闭弹窗" @click="showBuildModal = false">×</button>
+      <div v-if="showActionModal" class="action-modal-overlay" @click.self="showActionModal = false">
+        <div class="action-modal">
+          <div class="action-modal-header">
+            <span class="action-modal-title">选择行动</span>
+            <button class="action-modal-close" aria-label="关闭弹窗" @click="showActionModal = false">✕</button>
           </div>
-          <div class="build-modal-body">
-            <div v-if="scenes.currentBuildingRecipes.length === 0" class="build-modal-empty">
-              当前场景暂无可建造的建筑
-            </div>
+          <div class="action-modal-body">
+
+            <!-- 行动组 -->
+            <div class="action-group-label">── 行动 ──</div>
             <div
-              v-for="recipe in scenes.currentBuildingRecipes"
-              :key="recipe.type"
-              class="build-card"
+              v-for="action in props.actions"
+              :key="action.name"
+              class="modal-action-item"
+              :class="{ 'is-disabled': !!action.disabled }"
             >
-              <div class="build-card-info">
-                <span class="build-card-name">{{ recipe.name }}</span>
-                <span class="build-card-desc">{{ recipe.description }}</span>
-                <span class="build-card-cost">{{ formatCost(recipe.cost) }}</span>
-                <span class="build-card-energy">⚡ 体力：{{ recipe.energyCost }}</span>
+              <span class="modal-action-icon">{{ action.icon || '▶' }}</span>
+              <div class="modal-action-info">
+                <span class="modal-action-text">{{ action.text }}</span>
+                <span v-if="action.tooltip && action.disabled" class="modal-action-condition">{{ action.tooltip }}</span>
               </div>
               <button
-                class="build-btn"
-                :disabled="isBuilt(recipe.type)"
-                @click="handleBuild(recipe)"
+                class="modal-select-btn"
+                :disabled="!!action.disabled"
+                @click="handleActionStart(action)"
               >
-                {{ isBuilt(recipe.type) ? '✓ 已建造' : '建造' }}
+                选择
               </button>
             </div>
+
+            <!-- 建造组 -->
+            <template v-if="scenes.currentBuildingRecipes.length > 0">
+              <div class="action-group-label">── 建造 ──</div>
+              <div
+                v-for="recipe in scenes.currentBuildingRecipes"
+                :key="recipe.type"
+                class="modal-action-item"
+                :class="{ 'is-disabled': isBuilt(recipe.type) }"
+              >
+                <span class="modal-action-icon">🏗️</span>
+                <div class="modal-action-info">
+                  <span class="modal-action-text">{{ recipe.name }}</span>
+                  <span class="modal-action-condition">{{ formatCost(recipe.cost) }}</span>
+                </div>
+                <button
+                  class="modal-select-btn"
+                  :disabled="isBuilt(recipe.type)"
+                  @click="handleBuildStart(recipe)"
+                >
+                  {{ isBuilt(recipe.type) ? '✓ 已建造' : '选择' }}
+                </button>
+              </div>
+            </template>
+
           </div>
         </div>
       </div>
@@ -125,7 +112,7 @@ const props = defineProps<{
 const character = useCharacterStore();
 const scenes = useScenesStore();
 const activity = useActivityStore();
-const showBuildModal = ref(false);
+const showActionModal = ref(false);
 const progress = ref(0);
 
 let progressTimer: ReturnType<typeof setInterval> | null = null;
@@ -176,6 +163,7 @@ function handleActionStart(action: Action) {
     return;
   }
 
+  showActionModal.value = false;
   activity.startActivity({
     name: action.name,
     label: action.text,
@@ -183,6 +171,28 @@ function handleActionStart(action: Action) {
     startedAt: Date.now(),
     duration: action.duration * 1000,
     onComplete: action.handler
+  });
+}
+
+function handleBuildStart(recipe: GameBuildingRecipe) {
+  if (activity.isBusy || isBuilt(recipe.type)) return;
+
+  if (character.energy < recipe.energyCost) {
+    toast({ message: '体力不足，无法建造', type: 'warning' });
+    return;
+  }
+
+  showActionModal.value = false;
+  activity.startActivity({
+    name: `build_${recipe.type}`,
+    label: `建造${recipe.name}`,
+    icon: '🏗️',
+    startedAt: Date.now(),
+    duration: recipe.duration * 1000,
+    onComplete: async () => {
+      await scenes.buildInCurrentScene(recipe.type);
+      character.energy = Math.max(0, character.energy - recipe.energyCost);
+    }
   });
 }
 
@@ -203,18 +213,6 @@ function formatCost(cost: { [key: string]: number }): string {
     .map(([type, count]) => `${NAMES[type] ?? type}×${count}`)
     .join(' + ');
 }
-
-async function handleBuild(recipe: GameBuildingRecipe) {
-  if (character.energy < recipe.energyCost) {
-    toast({ message: '体力不足，无法建造', type: 'warning' });
-    return;
-  }
-  await scenes.buildInCurrentScene(recipe.type);
-  if (isBuilt(recipe.type)) {
-    character.energy = Math.max(0, character.energy - recipe.energyCost);
-    showBuildModal.value = false;
-  }
-}
 </script>
 
 <style scoped>
@@ -226,6 +224,36 @@ async function handleBuild(recipe: GameBuildingRecipe) {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+/* 空闲状态 */
+.idle-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.idle-label {
+  font-size: 0.9rem;
+  color: #a0aec0;
+}
+
+.select-action-btn {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.select-action-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* 当前行动区 */
@@ -295,81 +323,8 @@ async function handleBuild(recipe: GameBuildingRecipe) {
   text-align: right;
 }
 
-/* 分隔线 */
-.divider {
-  border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  margin: 0.25rem 0;
-}
-
-/* 行动列表 */
-.action-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.action-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.5rem;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-}
-
-.action-icon {
-  font-size: 1rem;
-  width: 1.4rem;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.action-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.action-text {
-  font-size: 0.9rem;
-  color: #e2e8f0;
-}
-
-.action-condition {
-  font-size: 0.72rem;
-  color: #fc8181;
-  margin-top: 0.1rem;
-}
-
-.start-btn {
-  padding: 0.25rem 0.65rem;
-  border: none;
-  border-radius: 4px;
-  background-color: #4a5568;
-  color: white;
-  cursor: pointer;
-  font-size: 0.8rem;
-  white-space: nowrap;
-  transition: background-color 0.2s;
-  flex-shrink: 0;
-  min-width: 2.8rem;
-}
-
-.start-btn:hover:not(:disabled) {
-  background-color: #2d3748;
-}
-
-.start-btn:disabled {
-  background-color: #2d3748;
-  color: #718096;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-/* 建造弹窗 */
-.build-modal-overlay {
+/* 行动选择弹窗 */
+.action-modal-overlay {
   position: fixed;
   top: 0;
   right: 0;
@@ -382,7 +337,7 @@ async function handleBuild(recipe: GameBuildingRecipe) {
   z-index: 1000;
 }
 
-.build-modal {
+.action-modal {
   min-width: 320px;
   max-width: 500px;
   width: 90%;
@@ -395,7 +350,7 @@ async function handleBuild(recipe: GameBuildingRecipe) {
   color: white;
 }
 
-.build-modal-header {
+.action-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -403,85 +358,83 @@ async function handleBuild(recipe: GameBuildingRecipe) {
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.build-modal-title {
+.action-modal-title {
   font-size: 1rem;
   font-weight: 600;
 }
 
-.build-modal-close {
+.action-modal-close {
   background: none;
   border: none;
   color: white;
-  font-size: 1.2rem;
+  font-size: 1rem;
   cursor: pointer;
   line-height: 1;
   padding: 0 0.25rem;
   opacity: 0.7;
 }
 
-.build-modal-close:hover {
+.action-modal-close:hover {
   opacity: 1;
 }
 
-.build-modal-body {
+.action-modal-body {
   overflow-y: auto;
   padding: 0.75rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
-.build-modal-empty {
-  font-size: 0.9rem;
-  color: #a0aec0;
-  text-align: center;
-  padding: 1rem 0;
+/* 分组标签 */
+.action-group-label {
+  font-size: 0.75rem;
+  color: #718096;
+  padding: 0.3rem 0 0.1rem;
+  letter-spacing: 0.02em;
 }
 
-.build-card {
+/* 弹窗内行动项 */
+.modal-action-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.6rem 0.75rem;
-  background-color: rgba(255, 255, 255, 0.08);
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 6px;
-  gap: 0.75rem;
-  min-height: 5rem;
 }
 
-.build-card-info {
+.modal-action-item.is-disabled {
+  opacity: 0.55;
+}
+
+.modal-action-icon {
+  font-size: 1rem;
+  width: 1.4rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.modal-action-info {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  flex: 1;
   min-width: 0;
-  gap: 0.15rem;
 }
 
-.build-card-name {
-  font-weight: 600;
-  font-size: 0.95rem;
+.modal-action-text {
+  font-size: 0.9rem;
   color: #e2e8f0;
 }
 
-.build-card-desc {
-  font-size: 0.78rem;
-  color: #a0aec0;
-  height: 3em;
-  overflow-y: auto;
+.modal-action-condition {
+  font-size: 0.72rem;
+  color: #fc8181;
+  margin-top: 0.1rem;
 }
 
-.build-card-cost {
-  font-size: 0.78rem;
-  color: #fbd38d;
-}
-
-.build-card-energy {
-  font-size: 0.78rem;
-  color: #90cdf4;
-}
-
-.build-btn {
-  padding: 0.3rem 0.7rem;
+.modal-select-btn {
+  padding: 0.25rem 0.65rem;
   border: none;
   border-radius: 4px;
   background-color: #4a5568;
@@ -491,15 +444,16 @@ async function handleBuild(recipe: GameBuildingRecipe) {
   white-space: nowrap;
   transition: background-color 0.2s;
   flex-shrink: 0;
+  min-width: 3.5rem;
 }
 
-.build-btn:hover:not(:disabled) {
+.modal-select-btn:hover:not(:disabled) {
   background-color: #2d3748;
 }
 
-.build-btn:disabled {
-  background-color: #2d5a27;
+.modal-select-btn:disabled {
+  background-color: #2d3748;
+  color: #718096;
   cursor: not-allowed;
-  opacity: 0.8;
 }
 </style>
