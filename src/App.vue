@@ -2,7 +2,6 @@
 import { RouterLink, RouterView } from 'vue-router'
 import { useScenesStore } from './stores/scenes'
 import { onMounted, ref, onUnmounted } from 'vue'
-import Background from './components/common/Background.vue'
 import Toast from './components/common/Toast.vue'
 import { emitter } from './utils/toast'
 
@@ -53,7 +52,6 @@ onMounted(() => {
 </script>
 
 <template>
-  <Background />
   <RouterView />
   <Toast
     :visible="toastVisible"
