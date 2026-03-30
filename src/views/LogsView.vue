@@ -1,12 +1,6 @@
 <template>
   <div class="logs-page" :class="isNight ? 'is-night' : 'is-day'">
-    <BackButton />
-
-    <!-- Page title & weather icon -->
-    <div class="logs-header">
-      <h1 class="logs-title">日志</h1>
-      <span class="weather-icon" :title="weatherName">{{ weatherEmoji }}</span>
-    </div>
+    <PageHeader title="日志" />
 
     <!-- Toolbar: search + filter -->
     <div class="logs-toolbar">
@@ -70,9 +64,9 @@ import { ref, computed } from 'vue'
 import { useTimeStore } from '@/stores/time'
 import { useGameLogStore } from '@/stores/gameLog'
 import type { GameLogEntry } from '@/stores/gameLog'
-import { seasonNames, messageTypeNames, weatherNames, type MessageType } from '@/utils/textMapping'
+import { seasonNames, messageTypeNames, type MessageType } from '@/utils/textMapping'
 import type { Season } from '@/stores/time'
-import BackButton from '@/components/common/BackButton.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import FilterBar from '@/components/common/FilterBar.vue'
 
 const timeStore = useTimeStore()
@@ -86,22 +80,6 @@ const selectedTypes = ref<Set<string>>(new Set())
 
 // Day/night detection: NIGHT = dark background, others = light
 const isNight = computed(() => timeStore.currentPeriod === 'NIGHT')
-
-// Weather display
-const weatherEmoji = computed(() => {
-  const map: Record<string, string> = {
-    SUNNY: '☀️',
-    RAINY: '🌧️',
-    WINDY: '💨',
-    SNOWY: '❄️',
-    HAIL: '🌨️',
-    SANDSTORM: '🌪️',
-    HAZE: '🌫️',
-  }
-  return map[timeStore.weather] ?? '☀️'
-})
-
-const weatherName = computed(() => weatherNames[timeStore.weather])
 
 const filteredEntries = computed(() => {
   return gameLogStore.entries.filter(entry => {
@@ -182,45 +160,12 @@ function hailStyle(i: number): Record<string, string> {
 .logs-page {
   position: relative;
   min-height: 100vh;
-  padding: 1.5rem 1.2rem 2rem;
+  padding: 4rem 1.2rem 2rem;
   max-width: 800px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
-  transition: background-color 0.5s, color 0.5s;
-}
-
-.logs-page.is-day {
-  background-color: #ffffff;
-  color: #1a1a1a;
-}
-
-.logs-page.is-night {
-  background-color: #0a0a14;
-  color: #e0e0e8;
-}
-
-/* ---- Header ---- */
-.logs-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 2.5rem;
-  position: relative;
-}
-
-.logs-title {
-  font-size: 1.4rem;
-  font-weight: 700;
-  margin: 0;
-}
-
-.weather-icon {
-  position: absolute;
-  right: 0;
-  font-size: 1.5rem;
-  cursor: default;
 }
 
 /* ---- Toolbar ---- */

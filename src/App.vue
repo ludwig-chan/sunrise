@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterView } from 'vue-router'
 import { useScenesStore } from './stores/scenes'
 import { onMounted, ref, onUnmounted } from 'vue'
 import Toast from './components/common/Toast.vue'
+import Background from './components/common/Background.vue'
 import { emitter } from './utils/toast'
 
 const scenesStore = useScenesStore()
@@ -52,6 +53,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <Background />
   <RouterView />
   <Toast
     :visible="toastVisible"
