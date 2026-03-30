@@ -1,10 +1,10 @@
 <template>
   <div class="operation-area">
+    <InventoryPanel />
     <div class="panels-container">
       <BuildingsPanel :buildings="scenesStore.currentScene.buildings" />
       <ActionsPanel :actions="scenesStore.currentActions" />
     </div>
-    <InventoryPanel />
   </div>
 </template>
 
@@ -26,6 +26,12 @@ const scenesStore = useScenesStore();
   gap: 1rem;
 }
 
+/* 让背包栏撑满剩余高度 */
+:deep(.inventory-panel) {
+  flex: 1;
+  min-height: 0;
+}
+
 .panels-container {
   flex: 0 0 auto;
   display: flex;
@@ -39,11 +45,5 @@ const scenesStore = useScenesStore();
 
 :deep(.actions-panel) {
   flex: 1;
-}
-
-/* 让背包栏撑满剩余高度 */
-:deep(.inventory-panel) {
-  flex: 1;
-  min-height: 0;
 }
 </style>
