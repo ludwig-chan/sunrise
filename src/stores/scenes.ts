@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
 import { useBaseSceneStore } from './scenes/base';
 import { useForestSceneStore } from './scenes/forest';
-import type { GameScene, GameBuildingRecipe } from './scenes/types';
+import type { GameScene, GameAction, GameBuildingRecipe } from './scenes/types';
 
 export const useScenesStore = defineStore('scenes', {
   state: () => ({
@@ -29,8 +28,14 @@ export const useScenesStore = defineStore('scenes', {
       return this.currentScene.resources;
     },
 
-    currentActions(): GameScene['actions'] {
-      return this.currentScene.actions;
+    currentActions(): GameAction[] {
+      const baseScene = useBaseSceneStore();
+      const forestScene = useForestSceneStore();
+      switch (this.currentSceneId) {
+        case 'base': return baseScene.getActionConfig();
+        case 'forest': return forestScene.getActionConfig();
+        default: return baseScene.getActionConfig();
+      }
     },
 
     currentBuildingRecipes(): GameBuildingRecipe[] {

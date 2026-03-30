@@ -42,6 +42,10 @@ export const useEquipmentStore = defineStore('equipment', {
       const axe = this.inventory.axe
       return axe && axe.durability > 0 ? 1 : 0
     },
+    pickaxeCount(): number {
+      const pickaxe = this.inventory.pickaxe
+      return pickaxe && pickaxe.durability > 0 ? 1 : 0
+    },
 
     // 计算当前装备槽位带来的综合属性
     computedStats(): Required<EquipStats> {
@@ -126,6 +130,24 @@ export const useEquipmentStore = defineStore('equipment', {
         return true
       }
       gameLog({ text: '需要装备斧头才能砍伐！', type: 'SYSTEM' })
+      return false
+    },
+
+    // 使用镐子
+    usePickaxe(amount: number = 5): boolean {
+      const pickaxe = this.inventory.pickaxe
+      // 检查库存或主手槽是否有可用镐子
+      const canUseInventory = pickaxe && pickaxe.durability > 0
+      const canUseEquipped = this.slots.mainHand === 'pickaxe' && pickaxe && pickaxe.durability > 0
+      if (canUseInventory || canUseEquipped) {
+        pickaxe!.durability -= amount
+        if (pickaxe!.durability <= 0) {
+          pickaxe!.durability = 0
+          gameLog({ text: '镐子已经损坏了！', type: 'SYSTEM' })
+        }
+        return true
+      }
+      gameLog({ text: '需要装备镐子才能采矿！', type: 'SYSTEM' })
       return false
     },
 

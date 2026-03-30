@@ -240,6 +240,11 @@ export const useForestSceneStore = defineStore('forestScene', {
     },
 
     async mineOre() {
+      const equipment = useEquipmentStore();
+      if (!equipment.usePickaxe()) {
+        return;
+      }
+
       try {
         const amount = await getStockAmount(this.scene.stock, 'ore');
         const oreResource = getOrCreateResource(this.scene.resources, {
@@ -383,6 +388,7 @@ export const useForestSceneStore = defineStore('forestScene', {
         {
           name: 'chopWood',
           text: '砍伐',
+          icon: '🪓',
           duration: 5,
           energyCost: 10, // 砍树需要较多体力
           group: 'gather',
@@ -393,14 +399,18 @@ export const useForestSceneStore = defineStore('forestScene', {
         {
           name: 'mineOre',
           text: '采矿',
+          icon: '⛏️',
           duration: 3,
           energyCost: 12, // 采矿需要大量体力
           group: 'gather',
-          handler: async () => await this.withEnergyCost(12, async () => await this.mineOre())
+          handler: async () => await this.withEnergyCost(12, async () => await this.mineOre()),
+          disabled: equipment.slots.mainHand !== 'pickaxe' && equipment.pickaxeCount === 0,
+          tooltip: '需要石镐才能采矿'
         },
         {
           name: 'gatherFood',
           text: '觅食',
+          icon: '🍎',
           duration: 3,
           energyCost: 5, // 采集食物消耗较少体力
           group: 'gather',
@@ -409,6 +419,7 @@ export const useForestSceneStore = defineStore('forestScene', {
         {
           name: 'explore',
           text: '探索',
+          icon: '🔍',
           duration: 3,
           energyCost: 8, // 探索消耗中等体力
           handler: async () => await this.withEnergyCost(8, async () => await this.explore())

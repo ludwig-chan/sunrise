@@ -1,6 +1,7 @@
 export interface GameAction {
   name: string;
   text: string;
+  icon?: string; // emoji 图标，用于列表展示
   duration: number;
   energyCost: number; // 新增: 该动作需要消耗的体力值
   handler: () => Promise<void>;
