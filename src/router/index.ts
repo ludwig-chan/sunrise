@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import CharacterView from '../views/CharacterView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import FeedView from '../views/FeedView.vue'
+import LogsView from '../views/LogsView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -26,6 +27,11 @@ const router = createRouter({
       path: '/feed',
       name: 'feed',
       component: FeedView,
+    },
+    {
+      path: '/logs',
+      name: 'logs',
+      component: LogsView,
     },
   ],
 })
