@@ -9,17 +9,14 @@ import { useTimeStore } from '../../stores/time'
 
 const timeStore = useTimeStore()
 
-// 根据时间段和天气计算背景样式
+// 根据时间段计算背景样式（仅昼夜渐变，不含天气效果）
 const backgroundClass = computed(() => {
   const period = timeStore.currentPeriod.toLowerCase()
-  const weather = timeStore.weather
-  
   return {
     'period-dawn': period === 'dawn',
     'period-day': period === 'day',
     'period-dusk': period === 'dusk',
     'period-night': period === 'night',
-    [`weather-${weather.toLowerCase()}`]: true
   }
 })
 </script>
@@ -52,28 +49,4 @@ const backgroundClass = computed(() => {
   background: linear-gradient(to bottom, #1a2a6c, #2a3c7c);
 }
 
-/* 天气效果 */
-.weather-rainy {
-  filter: brightness(0.8) saturate(0.8);
-}
-
-.weather-windy {
-  filter: contrast(1.1) brightness(1.1);
-}
-
-.weather-snowy {
-  filter: brightness(1.2) contrast(0.9);
-}
-
-.weather-hail {
-  filter: brightness(0.7) contrast(1.2);
-}
-
-.weather-sandstorm {
-  filter: sepia(0.5) brightness(0.9);
-}
-
-.weather-haze {
-  filter: blur(1px) brightness(0.9);
-}
 </style>
