@@ -134,7 +134,7 @@ function hailStyle(i: number): Record<string, string> {
   top: -10px;
   width: 4px;
   height: 8px;
-  background: rgba(180, 210, 255, 0.7);
+  background: rgba(255, 255, 255, 0.8);
   border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
   animation: rain-fall linear infinite;
 }

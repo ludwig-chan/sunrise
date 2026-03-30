@@ -251,16 +251,16 @@ function formatCost(cost: { [key: string]: number }): string {
 
 .idle-label {
   font-size: 0.9rem;
-  color: #e2e8f0;
+  color: #4a5568;
   text-align: center;
 }
 
 .select-action-btn {
   padding: 0.5rem;
-  border: 1px solid rgba(255, 200, 100, 0.6);
+  border: 1px solid #4a5568;
   border-radius: 4px;
-  background: rgba(255, 200, 100, 0.25);
-  color: #fbd38d;
+  background: #edf2f7;
+  color: #2d3748;
   cursor: pointer;
   font-size: 0.9rem;
   width: 100%;
@@ -268,7 +268,7 @@ function formatCost(cost: { [key: string]: number }): string {
 }
 
 .select-action-btn:hover {
-  background: rgba(255, 200, 100, 0.4);
+  background: #e2e8f0;
 }
 
 /* 当前行动区 */
@@ -292,7 +292,7 @@ function formatCost(cost: { [key: string]: number }): string {
   flex: 1;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #2d3748;
 }
 
 .cancel-btn {
@@ -399,6 +399,7 @@ function formatCost(cost: { [key: string]: number }): string {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  min-height: 280px;
 }
 
 /* Tab 切换 */

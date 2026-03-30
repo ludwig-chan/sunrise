@@ -1,10 +1,13 @@
 <template>
   <div class="player-status translucent-white">
     <div class="basic-info" @click="handleInfoClick">
-      <div class="info-item name">{{ character.name }}</div>
-      <div class="info-item">{{ character.age }}岁 · {{ character.gender === 'male' ? '♂' : '♀' }}</div>
-      <div class="info-item equip-icons" v-if="mainHandIcon">
-        <span>{{ mainHandIcon }}</span>
+      <div class="avatar" @click.stop="handleAvatarClick">👤</div>
+      <div class="info-text">
+        <div class="info-item name">{{ character.name }}</div>
+        <div class="info-item">{{ character.age }}岁 · {{ character.gender === 'male' ? '♂' : '♀' }}</div>
+        <div class="info-item equip-icons" v-if="mainHandIcon">
+          <span>{{ mainHandIcon }}</span>
+        </div>
       </div>
     </div>
     <div class="stats-container" @click="handleStatsClick">
@@ -39,6 +42,10 @@ const handleInfoClick = () => {
   router.push('/character/profile')
 }
 
+const handleAvatarClick = () => {
+  router.push('/character/equipment')
+}
+
 const handleStatsClick = () => {
   router.push('/character/status')
 }
@@ -61,6 +68,9 @@ const handleStatsClick = () => {
   padding: 0.3rem;
   border-radius: 4px;
   transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .basic-info:hover {
@@ -103,6 +113,29 @@ const handleStatsClick = () => {
   font-size: 0.9rem;
   line-height: 1.2;
   letter-spacing: 0.1rem;
+}
+
+.avatar {
+  font-size: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.avatar:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.info-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .status-item {
