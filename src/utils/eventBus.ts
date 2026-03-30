@@ -11,6 +11,7 @@ export type Events = {
   'hour-passed': void;  // 每小时触发的事件
   'clear-messages': void;  // 清空消息事件
   'game-auto-paused': void;  // 游戏自动暂停事件（血量过低或长时间无操作）
+  'open-game-menu': void;  // 打开游戏菜单（天气栏点击触发）
 }
 
 export const emitter = mitt<Events>()

@@ -15,7 +15,7 @@
         <span v-if="offHandIcon">{{ offHandIcon }}</span>
       </div>
     </div>
-    <div class="stats-container">
+    <div class="stats-container" @click="handleStatsClick">
       <div class="main-stats">
         <div class="status-item">
           <StatusIcon type="health" style="color: rgb(220, 53, 69)" />
@@ -28,43 +28,29 @@
       </div>
     </div>
   </div>
-  <PlayerMenuModal v-model="showMenu" @resume="timeStore.resumeGame()" />
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useCharacterStore } from '../../stores/character'
 import { useEquipmentStore } from '../../stores/equipment'
-import { useTimeStore } from '../../stores/time'
+import { useRouter } from 'vue-router'
 import ProgressBar from '../common/ProgressBar.vue'
-import PlayerMenuModal from './PlayerMenuModal.vue'
 import StatusIcon from '../common/StatusIcon.vue'
-import { emitter } from '../../utils/eventBus'
-import { onMounted, onUnmounted, computed } from 'vue'
+import { computed } from 'vue'
 
 const character = useCharacterStore()
 const equipment = useEquipmentStore()
-const timeStore = useTimeStore()
+const router = useRouter()
 const mainHandIcon = computed(() => equipment.mainHandIcon)
 const offHandIcon = computed(() => equipment.offHandIcon)
 
-const showMenu = ref(false)
-
 const handleAvatarClick = () => {
-  timeStore.pauseGame()
-  showMenu.value = true
+  router.push('/character/equipment')
 }
 
-// 监听自动暂停事件
-const onAutoPaused = () => { showMenu.value = true }
-
-onMounted(() => {
-  emitter.on('game-auto-paused', onAutoPaused)
-})
-
-onUnmounted(() => {
-  emitter.off('game-auto-paused', onAutoPaused)
-})
+const handleStatsClick = () => {
+  router.push('/character/profile')
+}
 </script>
 
 <style scoped>
@@ -80,6 +66,7 @@ onUnmounted(() => {
 .stats-container {
   display: flex;
   align-items: center;
+  cursor: pointer;
 }
 
 .main-stats {

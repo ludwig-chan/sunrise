@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import CharacterView from '../views/CharacterView.vue'
+import CharacterProfileView from '../views/CharacterProfileView.vue'
+import CharacterEquipmentView from '../views/CharacterEquipmentView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import FeedView from '../views/FeedView.vue'
 import LogsView from '../views/LogsView.vue'
@@ -15,8 +16,17 @@ const router = createRouter({
     },
     {
       path: '/character',
-      name: 'character',
-      component: CharacterView,
+      redirect: '/character/profile',
+    },
+    {
+      path: '/character/profile',
+      name: 'character-profile',
+      component: CharacterProfileView,
+    },
+    {
+      path: '/character/equipment',
+      name: 'character-equipment',
+      component: CharacterEquipmentView,
     },
     {
       path: '/settings',

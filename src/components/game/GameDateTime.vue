@@ -2,6 +2,7 @@
   <div
     class="game-date-time-wrapper"
     :class="[`period-${timeStore.currentPeriod.toLowerCase()}`, `weather-${timeStore.weather.toLowerCase()}`]"
+    @click="handleClick"
   >
     <!-- Weather animation particles -->
     <template v-if="timeStore.weather === 'RAINY'">
@@ -44,8 +45,13 @@
 <script setup lang="ts">
 import { useTimeStore } from '../../stores/time'
 import { seasonNames, weatherNames, periodNames } from '../../utils/textMapping'
+import { emitter } from '../../utils/eventBus'
 
 const timeStore = useTimeStore()
+
+function handleClick() {
+  emitter.emit('open-game-menu')
+}
 
 function rainStyle(i: number): Record<string, string> {
   const left = ((i * 37 + 11) % 100)
@@ -107,6 +113,7 @@ function hailStyle(i: number): Record<string, string> {
   width: 100%;
   background: linear-gradient(to bottom, #4CA1AF, #C4E0E5);
   transition: all 1s ease-in-out;
+  cursor: pointer;
 }
 
 .game-date-time-wrapper.period-dawn  { background: linear-gradient(to bottom, #ff7e5f, #feb47b); }
