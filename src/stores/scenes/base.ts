@@ -1,7 +1,5 @@
 import { defineStore } from 'pinia';
-import { computed } from 'vue';
 import type { GameScene, GameBuildingRecipe } from './types';
-import { useEquipmentStore } from '../equipment';
 import { useCharacterStore } from '../character';
 import { useScenesStore } from '../scenes';
 import { useTimeStore } from '../time';
@@ -320,11 +318,11 @@ export const useBaseSceneStore = defineStore('baseScene', {
       });
     },
     getActionConfig() {
-      const equipment = useEquipmentStore();
       const actions = [
         {
           name: 'explore',
           text: '探索',
+          icon: '🔍',
           duration: 5,
           energyCost: 10,
           handler: async () => await this.withEnergyCost(10, async () => await this.explore())
@@ -334,6 +332,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
         actions.push({
           name: 'sleep',
           text: '睡觉',
+          icon: '💤',
           duration: 5,
           energyCost: 0,
           handler: async () => await this.sleep()

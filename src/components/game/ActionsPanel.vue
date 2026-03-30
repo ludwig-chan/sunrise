@@ -1,28 +1,64 @@
 <template>
   <section class="actions-panel translucent-white">
-    <!-- 按 group 分组渲染行动按钮 -->
-    <template v-for="group in actionGroups" :key="group.key">
-      <div
-        :class="['action-buttons', group.isGroup ? 'action-buttons--row' : '']"
-      >
-        <ActionButton
-          v-for="action in group.actions"
-          :key="action.name"
-          :duration="action.duration"
-          :disabled="action.disabled"
-          :tooltip="action.tooltip"
-          :before-click="() => checkEnergyCost(action.energyCost)"
-          @click="action.handler"
-        >
-          {{ action.text }}
-        </ActionButton>
-      </div>
-    </template>
 
-    <!-- 建造区域 -->
-    <ActionButton @click="showBuildModal = true">
-      建造
-    </ActionButton>
+    <!-- 执行中：显示当前行动 + 进度条 -->
+    <div v-if="activity.currentActivity" class="current-activity">
+      <div class="current-activity-header">
+        <span class="current-activity-icon">{{ activity.currentActivity.icon }}</span>
+        <span class="current-activity-label">正在{{ activity.currentActivity.label }}...</span>
+        <button class="cancel-btn" @click="cancelActivity">取消</button>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" :style="{ width: `${Math.floor(progress * 100)}%` }"></div>
+        </div>
+        <span class="progress-text">{{ Math.floor(progress * 100) }}%</span>
+      </div>
+    </div>
+
+    <!-- 分隔线 -->
+    <div v-if="activity.currentActivity" class="divider"></div>
+
+    <!-- 行动列表 -->
+    <div class="action-list">
+
+      <!-- 常规行动 -->
+      <div
+        v-for="action in props.actions"
+        :key="action.name"
+        class="action-item"
+      >
+        <span class="action-icon">{{ action.icon || '▶' }}</span>
+        <div class="action-info">
+          <span class="action-text">{{ action.text }}</span>
+          <span v-if="action.tooltip && action.disabled" class="action-condition">{{ action.tooltip }}</span>
+        </div>
+        <button
+          class="start-btn"
+          :disabled="activity.isBusy || !!action.disabled"
+          :title="action.disabled ? (action.tooltip ?? '') : ''"
+          @click="handleActionStart(action)"
+        >
+          {{ activity.isBusy ? '——' : '开始' }}
+        </button>
+      </div>
+
+      <!-- 建造行动 -->
+      <div v-if="scenes.currentBuildingRecipes.length > 0" class="action-item">
+        <span class="action-icon">🏗️</span>
+        <div class="action-info">
+          <span class="action-text">建造</span>
+        </div>
+        <button
+          class="start-btn"
+          :disabled="activity.isBusy"
+          @click="showBuildModal = true"
+        >
+          {{ activity.isBusy ? '——' : '开始' }}
+        </button>
+      </div>
+
+    </div>
 
     <!-- 建造弹窗 -->
     <Teleport to="body">
@@ -63,16 +99,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import ActionButton from '../common/ActionButton.vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useCharacterStore } from '../../stores/character'
 import { useScenesStore } from '../../stores/scenes'
+import { useActivityStore } from '../../stores/activity'
 import { toast } from '../../utils/toast'
 import type { GameBuildingRecipe } from '../../stores/scenes/types'
 
 interface Action {
   name: string;
   text: string;
+  icon?: string;
   duration: number;
   energyCost: number;
   handler: () => Promise<void>;
@@ -87,27 +124,44 @@ const props = defineProps<{
 
 const character = useCharacterStore();
 const scenes = useScenesStore();
+const activity = useActivityStore();
 const showBuildModal = ref(false);
+const progress = ref(0);
 
-// 将 actions 按 group 分组，保持原始顺序
-const actionGroups = computed(() => {
-  const groups: { key: string; isGroup: boolean; actions: Action[] }[] = [];
-  const groupMap = new Map<string, Action[]>();
+let progressTimer: ReturnType<typeof setInterval> | null = null;
+let completing = false;
 
-  for (const action of props.actions) {
-    const key = action.group ?? `__solo__${action.name}`;
-    if (!groupMap.has(key)) {
-      groupMap.set(key, []);
-      groups.push({ key, isGroup: !!action.group, actions: groupMap.get(key)! });
-    }
-    groupMap.get(key)!.push(action);
+function updateProgress() {
+  if (!activity.currentActivity) {
+    progress.value = 0;
+    return;
   }
+  const elapsed = Date.now() - activity.currentActivity.startedAt;
+  progress.value = Math.min(1, elapsed / activity.currentActivity.duration);
+  if (progress.value >= 1 && !completing) {
+    completing = true;
+    activity.completeActivity().finally(() => {
+      completing = false;
+      progress.value = 0;
+    });
+  }
+}
 
-  return groups;
+onMounted(() => {
+  progressTimer = setInterval(updateProgress, 100);
 });
 
-function checkEnergyCost(cost: number) {
-  if (character.energy < cost) {
+onUnmounted(() => {
+  if (progressTimer) {
+    clearInterval(progressTimer);
+    progressTimer = null;
+  }
+});
+
+function handleActionStart(action: Action) {
+  if (activity.isBusy || action.disabled) return;
+
+  if (character.energy < action.energyCost) {
     const messages = [
       '你感到精疲力尽，需要休息一下...',
       '你的双腿像灌了铅一样沉重...',
@@ -119,9 +173,22 @@ function checkEnergyCost(cost: number) {
       message: messages[Math.floor(Math.random() * messages.length)],
       type: 'warning'
     });
-    return false;
+    return;
   }
-  return true;
+
+  activity.startActivity({
+    name: action.name,
+    label: action.text,
+    icon: action.icon || '▶',
+    startedAt: Date.now(),
+    duration: action.duration * 1000,
+    onComplete: action.handler
+  });
+}
+
+function cancelActivity() {
+  activity.cancelActivity();
+  progress.value = 0;
 }
 
 function isBuilt(recipeType: string): boolean {
@@ -138,7 +205,10 @@ function formatCost(cost: { [key: string]: number }): string {
 }
 
 async function handleBuild(recipe: GameBuildingRecipe) {
-  if (!checkEnergyCost(recipe.energyCost)) return;
+  if (character.energy < recipe.energyCost) {
+    toast({ message: '体力不足，无法建造', type: 'warning' });
+    return;
+  }
   await scenes.buildInCurrentScene(recipe.type);
   if (isBuilt(recipe.type)) {
     character.energy = Math.max(0, character.energy - recipe.energyCost);
@@ -158,19 +228,144 @@ async function handleBuild(recipe: GameBuildingRecipe) {
   gap: 0.5rem;
 }
 
-.action-buttons {
+/* 当前行动区 */
+.current-activity {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
-.action-buttons--row {
-  flex-direction: row;
-  gap: 0.5rem;
+.current-activity-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-.action-buttons--row :deep(.action-button) {
+.current-activity-icon {
+  font-size: 1.1rem;
+}
+
+.current-activity-label {
   flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.cancel-btn {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid rgba(255, 100, 100, 0.5);
+  border-radius: 4px;
+  background: rgba(200, 50, 50, 0.3);
+  color: #fc8181;
+  cursor: pointer;
+  font-size: 0.78rem;
+  transition: background 0.2s;
+}
+
+.cancel-btn:hover {
+  background: rgba(200, 50, 50, 0.5);
+}
+
+.progress-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-bar-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f6ad55, #ed8936);
+  border-radius: 4px;
+  transition: width 0.1s linear;
+}
+
+.progress-text {
+  font-size: 0.78rem;
+  color: #a0aec0;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+/* 分隔线 */
+.divider {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  margin: 0.25rem 0;
+}
+
+/* 行动列表 */
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.action-icon {
+  font-size: 1rem;
+  width: 1.4rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.action-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.action-text {
+  font-size: 0.9rem;
+  color: #e2e8f0;
+}
+
+.action-condition {
+  font-size: 0.72rem;
+  color: #fc8181;
+  margin-top: 0.1rem;
+}
+
+.start-btn {
+  padding: 0.25rem 0.65rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #4a5568;
+  color: white;
+  cursor: pointer;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+  min-width: 2.8rem;
+}
+
+.start-btn:hover:not(:disabled) {
+  background-color: #2d3748;
+}
+
+.start-btn:disabled {
+  background-color: #2d3748;
+  color: #718096;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* 建造弹窗 */
@@ -308,4 +503,3 @@ async function handleBuild(recipe: GameBuildingRecipe) {
   opacity: 0.8;
 }
 </style>
-
