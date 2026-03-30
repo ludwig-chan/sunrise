@@ -1,30 +1,69 @@
 <template>
   <div class="character-equipment">
-    <!-- 区块一：当前穿戴槽位 -->
-    <div class="section translucent-white">
-      <h3 class="section-title">当前穿戴</h3>
-      <div class="slots-grid">
-        <div
-          v-for="slot in SLOT_LIST"
-          :key="slot.key"
-          class="slot-row"
-        >
-          <span class="slot-label">{{ slot.label }}</span>
-          <template v-if="equipment.slots[slot.key]">
-            <span class="slot-icon">{{ getItemIcon(equipment.slots[slot.key]!) }}</span>
-            <span class="slot-name">{{ getItemName(equipment.slots[slot.key]!) }}</span>
-            <div class="durability-bar-wrap">
-              <div
-                class="durability-fill"
-                :style="{ width: `${getDurabilityPercent(equipment.slots[slot.key]!)}%`, backgroundColor: getDurabilityColor(equipment.slots[slot.key]!) }"
-              ></div>
+    <!-- 区块一：像素人 + 装备槽 -->
+    <div class="section translucent-white equip-layout">
+      <!-- 左侧：像素风全身人物像 -->
+      <div class="pixel-character-wrap">
+        <div class="pixel-character" :data-gender="character.gender">
+          <!-- 头部 -->
+          <div class="pixel-head">
+            <div class="pixel-head-inner"></div>
+          </div>
+          <!-- 颈部 -->
+          <div class="pixel-neck"></div>
+          <!-- 身体 -->
+          <div class="pixel-body">
+            <div class="pixel-arm left"></div>
+            <div class="pixel-torso"></div>
+            <div class="pixel-arm right"></div>
+          </div>
+          <!-- 腿 -->
+          <div class="pixel-legs">
+            <div class="pixel-leg left"></div>
+            <div class="pixel-leg right"></div>
+          </div>
+          <!-- 脚 -->
+          <div class="pixel-feet">
+            <div class="pixel-foot left"></div>
+            <div class="pixel-foot right"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧：装备槽位 -->
+      <div class="slots-panel">
+        <h3 class="section-title">当前穿戴</h3>
+        <div class="slots-grid">
+          <div
+            v-for="slot in SLOT_LIST"
+            :key="slot.key"
+            class="slot-card"
+            :class="{ 'slot-equipped': !!equipment.slots[slot.key] }"
+          >
+            <div class="slot-header">
+              <span class="slot-icon-bg">{{ slot.icon }}</span>
+              <span class="slot-label">{{ slot.label }}</span>
             </div>
-            <span class="durability-text">{{ getDurabilityPercent(equipment.slots[slot.key]!) }}%</span>
-            <button class="btn-unequip" @click="equipment.unequip(slot.key)">卸下</button>
-          </template>
-          <template v-else>
-            <span class="slot-empty">— 空 —</span>
-          </template>
+            <template v-if="equipment.slots[slot.key]">
+              <div class="slot-item-info">
+                <span class="slot-item-icon">{{ getItemIcon(equipment.slots[slot.key]!) }}</span>
+                <span class="slot-item-name">{{ getItemName(equipment.slots[slot.key]!) }}</span>
+              </div>
+              <div class="durability-bar-wrap">
+                <div
+                  class="durability-fill"
+                  :style="{ width: `${getDurabilityPercent(equipment.slots[slot.key]!)}%`, backgroundColor: getDurabilityColor(equipment.slots[slot.key]!) }"
+                ></div>
+              </div>
+              <div class="slot-footer">
+                <span class="durability-text">{{ getDurabilityPercent(equipment.slots[slot.key]!) }}%</span>
+                <button class="btn-unequip" @click="equipment.unequip(slot.key)">卸下</button>
+              </div>
+            </template>
+            <template v-else>
+              <div class="slot-empty">— 空 —</div>
+            </template>
+          </div>
         </div>
       </div>
     </div>
@@ -85,6 +124,21 @@
           <span class="stat-label">体力消耗</span>
           <span class="stat-value">{{ stats.energyCostMod > 0 ? '+' : '' }}{{ stats.energyCostMod }}</span>
         </div>
+        <div v-if="stats.magicMod" class="stat-row">
+          <span class="stat-icon">✨</span>
+          <span class="stat-label">魔法加成</span>
+          <span class="stat-value">{{ stats.magicMod > 0 ? '+' : '' }}{{ stats.magicMod }}</span>
+        </div>
+        <div v-if="stats.moodMod" class="stat-row">
+          <span class="stat-icon">😊</span>
+          <span class="stat-label">心情加成</span>
+          <span class="stat-value">{{ stats.moodMod > 0 ? '+' : '' }}{{ stats.moodMod }}</span>
+        </div>
+        <div v-if="stats.hungerMod" class="stat-row">
+          <span class="stat-icon">🍖</span>
+          <span class="stat-label">饥饿消耗</span>
+          <span class="stat-value">{{ stats.hungerMod > 0 ? '+' : '' }}{{ stats.hungerMod }}</span>
+        </div>
       </template>
       <div v-else class="empty-hint">暂无装备加成</div>
     </div>
@@ -94,19 +148,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useEquipmentStore } from '../../stores/equipment'
+import { useCharacterStore } from '../../stores/character'
 import { ITEM_DEFINITIONS } from '../../data/items'
 import type { EquipSlot } from '../../data/items'
 
 const equipment = useEquipmentStore()
+const character = useCharacterStore()
 
-const SLOT_LIST: { key: EquipSlot; label: string }[] = [
-  { key: 'mainHand', label: '主手' },
-  { key: 'offHand', label: '副手' },
-  { key: 'head', label: '头部' },
-  { key: 'body', label: '身体' },
-  { key: 'legs', label: '腿部' },
-  { key: 'feet', label: '脚部' },
-  { key: 'accessory', label: '饰品' },
+const SLOT_LIST: { key: EquipSlot; label: string; icon: string }[] = [
+  { key: 'mainHand', label: '武器', icon: '⚔️' },
+  { key: 'head', label: '帽子', icon: '🪖' },
+  { key: 'body', label: '铠甲', icon: '🛡️' },
+  { key: 'feet', label: '鞋子', icon: '👟' },
+  { key: 'accessory', label: '饰品', icon: '✨' },
 ]
 
 function getItemIcon(itemId: string): string {
@@ -149,7 +203,10 @@ const hasAnyStats = computed(() =>
   stats.value.defense !== 0 ||
   stats.value.gatherSpeed !== 0 ||
   stats.value.miningSpeed !== 0 ||
-  stats.value.energyCostMod !== 0
+  stats.value.energyCostMod !== 0 ||
+  stats.value.magicMod !== 0 ||
+  stats.value.moodMod !== 0 ||
+  stats.value.hungerMod !== 0
 )
 </script>
 
@@ -172,27 +229,244 @@ const hasAnyStats = computed(() =>
   margin: 0 0 0.6rem 0;
 }
 
+/* 装备页面布局：像素人 + 槽位面板 */
+.equip-layout {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+/* ===== 像素风全身人物 ===== */
+.pixel-character-wrap {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.pixel-character {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  image-rendering: pixelated;
+  gap: 0;
+}
+
+/* 头部 */
+.pixel-head {
+  width: 32px;
+  height: 32px;
+  background-color: #f5c89a;
+  border: 2px solid #c8855a;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pixel-character[data-gender='female'] .pixel-head {
+  background-color: #f7d4b0;
+  border-color: #c8885e;
+}
+
+.pixel-head-inner {
+  width: 22px;
+  height: 12px;
+  background-color: transparent;
+  position: relative;
+}
+
+/* 头发 */
+.pixel-head-inner::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -3px;
+  width: 28px;
+  height: 8px;
+  background-color: #5a3a1a;
+  border-radius: 1px 1px 0 0;
+}
+
+.pixel-character[data-gender='female'] .pixel-head-inner::before {
+  background-color: #8b4513;
+  height: 10px;
+  top: -10px;
+  width: 30px;
+  left: -4px;
+}
+
+/* 眼睛 */
+.pixel-head-inner::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  width: 16px;
+  height: 4px;
+  background: linear-gradient(to right, #333 4px, transparent 4px, transparent 8px, #333 8px, #333 12px);
+}
+
+/* 颈部 */
+.pixel-neck {
+  width: 10px;
+  height: 4px;
+  background-color: #f5c89a;
+  border-left: 1px solid #c8855a;
+  border-right: 1px solid #c8855a;
+}
+
+.pixel-character[data-gender='female'] .pixel-neck {
+  background-color: #f7d4b0;
+}
+
+/* 身体 */
+.pixel-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.pixel-torso {
+  width: 26px;
+  height: 30px;
+  background-color: #4a7fb5;
+  border: 2px solid #2d5a8a;
+  border-radius: 1px;
+}
+
+.pixel-character[data-gender='female'] .pixel-torso {
+  background-color: #b54a7f;
+  border-color: #8a2d5a;
+}
+
+.pixel-arm {
+  width: 8px;
+  height: 26px;
+  background-color: #4a7fb5;
+  border: 1px solid #2d5a8a;
+  margin-top: 2px;
+}
+
+.pixel-character[data-gender='female'] .pixel-arm {
+  background-color: #b54a7f;
+  border-color: #8a2d5a;
+}
+
+.pixel-arm.left {
+  border-radius: 2px 0 0 2px;
+}
+
+.pixel-arm.right {
+  border-radius: 0 2px 2px 0;
+}
+
+/* 腿 */
+.pixel-legs {
+  display: flex;
+  gap: 2px;
+  margin-top: 1px;
+}
+
+.pixel-leg {
+  width: 11px;
+  height: 22px;
+  background-color: #3d3d8a;
+  border: 1px solid #222266;
+  border-radius: 1px;
+}
+
+.pixel-character[data-gender='female'] .pixel-leg {
+  background-color: #6b3d8a;
+  border-color: #442266;
+}
+
+/* 脚 */
+.pixel-feet {
+  display: flex;
+  gap: 2px;
+  margin-top: 1px;
+}
+
+.pixel-foot {
+  width: 13px;
+  height: 6px;
+  background-color: #5a3a1a;
+  border: 1px solid #3a1a00;
+  border-radius: 1px 1px 2px 2px;
+}
+
+/* ===== 装备槽位面板 ===== */
+.slots-panel {
+  flex: 1;
+  min-width: 0;
+}
+
 .slots-grid {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
-.slot-row {
+.slot-card {
+  border: 1px dashed rgba(72, 100, 145, 0.3);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 255, 255, 0.4);
+  transition: border-color 0.2s;
+}
+
+.slot-card.slot-equipped {
+  border-style: solid;
+  border-color: rgba(72, 100, 145, 0.5);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.slot-header {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  min-height: 2rem;
-  border: 1px dashed rgba(72, 100, 145, 0.2);
-  border-radius: 6px;
-  padding: 0.3rem 0.5rem;
+  gap: 0.3rem;
+  margin-bottom: 0.2rem;
+}
+
+.slot-icon-bg {
+  font-size: 0.85rem;
 }
 
 .slot-label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #7a95b8;
-  width: 2.5rem;
-  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.slot-item-info {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.2rem;
+}
+
+.slot-item-icon {
+  font-size: 1rem;
+}
+
+.slot-item-name {
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.slot-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.2rem;
+}
+
+.slot-empty {
+  font-size: 0.78rem;
+  color: #bbb;
+  text-align: center;
+  padding: 0.15rem 0;
 }
 
 .slot-icon {
@@ -200,22 +474,16 @@ const hasAnyStats = computed(() =>
   flex-shrink: 0;
 }
 
-.slot-name, .inv-name {
+.inv-name {
   font-size: 0.85rem;
   color: #333;
   flex-shrink: 0;
   min-width: 2.5rem;
 }
 
-.slot-empty {
-  font-size: 0.8rem;
-  color: #aaa;
-  margin-left: 0.5rem;
-}
-
 .durability-bar-wrap {
   flex: 1;
-  height: 6px;
+  height: 5px;
   background-color: #ddd;
   border-radius: 3px;
   overflow: hidden;
@@ -229,15 +497,15 @@ const hasAnyStats = computed(() =>
 }
 
 .durability-text {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: #888;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .btn-unequip, .btn-equip, .btn-repair {
-  font-size: 0.75rem;
-  padding: 0.15rem 0.4rem;
+  font-size: 0.72rem;
+  padding: 0.12rem 0.35rem;
   border-radius: 4px;
   border: none;
   cursor: pointer;

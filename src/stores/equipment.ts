@@ -24,10 +24,8 @@ export const useEquipmentStore = defineStore('equipment', {
     },
     slots: {
       mainHand: null,
-      offHand: null,
       head: null,
       body: null,
-      legs: null,
       feet: null,
       accessory: null,
     }
@@ -55,6 +53,9 @@ export const useEquipmentStore = defineStore('equipment', {
         gatherSpeed: 0,
         miningSpeed: 0,
         energyCostMod: 0,
+        magicMod: 0,
+        moodMod: 0,
+        hungerMod: 0,
       }
       for (const itemId of Object.values(this.slots)) {
         if (!itemId) continue
@@ -66,6 +67,9 @@ export const useEquipmentStore = defineStore('equipment', {
         if (s.gatherSpeed) base.gatherSpeed += s.gatherSpeed
         if (s.miningSpeed) base.miningSpeed += s.miningSpeed
         if (s.energyCostMod) base.energyCostMod += s.energyCostMod
+        if (s.magicMod) base.magicMod += s.magicMod
+        if (s.moodMod) base.moodMod += s.moodMod
+        if (s.hungerMod) base.hungerMod += s.hungerMod
       }
       return base
     },
@@ -79,16 +83,6 @@ export const useEquipmentStore = defineStore('equipment', {
       if (def.icon.type === 'text') return def.icon.char
       return null
     },
-
-    // 副手装备的 icon
-    offHandIcon(): string | null {
-      const id = this.slots.offHand
-      if (!id) return null
-      const def = ITEM_DEFINITIONS[id]
-      if (!def) return null
-      if (def.icon.type === 'text') return def.icon.char
-      return null
-    }
   },
 
   actions: {

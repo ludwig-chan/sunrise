@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import CharacterProfileView from '../views/CharacterProfileView.vue'
+import CharacterStatusView from '../views/CharacterStatusView.vue'
 import CharacterEquipmentView from '../views/CharacterEquipmentView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import FeedView from '../views/FeedView.vue'
@@ -22,6 +23,11 @@ const router = createRouter({
       path: '/character/profile',
       name: 'character-profile',
       component: CharacterProfileView,
+    },
+    {
+      path: '/character/status',
+      name: 'character-status',
+      component: CharacterStatusView,
     },
     {
       path: '/character/equipment',

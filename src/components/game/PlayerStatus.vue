@@ -1,18 +1,10 @@
 <template>
   <div class="player-status translucent-white">
-    <div class="avatar-section" @click="handleAvatarClick">
-      <div class="avatar">
-        <div class="avatar-placeholder">
-          <span class="emoji">{{ character.avatar }}</span>
-        </div>
-      </div>
-    </div>
-    <div class="basic-info">
+    <div class="basic-info" @click="handleInfoClick">
       <div class="info-item name">{{ character.name }}</div>
       <div class="info-item">{{ character.age }}岁 · {{ character.gender === 'male' ? '♂' : '♀' }}</div>
-      <div class="info-item equip-icons" v-if="mainHandIcon || offHandIcon">
-        <span v-if="mainHandIcon">{{ mainHandIcon }}</span>
-        <span v-if="offHandIcon">{{ offHandIcon }}</span>
+      <div class="info-item equip-icons" v-if="mainHandIcon">
+        <span>{{ mainHandIcon }}</span>
       </div>
     </div>
     <div class="stats-container" @click="handleStatsClick">
@@ -42,61 +34,65 @@ const character = useCharacterStore()
 const equipment = useEquipmentStore()
 const router = useRouter()
 const mainHandIcon = computed(() => equipment.mainHandIcon)
-const offHandIcon = computed(() => equipment.offHandIcon)
 
-const handleAvatarClick = () => {
-  router.push('/character/equipment')
+const handleInfoClick = () => {
+  router.push('/character/profile')
 }
 
 const handleStatsClick = () => {
-  router.push('/character/profile')
+  router.push('/character/status')
 }
 </script>
 
 <style scoped>
 .player-status {
-  padding: 0.6rem;  /* 减小内边距 */
+  padding: 0.6rem;
   border-radius: 6px;
   display: grid;
-  grid-template-columns: auto auto 1fr;
-  gap: 1rem;  /* 减小间距 */
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
   align-items: center;
+}
+
+.basic-info {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #666;
+  padding: 0.3rem;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.basic-info:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .stats-container {
   display: flex;
   align-items: center;
   cursor: pointer;
+  border-radius: 4px;
+  padding: 0.2rem;
+  transition: background 0.15s;
+}
+
+.stats-container:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .main-stats {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;  /* 减小状态条之间的间距 */
+  gap: 0.5rem;
   flex-grow: 1;
-  padding: 0.3rem;  /* 减小内边距 */
-}
-
-.avatar-section, .basic-info {
-  cursor: default;
-}
-
-.avatar-section {
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.basic-info {
-  font-size: 0.85rem;  /* 稍微减小字体 */
-  color: #666;
-  padding: 0 0.3rem;  /* 减小内边距 */
+  padding: 0.3rem;
 }
 
 .info-item.name {
-  font-size: 1rem;  /* 减小名字字体 */
+  font-size: 1rem;
   font-weight: bold;
   color: #333;
-  margin-bottom: 0.1rem;  /* 减小间距 */
+  margin-bottom: 0.1rem;
 }
 
 .info-item {
@@ -107,28 +103,6 @@ const handleStatsClick = () => {
   font-size: 0.9rem;
   line-height: 1.2;
   letter-spacing: 0.1rem;
-}
-
-.avatar {
-  width: 50px;  /* 减小头像尺寸 */
-  height: 50px;  /* 减小头像尺寸 */
-  border-radius: 50%;
-  overflow: hidden;
-  background-color: #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.avatar-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.emoji {
-  font-size: 28px;  /* 减小表情符号大小 */
-  line-height: 1;
 }
 
 .status-item {
