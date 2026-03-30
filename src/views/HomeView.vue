@@ -2,6 +2,7 @@
   <main class="game-container">
     <header class="header">
       <GameDateTime />
+      <GameLogPreview />
       <PlayerStatus />
     </header>
     <div class="middle-section">
@@ -22,6 +23,7 @@ import { useBaseSceneStore } from '@/stores/scenes/base'
 import { useForestSceneStore } from '@/stores/scenes/forest'
 import { emitter, gameLog } from '@/utils/eventBus'
 import GameDateTime from '@/components/game/GameDateTime.vue'
+import GameLogPreview from '@/components/game/GameLogPreview.vue'
 import PlayerStatus from '@/components/game/PlayerStatus.vue'
 import OperationArea from '@/components/game/OperationArea.vue'
 import ScenePanel from '@/components/game/ScenePanel.vue'
