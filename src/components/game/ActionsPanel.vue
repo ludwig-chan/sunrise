@@ -31,32 +31,46 @@
             <button class="action-modal-close" aria-label="关闭弹窗" @click="showActionModal = false">✕</button>
           </div>
           <div class="action-modal-body">
-
-            <!-- 行动组 -->
-            <div class="action-group-label">── 行动 ──</div>
-            <div
-              v-for="action in props.actions"
-              :key="action.name"
-              class="modal-action-item"
-              :class="{ 'is-disabled': !!action.disabled }"
-            >
-              <span class="modal-action-icon">{{ action.icon || '▶' }}</span>
-              <div class="modal-action-info">
-                <span class="modal-action-text">{{ action.text }}</span>
-                <span v-if="action.tooltip && action.disabled" class="modal-action-condition">{{ action.tooltip }}</span>
-              </div>
+            <!-- Tab 切换 -->
+            <div class="modal-tabs">
               <button
-                class="modal-select-btn"
-                :disabled="!!action.disabled"
-                @click="handleActionStart(action)"
-              >
-                选择
-              </button>
+                class="modal-tab"
+                :class="{ active: activeTab === 'actions' }"
+                @click="activeTab = 'actions'"
+              >行动</button>
+              <button
+                class="modal-tab"
+                :class="{ active: activeTab === 'build', disabled: scenes.currentBuildingRecipes.length === 0 }"
+                :disabled="scenes.currentBuildingRecipes.length === 0"
+                @click="scenes.currentBuildingRecipes.length > 0 && (activeTab = 'build')"
+              >建造</button>
             </div>
 
-            <!-- 建造组 -->
-            <template v-if="scenes.currentBuildingRecipes.length > 0">
-              <div class="action-group-label">── 建造 ──</div>
+            <!-- 行动 Tab -->
+            <template v-if="activeTab === 'actions'">
+              <div
+                v-for="action in props.actions"
+                :key="action.name"
+                class="modal-action-item"
+                :class="{ 'is-disabled': !!action.disabled }"
+              >
+                <span class="modal-action-icon">{{ action.icon || '▶' }}</span>
+                <div class="modal-action-info">
+                  <span class="modal-action-text">{{ action.text }}</span>
+                  <span v-if="action.tooltip && action.disabled" class="modal-action-condition">{{ action.tooltip }}</span>
+                </div>
+                <button
+                  class="modal-select-btn"
+                  :disabled="!!action.disabled"
+                  @click="handleActionStart(action)"
+                >
+                  选择
+                </button>
+              </div>
+            </template>
+
+            <!-- 建造 Tab -->
+            <template v-if="activeTab === 'build'">
               <div
                 v-for="recipe in scenes.currentBuildingRecipes"
                 :key="recipe.type"
@@ -113,6 +127,7 @@ const character = useCharacterStore();
 const scenes = useScenesStore();
 const activity = useActivityStore();
 const showActionModal = ref(false);
+const activeTab = ref<'actions' | 'build'>('actions');
 const progress = ref(0);
 
 let progressTimer: ReturnType<typeof setInterval> | null = null;
@@ -229,31 +244,31 @@ function formatCost(cost: { [key: string]: number }): string {
 /* 空闲状态 */
 .idle-state {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
   gap: 0.5rem;
 }
 
 .idle-label {
   font-size: 0.9rem;
-  color: #a0aec0;
+  color: #e2e8f0;
+  text-align: center;
 }
 
 .select-action-btn {
-  padding: 0.3rem 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 0.5rem;
+  border: 1px solid rgba(255, 200, 100, 0.6);
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #e2e8f0;
+  background: rgba(255, 200, 100, 0.25);
+  color: #fbd38d;
   cursor: pointer;
-  font-size: 0.82rem;
-  white-space: nowrap;
+  font-size: 0.9rem;
+  width: 100%;
   transition: background 0.2s;
-  flex-shrink: 0;
 }
 
 .select-action-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 200, 100, 0.4);
 }
 
 /* 当前行动区 */
@@ -386,12 +401,40 @@ function formatCost(cost: { [key: string]: number }): string {
   gap: 0.4rem;
 }
 
-/* 分组标签 */
-.action-group-label {
-  font-size: 0.75rem;
-  color: #718096;
-  padding: 0.3rem 0 0.1rem;
-  letter-spacing: 0.02em;
+/* Tab 切换 */
+.modal-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-tab {
+  flex: 1;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #a0aec0;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.modal-tab.active {
+  background: rgba(246, 173, 85, 0.25);
+  border-color: rgba(246, 173, 85, 0.6);
+  color: #f6ad55;
+  font-weight: 600;
+}
+
+.modal-tab.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.modal-tab:not(.active):not(.disabled):hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
 }
 
 /* 弹窗内行动项 */

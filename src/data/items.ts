@@ -5,7 +5,7 @@ export type ItemIcon =
 
 export type ItemCategory = 'food' | 'material' | 'equipment'
 
-export type EquipSlot = 'mainHand' | 'offHand' | 'head' | 'body' | 'legs' | 'feet' | 'accessory'
+export type EquipSlot = 'mainHand' | 'head' | 'body' | 'feet' | 'accessory'
 
 export interface EquipStats {
   attack?: number        // 攻击力加成
@@ -13,6 +13,9 @@ export interface EquipStats {
   gatherSpeed?: number   // 采集速度倍率加成（如 0.5 = +50%）
   miningSpeed?: number   // 采矿速度倍率加成
   energyCostMod?: number // 体力消耗修正（负数 = 减少消耗）
+  magicMod?: number      // 魔法值加成
+  moodMod?: number       // 心情加成
+  hungerMod?: number     // 饥饿消耗修正（负数 = 减少饥饿消耗）
 }
 
 export interface ItemEffect {
@@ -103,8 +106,8 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     name: '木盾',
     category: 'equipment',
     icon: { type: 'text', char: '🛡️' },
-    description: '简单的木制盾牌，提供基础防御。',
-    equipSlot: 'offHand',
+    description: '简单的木制盾牌，穿在身上提供基础防御。',
+    equipSlot: 'body',
     equipStats: { defense: 8 }
   },
   raw_meat: {

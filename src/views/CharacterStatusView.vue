@@ -1,17 +1,17 @@
 <template>
-  <div class="character-detail">
-    <PageHeader title="个人信息" />
-    <CharacterProfile />
+  <div class="character-status-view">
+    <PageHeader title="状态" />
+    <CharacterStatus />
   </div>
 </template>
 
 <script setup lang="ts">
-import CharacterProfile from '../components/game/CharacterProfile.vue'
+import CharacterStatus from '../components/game/CharacterStatus.vue'
 import PageHeader from '../components/common/PageHeader.vue'
 </script>
 
 <style scoped>
-.character-detail {
+.character-status-view {
   padding: 4rem 2rem 2rem;
   max-width: 800px;
   margin: 0 auto;
