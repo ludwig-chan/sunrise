@@ -1,7 +1,6 @@
 <template>
   <div class="settings-view">
-    <BackButton />
-    <div class="h1-wrapper"><h1>游戏设置</h1></div>
+    <PageHeader title="游戏设置" />
     
     <div class="settings-content">
       <div class="settings-section">
@@ -26,7 +25,7 @@
 import { useRouter } from 'vue-router'
 import { showDialog } from '@/utils/dialog'
 import { useCharacterStore } from '@/stores/character'
-import BackButton from '@/components/common/BackButton.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const router = useRouter()
 const characterStore = useCharacterStore()
@@ -50,27 +49,10 @@ const handleResetGame = async () => {
 
 <style scoped>
 .settings-view {
-  padding: 2rem;
+  padding: 4rem 2rem 2rem;
   max-width: 800px;
   margin: 0 auto;
   position: relative;
-}
-
-h1 {
-  text-align: center;
-  margin-bottom: 2rem;
-  color: #fff;
-  display: inline-block;
-  background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  padding: 0.2rem 1.2rem;
-  border-radius: 20px;
-  width: fit-content;
-}
-
-.h1-wrapper {
-  text-align: center;
 }
 
 .settings-content {
