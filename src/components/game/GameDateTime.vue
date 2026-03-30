@@ -68,7 +68,7 @@ function snowStyle(i: number): Record<string, string> {
   const left = ((i * 43 + 7) % 100)
   const delay = ((i * 0.3) % 3).toFixed(2)
   const duration = (2.5 + (i % 4) * 0.5).toFixed(2)
-  const size = (3 + (i % 3)).toFixed(0)
+  const size = (8 + (i % 4) * 2).toFixed(0)
   return {
     left: `${left}%`,
     width: `${size}px`,
@@ -132,10 +132,10 @@ function hailStyle(i: number): Record<string, string> {
 .rain-drop {
   position: absolute;
   top: -10px;
-  width: 2px;
-  height: 10px;
+  width: 4px;
+  height: 8px;
   background: rgba(180, 210, 255, 0.7);
-  border-radius: 1px;
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
   animation: rain-fall linear infinite;
 }
 @keyframes rain-fall {

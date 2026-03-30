@@ -4,7 +4,6 @@
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="15 18 9 12 15 6" />
       </svg>
-      <span>返回</span>
     </button>
     <h1 class="page-title">{{ title }}</h1>
     <div class="header-right" />
@@ -53,7 +52,9 @@ const router = useRouter()
 }
 
 .page-title {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   text-align: center;
   margin: 0;
   font-size: 1.1rem;

@@ -471,5 +471,7 @@ export const useForestSceneStore = defineStore('forestScene', {
     }
   },
 
-  persist: true
+  persist: {
+    omit: ['_trapListenerRegistered']
+  }
 })
