@@ -8,9 +8,6 @@
               ▶ 继续游戏
             </button>
             <hr class="menu-divider" />
-            <button class="menu-item" @click="goToCharacter">
-              👤 个人信息
-            </button>
             <button class="menu-item" @click="goToSettings">
               ⚙️ 设置
             </button>
@@ -43,10 +40,6 @@ function handleResume() {
 function handleOverlayClick() {
   emit('resume')
   emit('update:modelValue', false)
-}
-
-function goToCharacter() {
-  router.push('/character')
 }
 
 function goToSettings() {
