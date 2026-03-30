@@ -27,7 +27,7 @@
       >
         【{{ entry.gameTimestamp % 24 }}时】{{ entry.text }}
       </div>
-      <div class="log-footer" @click="router.push('/character')">查看全部 →</div>
+      <div class="log-footer" @click="router.push('/logs')">查看全部 →</div>
     </div>
   </div>
 </template>

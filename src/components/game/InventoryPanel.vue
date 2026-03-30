@@ -1,21 +1,12 @@
 <template>
   <div class="inventory-panel translucent-white">
     <!-- 过滤标签栏 -->
-    <div class="filter-bar">
-      <label
-        v-for="cat in CATEGORIES"
-        :key="cat.key"
-        class="filter-label"
-        :class="{ active: activeCategories.has(cat.key) }"
-        @click.prevent="selectOnlyCategory(cat.key)"
-      >
-        <input
-          type="checkbox"
-          :checked="activeCategories.has(cat.key)"
-          @click.stop="toggleCategory(cat.key)"
-        /> {{ cat.label }}
-      </label>
-    </div>
+    <FilterBar
+      :items="CATEGORIES"
+      :model-value="activeCategories"
+      @update:model-value="onFilterChange"
+      class="inventory-filter-bar"
+    />
 
     <!-- 主体区：格子全宽 -->
     <div class="inventory-body">
@@ -74,6 +65,7 @@ import { useCharacterStore } from '../../stores/character'
 import { ITEM_DEFINITIONS, type ItemIcon as ItemIconType, type ItemEffect } from '../../data/items'
 import ItemIcon from '../common/ItemIcon.vue'
 import StatusIcon from '../common/StatusIcon.vue'
+import FilterBar from '../common/FilterBar.vue'
 
 const baseScene = useBaseSceneStore()
 const forestScene = useForestSceneStore()
@@ -101,23 +93,8 @@ const activeCategories = ref<Set<CategoryKey>>(new Set())
 const selectedItem = ref<DisplayItem | null>(null)
 
 // 单选：点击标签时只选此分类；若已经只选了它，则清空（显示全部）
-function selectOnlyCategory(cat: CategoryKey) {
-  if (activeCategories.value.size === 1 && activeCategories.value.has(cat)) {
-    activeCategories.value = new Set()
-  } else {
-    activeCategories.value = new Set([cat])
-  }
-  selectedItem.value = null
-}
-
-function toggleCategory(cat: CategoryKey) {
-  const next = new Set(activeCategories.value)
-  if (next.has(cat)) {
-    next.delete(cat)
-  } else {
-    next.add(cat)
-  }
-  activeCategories.value = next
+function onFilterChange(newValue: Set<string>) {
+  activeCategories.value = newValue as Set<CategoryKey>
   selectedItem.value = null
 }
 
@@ -197,46 +174,10 @@ function useItem(item: DisplayItem) {
 }
 
 /* 过滤标签栏 */
-.filter-bar {
-  display: flex;
-  gap: 0.2rem;
-  flex-wrap: wrap;
+.inventory-filter-bar {
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   margin-bottom: 0.5rem;
   padding-bottom: 0.3rem;
-}
-
-.filter-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.6rem;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 0.78rem;
-  color: #666;
-  transition: all 0.15s;
-  white-space: nowrap;
-  user-select: none;
-}
-
-.filter-label:hover {
-  background: rgba(66, 153, 225, 0.15);
-  border-color: #4299e1;
-  color: #2b6cb0;
-}
-
-.filter-label.active {
-  background: rgba(66, 153, 225, 0.25);
-  border-color: #3182ce;
-  color: #2b6cb0;
-  font-weight: 500;
-}
-
-.filter-label input[type="checkbox"] {
-  margin: 0;
 }
 
 /* 主体布局 */

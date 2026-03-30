@@ -10,9 +10,6 @@
       <template #equipment>
         <CharacterEquipment />
       </template>
-      <template #log>
-        <CharacterLog />
-      </template>
     </Tabs>
   </div>
 </template>
@@ -22,7 +19,6 @@ import { ref } from 'vue'
 import { useCharacterStore } from '../stores/character'
 import CharacterProfile from '../components/game/CharacterProfile.vue'
 import CharacterEquipment from '../components/game/CharacterEquipment.vue'
-import CharacterLog from '../components/game/CharacterLog.vue'
 import Tabs from '../components/common/Tabs.vue'
 import BackButton from '../components/common/BackButton.vue'
 
@@ -31,7 +27,6 @@ const activeTab = ref('profile')
 const tabs = [
   { key: 'profile', title: '状态' },
   { key: 'equipment', title: '装备' },
-  { key: 'log', title: '日志' },
 ]
 </script>
 
