@@ -1,68 +1,151 @@
 <template>
   <div class="character-equipment">
-    <!-- 区块一：像素人 + 装备槽 -->
+    <!-- 区块一：RPG 风格装备布局（人物居中，槽位环绕） -->
     <div class="section translucent-white equip-layout">
-      <!-- 左侧：像素风全身人物像 -->
-      <div class="pixel-character-wrap">
-        <div class="pixel-character" :data-gender="character.gender">
-          <!-- 头部 -->
-          <div class="pixel-head">
-            <div class="pixel-head-inner"></div>
-          </div>
-          <!-- 颈部 -->
-          <div class="pixel-neck"></div>
-          <!-- 身体 -->
-          <div class="pixel-body">
-            <div class="pixel-arm left"></div>
-            <div class="pixel-torso"></div>
-            <div class="pixel-arm right"></div>
-          </div>
-          <!-- 腿 -->
-          <div class="pixel-legs">
-            <div class="pixel-leg left"></div>
-            <div class="pixel-leg right"></div>
-          </div>
-          <!-- 脚 -->
-          <div class="pixel-feet">
-            <div class="pixel-foot left"></div>
-            <div class="pixel-foot right"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 右侧：装备槽位 -->
-      <div class="slots-panel">
-        <h3 class="section-title">当前穿戴</h3>
-        <div class="slots-grid">
-          <div
-            v-for="slot in SLOT_LIST"
-            :key="slot.key"
-            class="slot-card"
-            :class="{ 'slot-equipped': !!equipment.slots[slot.key] }"
-          >
+      <h3 class="section-title">当前穿戴</h3>
+      <div class="equip-grid">
+        <!-- 帽子：头顶 -->
+        <div class="equip-cell cell-head">
+          <div class="slot-card" :class="{ 'slot-equipped': !!equipment.slots.head }">
             <div class="slot-header">
-              <span class="slot-icon-bg">{{ slot.icon }}</span>
-              <span class="slot-label">{{ slot.label }}</span>
+              <span class="slot-icon-bg">🪖</span>
+              <span class="slot-label">帽子</span>
             </div>
-            <template v-if="equipment.slots[slot.key]">
+            <template v-if="equipment.slots.head">
               <div class="slot-item-info">
-                <span class="slot-item-icon">{{ getItemIcon(equipment.slots[slot.key]!) }}</span>
-                <span class="slot-item-name">{{ getItemName(equipment.slots[slot.key]!) }}</span>
+                <span class="slot-item-icon">{{ getItemIcon(equipment.slots.head) }}</span>
+                <span class="slot-item-name">{{ getItemName(equipment.slots.head) }}</span>
               </div>
               <div class="durability-bar-wrap">
-                <div
-                  class="durability-fill"
-                  :style="{ width: `${getDurabilityPercent(equipment.slots[slot.key]!)}%`, backgroundColor: getDurabilityColor(equipment.slots[slot.key]!) }"
-                ></div>
+                <div class="durability-fill" :style="{ width: `${getDurabilityPercent(equipment.slots.head)}%`, backgroundColor: getDurabilityColor(equipment.slots.head) }"></div>
               </div>
               <div class="slot-footer">
-                <span class="durability-text">{{ getDurabilityPercent(equipment.slots[slot.key]!) }}%</span>
-                <button class="btn-unequip" @click="equipment.unequip(slot.key)">卸下</button>
+                <span class="durability-text">{{ getDurabilityPercent(equipment.slots.head) }}%</span>
+                <button class="btn-unequip" @click="equipment.unequip('head')">卸下</button>
               </div>
             </template>
-            <template v-else>
-              <div class="slot-empty">— 空 —</div>
+            <template v-else><div class="slot-empty">— 空 —</div></template>
+          </div>
+        </div>
+
+        <!-- 武器：左侧 -->
+        <div class="equip-cell cell-weapon">
+          <div class="slot-card" :class="{ 'slot-equipped': !!equipment.slots.mainHand }">
+            <div class="slot-header">
+              <span class="slot-icon-bg">⚔️</span>
+              <span class="slot-label">武器</span>
+            </div>
+            <template v-if="equipment.slots.mainHand">
+              <div class="slot-item-info">
+                <span class="slot-item-icon">{{ getItemIcon(equipment.slots.mainHand) }}</span>
+                <span class="slot-item-name">{{ getItemName(equipment.slots.mainHand) }}</span>
+              </div>
+              <div class="durability-bar-wrap">
+                <div class="durability-fill" :style="{ width: `${getDurabilityPercent(equipment.slots.mainHand)}%`, backgroundColor: getDurabilityColor(equipment.slots.mainHand) }"></div>
+              </div>
+              <div class="slot-footer">
+                <span class="durability-text">{{ getDurabilityPercent(equipment.slots.mainHand) }}%</span>
+                <button class="btn-unequip" @click="equipment.unequip('mainHand')">卸下</button>
+              </div>
             </template>
+            <template v-else><div class="slot-empty">— 空 —</div></template>
+          </div>
+        </div>
+
+        <!-- 人物：中间 -->
+        <div class="equip-cell cell-character">
+          <div class="pixel-character-wrap">
+            <div class="pixel-character" :data-gender="character.gender">
+              <div class="pixel-head">
+                <div class="pixel-head-inner"></div>
+              </div>
+              <div class="pixel-neck"></div>
+              <div class="pixel-body">
+                <div class="pixel-arm left"></div>
+                <div class="pixel-torso"></div>
+                <div class="pixel-arm right"></div>
+              </div>
+              <div class="pixel-legs">
+                <div class="pixel-leg left"></div>
+                <div class="pixel-leg right"></div>
+              </div>
+              <div class="pixel-feet">
+                <div class="pixel-foot left"></div>
+                <div class="pixel-foot right"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 铠甲：右侧 -->
+        <div class="equip-cell cell-body">
+          <div class="slot-card" :class="{ 'slot-equipped': !!equipment.slots.body }">
+            <div class="slot-header">
+              <span class="slot-icon-bg">🛡️</span>
+              <span class="slot-label">铠甲</span>
+            </div>
+            <template v-if="equipment.slots.body">
+              <div class="slot-item-info">
+                <span class="slot-item-icon">{{ getItemIcon(equipment.slots.body) }}</span>
+                <span class="slot-item-name">{{ getItemName(equipment.slots.body) }}</span>
+              </div>
+              <div class="durability-bar-wrap">
+                <div class="durability-fill" :style="{ width: `${getDurabilityPercent(equipment.slots.body)}%`, backgroundColor: getDurabilityColor(equipment.slots.body) }"></div>
+              </div>
+              <div class="slot-footer">
+                <span class="durability-text">{{ getDurabilityPercent(equipment.slots.body) }}%</span>
+                <button class="btn-unequip" @click="equipment.unequip('body')">卸下</button>
+              </div>
+            </template>
+            <template v-else><div class="slot-empty">— 空 —</div></template>
+          </div>
+        </div>
+
+        <!-- 鞋子：脚下 -->
+        <div class="equip-cell cell-feet">
+          <div class="slot-card" :class="{ 'slot-equipped': !!equipment.slots.feet }">
+            <div class="slot-header">
+              <span class="slot-icon-bg">👟</span>
+              <span class="slot-label">鞋子</span>
+            </div>
+            <template v-if="equipment.slots.feet">
+              <div class="slot-item-info">
+                <span class="slot-item-icon">{{ getItemIcon(equipment.slots.feet) }}</span>
+                <span class="slot-item-name">{{ getItemName(equipment.slots.feet) }}</span>
+              </div>
+              <div class="durability-bar-wrap">
+                <div class="durability-fill" :style="{ width: `${getDurabilityPercent(equipment.slots.feet)}%`, backgroundColor: getDurabilityColor(equipment.slots.feet) }"></div>
+              </div>
+              <div class="slot-footer">
+                <span class="durability-text">{{ getDurabilityPercent(equipment.slots.feet) }}%</span>
+                <button class="btn-unequip" @click="equipment.unequip('feet')">卸下</button>
+              </div>
+            </template>
+            <template v-else><div class="slot-empty">— 空 —</div></template>
+          </div>
+        </div>
+
+        <!-- 饰品：右下 -->
+        <div class="equip-cell cell-accessory">
+          <div class="slot-card" :class="{ 'slot-equipped': !!equipment.slots.accessory }">
+            <div class="slot-header">
+              <span class="slot-icon-bg">✨</span>
+              <span class="slot-label">饰品</span>
+            </div>
+            <template v-if="equipment.slots.accessory">
+              <div class="slot-item-info">
+                <span class="slot-item-icon">{{ getItemIcon(equipment.slots.accessory) }}</span>
+                <span class="slot-item-name">{{ getItemName(equipment.slots.accessory) }}</span>
+              </div>
+              <div class="durability-bar-wrap">
+                <div class="durability-fill" :style="{ width: `${getDurabilityPercent(equipment.slots.accessory)}%`, backgroundColor: getDurabilityColor(equipment.slots.accessory) }"></div>
+              </div>
+              <div class="slot-footer">
+                <span class="durability-text">{{ getDurabilityPercent(equipment.slots.accessory) }}%</span>
+                <button class="btn-unequip" @click="equipment.unequip('accessory')">卸下</button>
+              </div>
+            </template>
+            <template v-else><div class="slot-empty">— 空 —</div></template>
           </div>
         </div>
       </div>
@@ -150,18 +233,9 @@ import { computed } from 'vue'
 import { useEquipmentStore } from '../../stores/equipment'
 import { useCharacterStore } from '../../stores/character'
 import { ITEM_DEFINITIONS } from '../../data/items'
-import type { EquipSlot } from '../../data/items'
 
 const equipment = useEquipmentStore()
 const character = useCharacterStore()
-
-const SLOT_LIST: { key: EquipSlot; label: string; icon: string }[] = [
-  { key: 'mainHand', label: '武器', icon: '⚔️' },
-  { key: 'head', label: '帽子', icon: '🪖' },
-  { key: 'body', label: '铠甲', icon: '🛡️' },
-  { key: 'feet', label: '鞋子', icon: '👟' },
-  { key: 'accessory', label: '饰品', icon: '✨' },
-]
 
 function getItemIcon(itemId: string): string {
   const def = ITEM_DEFINITIONS[itemId]
@@ -229,16 +303,55 @@ const hasAnyStats = computed(() =>
   margin: 0 0 0.6rem 0;
 }
 
-/* 装备页面布局：像素人 + 槽位面板 */
+/* 装备页面布局：RPG 风格，人物居中 */
 .equip-layout {
+  /* section padding already applied */
+}
+
+.equip-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 0.5rem;
+  align-items: center;
+  justify-items: stretch;
+}
+
+/* 各格子位置 */
+.cell-head {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.cell-weapon {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.cell-character {
+  grid-column: 2;
+  grid-row: 2;
   display: flex;
-  gap: 1rem;
-  align-items: flex-start;
+  justify-content: center;
+}
+
+.cell-body {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.cell-feet {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.cell-accessory {
+  grid-column: 3;
+  grid-row: 3;
 }
 
 /* ===== 像素风全身人物 ===== */
 .pixel-character-wrap {
-  flex-shrink: 0;
   display: flex;
   justify-content: center;
   padding: 0.5rem;
@@ -394,18 +507,6 @@ const hasAnyStats = computed(() =>
   background-color: #5a3a1a;
   border: 1px solid #3a1a00;
   border-radius: 1px 1px 2px 2px;
-}
-
-/* ===== 装备槽位面板 ===== */
-.slots-panel {
-  flex: 1;
-  min-width: 0;
-}
-
-.slots-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
 }
 
 .slot-card {

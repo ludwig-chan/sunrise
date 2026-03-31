@@ -4,7 +4,6 @@
       <div class="avatar" @click.stop="handleAvatarClick">👤</div>
       <div class="info-text">
         <div class="info-item name">{{ character.name }}</div>
-        <div class="info-item">{{ character.age }}岁 · {{ character.gender === 'male' ? '♂' : '♀' }}</div>
         <div class="info-item equip-icons" v-if="mainHandIcon">
           <span>{{ mainHandIcon }}</span>
         </div>
@@ -19,6 +18,10 @@
         <div class="status-item">
           <StatusIcon type="energy" style="color: rgb(0, 123, 255)" />
           <ProgressBar :value="character.energy" color="rgb(0, 123, 255)" />
+        </div>
+        <div class="status-item">
+          <StatusIcon type="satiety" style="color: rgb(255, 152, 0)" />
+          <ProgressBar :value="character.satiety" color="rgb(255, 152, 0)" />
         </div>
       </div>
     </div>
