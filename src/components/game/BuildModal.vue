@@ -14,17 +14,19 @@
             v-for="recipe in recipes"
             :key="recipe.type"
             class="build-item"
-            :class="{ 'is-built': isBuilt(recipe.type) }"
+            :class="{ 'is-built': isBuilt(recipe.type), 'is-insufficient': !isBuilt(recipe.type) && !canAfford(recipe) }"
           >
             <span class="build-item-icon">{{ buildingIcon(recipe.type) }}</span>
             <div class="build-item-info">
               <span class="build-item-name">{{ recipe.name }}</span>
               <span class="build-item-desc">{{ recipe.description }}</span>
-              <span class="build-item-cost">{{ formatCost(recipe.cost) }}</span>
+              <span class="build-item-cost" :class="{ 'cost-insufficient': !isBuilt(recipe.type) && !canAfford(recipe) }">
+                {{ formatCost(recipe.cost) }}
+              </span>
             </div>
             <button
               class="build-select-btn"
-              :disabled="activity.isBusy || isBuilt(recipe.type)"
+              :disabled="activity.isBusy || isBuilt(recipe.type) || !canAfford(recipe)"
               @click="handleBuildStart(recipe)"
             >
               {{ isBuilt(recipe.type) ? '✓ 已建造' : '建造' }}
@@ -49,6 +51,10 @@ import { FOREST_BUILDING_ICONS } from '../../stores/scenes/forest';
 import { toast } from '../../utils/toast';
 import type { GameBuildingRecipe } from '../../stores/scenes/types';
 
+const RESOURCE_NAMES: { [key: string]: string } = {
+  wood: '木材', ore: '矿石', branch: '树枝', apple: '苹果'
+};
+
 defineProps<{
   open: boolean;
   recipes: GameBuildingRecipe[];
@@ -71,19 +77,40 @@ function buildingIcon(type: string): string {
 }
 
 function formatCost(cost: { [key: string]: number }): string {
-  const NAMES: { [key: string]: string } = {
-    wood: '木材', ore: '矿石', branch: '树枝', apple: '苹果'
-  };
   return '需要：' + Object.entries(cost)
-    .map(([type, count]) => `${NAMES[type] ?? type}×${count}`)
+    .map(([type, count]) => `${RESOURCE_NAMES[type] ?? type}×${count}`)
     .join(' + ');
+}
+
+/** 检查当前场景资源是否足以支付建造费用 */
+function canAfford(recipe: GameBuildingRecipe): boolean {
+  for (const [resourceType, required] of Object.entries(recipe.cost)) {
+    const resource = scenes.currentScene.resources.find(r => r.id === resourceType);
+    const current = resource?.count ?? 0;
+    if (current < required) return false;
+  }
+  return true;
 }
 
 function handleBuildStart(recipe: GameBuildingRecipe) {
   if (activity.isBusy || isBuilt(recipe.type)) return;
 
+  // 检查体力
   if (character.energy < recipe.energyCost) {
     toast({ message: '体力不足，无法建造', type: 'warning' });
+    return;
+  }
+
+  // 提前检查材料（不足时直接拒绝，不启动 activity，不扣体力）
+  if (!canAfford(recipe)) {
+    const missing = Object.entries(recipe.cost)
+      .map(([type, required]) => {
+        const resource = scenes.currentScene.resources.find(r => r.id === type);
+        const current = resource?.count ?? 0;
+        return current < required ? `${RESOURCE_NAMES[type] ?? type} x${required - current}` : null;
+      })
+      .filter((s): s is string => s !== null);
+    toast({ message: `材料不足：还需要 ${missing.join('、')}`, type: 'warning' });
     return;
   }
 
@@ -179,6 +206,10 @@ function handleBuildStart(recipe: GameBuildingRecipe) {
   opacity: 0.55;
 }
 
+.build-item.is-insufficient {
+  opacity: 0.7;
+}
+
 .build-item-icon {
   font-size: 1.3rem;
   width: 1.6rem;
@@ -209,6 +240,10 @@ function handleBuildStart(recipe: GameBuildingRecipe) {
   font-size: 0.72rem;
   color: #fbd38d;
   margin-top: 0.05rem;
+}
+
+.build-item-cost.cost-insufficient {
+  color: #fc8181;
 }
 
 .build-select-btn {
