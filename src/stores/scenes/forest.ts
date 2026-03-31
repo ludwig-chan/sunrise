@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { GameScene, GameResource, GameBuildingRecipe } from './types';
+import type { GameScene, GameResource, GameBuildingRecipe, GameBuildingAction } from './types';
 import { useEquipmentStore } from '../equipment';
 import { useCharacterStore } from '../character';
 import { useTimeStore } from '../time';
@@ -33,6 +33,12 @@ export const FOREST_BUILDING_RECIPES: GameBuildingRecipe[] = [
     energyCost: 4
   }
 ];
+
+// 建筑图标映射
+export const FOREST_BUILDING_ICONS: Record<string, string> = {
+  woodenHut: '🏠',
+  trap: '🪤'
+};
 
 const RESOURCE_NAMES: { [key: string]: string } = {
   wood: '木材',
@@ -377,9 +383,58 @@ export const useForestSceneStore = defineStore('forestScene', {
         if (resource) resource.count -= required;
       }
 
-      // 添加建筑
-      this.scene.buildings.push({ name: recipe.name, type: recipe.type, level: 1 });
+      // 添加建筑（带图标）
+      this.scene.buildings.push({
+        name: recipe.name,
+        type: recipe.type,
+        level: 1,
+        icon: FOREST_BUILDING_ICONS[recipe.type]
+      });
       toast({ message: `${recipe.name}建造成功！`, type: 'success' });
+    },
+
+    // 睡觉（森林木屋建筑动作）
+    async sleep() {
+      const character = useCharacterStore();
+      const SATIETY_COST = 20;
+      const ENERGY_RESTORE = 30;
+      if (character.satiety <= SATIETY_COST) {
+        toast({ message: '太饿了，睡不着...', type: 'warning' });
+        return;
+      }
+      character.satiety = Math.max(0, character.satiety - SATIETY_COST);
+      character.energy = Math.min(100, character.energy + ENERGY_RESTORE);
+      const message = `睡了一觉，体力恢复了 +${ENERGY_RESTORE}，饱食度 -${SATIETY_COST}`;
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'SYSTEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 获取建筑动作（根据建筑类型返回对应动作列表）
+    getBuildingActions(buildingType: string): GameBuildingAction[] {
+      switch (buildingType) {
+        case 'trap':
+          // 陷阱：自动触发，无手动动作（展示状态即可）
+          return [];
+        case 'woodenHut':
+          return [
+            {
+              name: 'sleep',
+              text: '睡觉',
+              icon: '🛏️',
+              duration: 5,
+              energyCost: 0,
+              handler: async () => await this.sleep(),
+              tooltip: '消耗饱食度恢复体力'
+            }
+          ];
+        default:
+          return [];
+      }
     },
 
     getActionConfig() {
@@ -392,6 +447,7 @@ export const useForestSceneStore = defineStore('forestScene', {
           duration: 5,
           energyCost: 10, // 砍树需要较多体力
           group: 'gather',
+          actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(10, async () => await this.chopWood()),
           disabled: equipment.slots.mainHand !== 'axe' && equipment.axeCount === 0,
           tooltip: '需要斧头才能砍伐'
@@ -403,6 +459,7 @@ export const useForestSceneStore = defineStore('forestScene', {
           duration: 3,
           energyCost: 12, // 采矿需要大量体力
           group: 'gather',
+          actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(12, async () => await this.mineOre()),
           disabled: equipment.slots.mainHand !== 'pickaxe' && equipment.pickaxeCount === 0,
           tooltip: '需要石镐才能采矿'
@@ -414,6 +471,7 @@ export const useForestSceneStore = defineStore('forestScene', {
           duration: 3,
           energyCost: 5, // 采集食物消耗较少体力
           group: 'gather',
+          actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(5, async () => await this.gatherFood())
         },
         {
@@ -422,6 +480,7 @@ export const useForestSceneStore = defineStore('forestScene', {
           icon: '🔍',
           duration: 3,
           energyCost: 8, // 探索消耗中等体力
+          actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(8, async () => await this.explore())
         }
       ];

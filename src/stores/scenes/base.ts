@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { GameScene, GameBuildingRecipe } from './types';
+import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, GameBuildingUpgrade } from './types';
 import { useCharacterStore } from '../character';
 import { useScenesStore } from '../scenes';
 import { useTimeStore } from '../time';
@@ -12,7 +12,7 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
   {
     type: 'campfire',
     name: '篝火',
-    description: '提供温暖和光源',
+    description: '提供温暖和光源，可以烹饪食物',
     cost: { branch: 5 },
     duration: 1,
     energyCost: 7
@@ -26,9 +26,9 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     energyCost: 20
   },
   {
-    type: 'cookingTable',
-    name: '烹饪台',
-    description: '可以烹饪各种食物',
+    type: 'workbench',
+    name: '工作台',
+    description: '可以制作和修理各种工具、装备',
     cost: { wood: 8, ore: 3 },
     duration: 2,
     energyCost: 14
@@ -42,6 +42,38 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     energyCost: 10
   }
 ];
+
+// 建筑图标映射
+export const BASE_BUILDING_ICONS: Record<string, string> = {
+  campfire: '🔥',
+  woodenHut: '🏠',
+  workbench: '🔨',
+  cookingTable: '🍳',
+  storageBox: '📦'
+};
+
+// 建筑升级配方（可选，预留字段）
+export const BASE_BUILDING_UPGRADES: Record<string, GameBuildingUpgrade[]> = {
+  campfire: [
+    {
+      toLevel: 2,
+      cost: { ore: 5, branch: 10 },
+      energyCost: 15,
+      duration: 10,
+      description: '升级为石炉，可以冶炼矿石'
+    }
+  ],
+  storageBox: [
+    {
+      toLevel: 2,
+      cost: { wood: 15 },
+      energyCost: 12,
+      duration: 8,
+      description: '扩容至200格'
+    }
+  ]
+};
+
 
 const RESOURCE_NAMES: { [key: string]: string } = {
   wood: '木材',
@@ -289,11 +321,16 @@ export const useBaseSceneStore = defineStore('baseScene', {
         if (resource) resource.count -= required;
       }
 
-      // 添加建筑
-      this.scene.buildings.push({ name: recipe.name, type: recipe.type, level: 1 });
+      // 添加建筑（带图标）
+      this.scene.buildings.push({
+        name: recipe.name,
+        type: recipe.type,
+        level: 1,
+        icon: BASE_BUILDING_ICONS[recipe.type]
+      });
       toast({ message: `${recipe.name}建造成功！`, type: 'success' });
 
-      // 建造完成后刷新动作列表（例如建造木屋后出现睡觉按钮）
+      // 建造完成后刷新动作列表
       this.scene.actions = this.getActionConfig();
     },
 
@@ -317,28 +354,170 @@ export const useBaseSceneStore = defineStore('baseScene', {
         timestamp: Date.now()
       });
     },
-    getActionConfig() {
-      const actions = [
+
+    // 休息：小幅恢复体力（人物动作，随时可用）
+    async rest() {
+      const character = useCharacterStore();
+      const ENERGY_RESTORE = 8;
+      character.energy = Math.min(100, character.energy + ENERGY_RESTORE);
+      const message = `稍作休息，体力恢复了 +${ENERGY_RESTORE}`;
+      toast({ message, type: 'info' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'SYSTEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 烤食物（篝火建筑动作）
+    async cookFood() {
+      const resource = this.scene.resources.find(r => r.id === 'raw_meat');
+      if (!resource || resource.count <= 0) {
+        toast({ message: '没有生肉可以烤', type: 'warning' });
+        return;
+      }
+      resource.count -= 1;
+      const cookedMeat = getOrCreateResource(this.scene.resources, {
+        id: 'cooked_meat',
+        type: 'cooked_meat',
+        name: '熟肉'
+      });
+      cookedMeat.count += 1;
+      const message = '用篝火烤了一块肉，获得了熟肉';
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'ITEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 取暖过夜（篝火建筑动作）
+    async warmUp() {
+      const character = useCharacterStore();
+      character.mood = Math.min(100, character.mood + 15);
+      const message = '在篝火旁取暖，心情好多了 +15';
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'SYSTEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 制作工具（工作台建筑动作）
+    async craftTool() {
+      const woodRes = this.scene.resources.find(r => r.id === 'wood');
+      const oreRes = this.scene.resources.find(r => r.id === 'ore');
+      if (!woodRes || woodRes.count < 2 || !oreRes || oreRes.count < 1) {
+        toast({ message: '需要木材×2 + 矿石×1 才能制作工具', type: 'warning' });
+        return;
+      }
+      woodRes.count -= 2;
+      oreRes.count -= 1;
+      const tool = getOrCreateResource(this.scene.resources, {
+        id: 'tool',
+        type: 'tool',
+        name: '工具'
+      });
+      tool.count += 1;
+      const message = '在工作台上制作了一件工具';
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'ITEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 获取人物动作（与场景/建筑无关）
+    getCharacterActions(): GameBuildingAction[] {
+      return [
+        {
+          name: 'rest',
+          text: '休息',
+          icon: '💤',
+          duration: 3,
+          energyCost: 0,
+          actionGroup: 'character',
+          handler: async () => await this.rest()
+        }
+      ];
+    },
+
+    // 获取建筑动作（根据建筑类型返回对应动作列表）
+    getBuildingActions(buildingType: string): GameBuildingAction[] {
+      switch (buildingType) {
+        case 'campfire':
+          return [
+            {
+              name: 'cookFood',
+              text: '烤食物',
+              icon: '🍖',
+              duration: 5,
+              energyCost: 5,
+              handler: async () => await this.withEnergyCost(5, async () => await this.cookFood()),
+              tooltip: '需要生肉'
+            },
+            {
+              name: 'warmUp',
+              text: '取暖',
+              icon: '🌡️',
+              duration: 3,
+              energyCost: 0,
+              handler: async () => await this.warmUp()
+            }
+          ];
+        case 'woodenHut':
+          return [
+            {
+              name: 'sleep',
+              text: '睡觉',
+              icon: '🛏️',
+              duration: 5,
+              energyCost: 0,
+              handler: async () => await this.sleep(),
+              tooltip: '消耗饱食度恢复体力'
+            }
+          ];
+        case 'workbench':
+        case 'cookingTable':
+          return [
+            {
+              name: 'craftTool',
+              text: '制作工具',
+              icon: '🔧',
+              duration: 8,
+              energyCost: 10,
+              handler: async () => await this.withEnergyCost(10, async () => await this.craftTool()),
+              tooltip: '需要木材×2 + 矿石×1'
+            }
+          ];
+        case 'storageBox':
+          // 储藏箱无动作，只显示库存
+          return [];
+        default:
+          return [];
+      }
+    },
+
+    // 获取场景基础动作（场景相关，与建筑无关）
+    getActionConfig(): GameAction[] {
+      return [
         {
           name: 'explore',
           text: '探索',
           icon: '🔍',
           duration: 5,
           energyCost: 10,
+          actionGroup: 'scene',
           handler: async () => await this.withEnergyCost(10, async () => await this.explore())
         }
       ];
-      if (this.scene.buildings.some(b => b.type === 'woodenHut')) {
-        actions.push({
-          name: 'sleep',
-          text: '睡觉',
-          icon: '💤',
-          duration: 5,
-          energyCost: 0,
-          handler: async () => await this.sleep()
-        });
-      }
-      return actions;
     },
 
     initializeScene() {

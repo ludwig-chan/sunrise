@@ -8,6 +8,25 @@ export interface GameAction {
   disabled?: boolean | (() => boolean);
   tooltip?: string;
   group?: string; // 用于 UI 分组，同组按钮横排显示
+  actionGroup?: 'character' | 'scene'; // 区分人物动作与场景动作
+}
+
+// 建筑动作（与 GameAction 结构相同，用于建筑弹窗）
+export type GameBuildingAction = GameAction;
+
+// 建筑升级配方
+export interface GameBuildingUpgrade {
+  toLevel: number;
+  cost: Record<string, number>;
+  energyCost: number;
+  duration: number; // 秒
+  description?: string;
+}
+
+// 建筑仓库
+export interface GameBuildingStorage {
+  capacity: number;
+  items: Record<string, number>;
 }
 
 export interface GameBuildingRecipe {
@@ -32,9 +51,17 @@ export interface GameBuilding {
   name: string;
   type: string;
   level: number;
+  icon?: string; // 建筑图标
+  storage?: GameBuildingStorage; // 仓库类建筑的库存状态（可持久化）
 }
 
-export interface GameScene {
+// UI 分组动作（供 ActionsPanel 分组展示）
+export interface ActionGroup {
+  groupId: 'character' | 'scene';
+  label: string; // 例如"人物行动"或"当前场景：树林"
+  actions: GameAction[];
+}
+
   id: string;
   name: string;
   actions: GameAction[];

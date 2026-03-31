@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { useBaseSceneStore } from './scenes/base';
 import { useForestSceneStore } from './scenes/forest';
-import type { GameScene, GameAction, GameBuildingRecipe } from './scenes/types';
+import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, ActionGroup } from './scenes/types';
 
 export const useScenesStore = defineStore('scenes', {
   state: () => ({
@@ -28,14 +28,50 @@ export const useScenesStore = defineStore('scenes', {
       return this.currentScene.resources;
     },
 
+    // 返回所有动作（兼容旧用法，已废弃，请改用 currentGroupedActions）
     currentActions(): GameAction[] {
       const baseScene = useBaseSceneStore();
       const forestScene = useForestSceneStore();
       switch (this.currentSceneId) {
-        case 'base': return baseScene.getActionConfig();
-        case 'forest': return forestScene.getActionConfig();
-        default: return baseScene.getActionConfig();
+        case 'base': return [...baseScene.getCharacterActions(), ...baseScene.getActionConfig()];
+        case 'forest': return [...baseScene.getCharacterActions(), ...forestScene.getActionConfig()];
+        default: return baseScene.getCharacterActions();
       }
+    },
+
+    // 分组动作：人物行动 + 场景基础行动（供 ActionsPanel 分组展示）
+    currentGroupedActions(): ActionGroup[] {
+      const baseScene = useBaseSceneStore();
+      const forestScene = useForestSceneStore();
+      const characterActions = baseScene.getCharacterActions();
+      let sceneActions: GameAction[] = [];
+
+      switch (this.currentSceneId) {
+        case 'base':
+          sceneActions = baseScene.getActionConfig();
+          break;
+        case 'forest':
+          sceneActions = forestScene.getActionConfig();
+          break;
+      }
+
+      const groups: ActionGroup[] = [
+        {
+          groupId: 'character',
+          label: '人物行动',
+          actions: characterActions
+        }
+      ];
+
+      if (sceneActions.length > 0) {
+        groups.push({
+          groupId: 'scene',
+          label: `当前场景：${this.currentScene.name}`,
+          actions: sceneActions
+        });
+      }
+
+      return groups;
     },
 
     currentBuildingRecipes(): GameBuildingRecipe[] {
@@ -90,6 +126,28 @@ export const useScenesStore = defineStore('scenes', {
           await forestScene.build(recipeType);
           break;
       }
+    },
+
+    // 获取当前场景中某建筑的动作列表
+    getBuildingActions(buildingType: string): GameBuildingAction[] {
+      const baseScene = useBaseSceneStore();
+      const forestScene = useForestSceneStore();
+      switch (this.currentSceneId) {
+        case 'base':
+          return baseScene.getBuildingActions(buildingType);
+        case 'forest':
+          return forestScene.getBuildingActions(buildingType);
+        default:
+          return [];
+      }
+    },
+
+    // 升级当前场景中的某个建筑（预留，待实现完整升级逻辑）
+    async upgradeBuildingInCurrentScene(buildingType: string) {
+      const building = this.currentScene.buildings.find(b => b.type === buildingType);
+      if (!building) return;
+      // TODO: 实现具体升级逻辑（消耗材料、增加等级）
+      building.level += 1;
     }
   },
 

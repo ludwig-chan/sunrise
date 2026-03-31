@@ -3,7 +3,7 @@
     <InventoryPanel />
     <div class="panels-container">
       <BuildingsPanel :buildings="scenesStore.currentScene.buildings" />
-      <ActionsPanel :actions="scenesStore.currentActions" />
+      <ActionsPanel />
     </div>
   </div>
 </template>
