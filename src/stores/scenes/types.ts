@@ -59,6 +59,7 @@ export interface GameBuilding {
   // 陷阱捕获状态（仅 trap 类型建筑使用）
   trapCapturedAt?: number;   // 上次捕获时间戳（ms），null/undefined 表示陷阱为空
   trapAnimal?: TrapAnimal;   // 当前捕获的动物信息
+  trapDamaged?: boolean;     // 陷阱是否已损坏，需要修复才能继续使用
 }
 
 // UI 分组动作（供 ActionsPanel 分组展示）

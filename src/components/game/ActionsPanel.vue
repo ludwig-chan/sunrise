@@ -16,19 +16,43 @@
       </div>
     </div>
 
-    <!-- 空闲中：行动分体式按钮 + 建造按钮 -->
+    <!-- 空闲中：渐进式复合按钮 + 建造按钮 -->
     <div v-else class="idle-buttons">
-      <!-- 行动：分体式 -->
-      <div class="action-btn-group">
+      <!-- 渐进式复合主按钮 -->
+      <div class="action-btn-group" :class="`phase-${phase}`">
+        <!-- 左：场景默认动作（探索） -->
         <button
-          class="action-btn-main"
-          :disabled="!!defaultAction?.disabled"
+          class="action-btn-segment action-btn-default"
+          :class="{ 'is-disabled': defaultAction && isDisabled(defaultAction) }"
+          :disabled="defaultAction ? isDisabled(defaultAction) : false"
           @click="defaultAction && handleActionStart(defaultAction)"
         >
-          <span v-if="defaultAction">{{ defaultAction.icon }} {{ defaultAction.text }}</span>
-          <span v-else>行动</span>
+          <span v-if="defaultAction">{{ defaultAction.text }}</span>
+          <span v-else>探索</span>
         </button>
-        <button class="action-btn-more" @click="showActionModal = true" title="更多行动">···</button>
+
+        <!-- 中：上次使用的操作（阶段三） -->
+        <Transition name="btn-slide">
+          <button
+            v-if="phase >= 3 && lastAction"
+            class="action-btn-segment action-btn-last"
+            :class="{ 'is-disabled': isDisabled(lastAction) }"
+            :disabled="isDisabled(lastAction)"
+            @click="handleLastActionClick"
+          >
+            {{ lastAction.text }}
+          </button>
+        </Transition>
+
+        <!-- 右：更多（阶段二起） -->
+        <Transition name="btn-slide">
+          <button
+            v-if="phase >= 2"
+            class="action-btn-segment action-btn-more"
+            @click="showActionModal = true"
+            title="更多行动"
+          >···</button>
+        </Transition>
       </div>
       <!-- 建造 -->
       <button class="action-btn" @click="showBuildModal = true">建造</button>
@@ -117,6 +141,23 @@ const defaultAction = computed((): GameAction | null => {
   return (allActions.find(a => a.name === defaultName) as GameAction) ?? null;
 });
 
+// 上次使用的操作（从当前场景所有动作中查找）
+const lastAction = computed((): GameAction | null => {
+  if (!scenes.lastUsedActionName) return null;
+  const allActions = scenes.currentGroupedActions.flatMap(g => g.actions);
+  return (allActions.find(a => a.name === scenes.lastUsedActionName) as GameAction) ?? null;
+});
+
+// 渐进式阶段：
+// 1 = 仅探索（游戏初始）
+// 2 = 探索(2/3) + 更多(1/3)（解锁树林后）
+// 3 = 探索(1/3) + 上次操作(1/3) + 更多(1/3)（使用过更多菜单的功能后）
+const phase = computed((): 1 | 2 | 3 => {
+  if (!scenes.unlockedScenes.includes('forest')) return 1;
+  if (!scenes.lastUsedActionName) return 2;
+  return 3;
+});
+
 function isDisabled(action: GameAction): boolean {
   if (typeof action.disabled === 'function') return action.disabled();
   return !!action.disabled;
@@ -167,6 +208,14 @@ function handleActionStart(action: GameAction) {
     return;
   }
 
+  // 若从"更多"弹窗中选择且不是当前场景默认动作，记录为上次使用的操作
+  if (showActionModal.value) {
+    const defaultName = DEFAULT_ACTION_MAP[scenes.currentSceneId] ?? 'explore';
+    if (action.name !== defaultName) {
+      scenes.setLastUsedAction(action.name);
+    }
+  }
+
   showActionModal.value = false;
   activity.startActivity({
     name: action.name,
@@ -176,6 +225,19 @@ function handleActionStart(action: GameAction) {
     duration: action.duration * 1000,
     onComplete: action.handler
   });
+}
+
+// 点击中间"上次操作"按钮
+function handleLastActionClick() {
+  if (!lastAction.value) return;
+  if (isDisabled(lastAction.value)) {
+    toast({
+      message: lastAction.value.tooltip || '该操作当前无法执行',
+      type: 'warning'
+    });
+    return;
+  }
+  handleActionStart(lastAction.value);
 }
 
 function cancelActivity() {
@@ -202,7 +264,7 @@ function cancelActivity() {
   gap: 0.5rem;
 }
 
-/* 行动按钮分体式 */
+/* 渐进式复合按钮组 */
 .action-btn-group {
   display: flex;
   border: 1px solid #4a5568;
@@ -210,45 +272,88 @@ function cancelActivity() {
   overflow: hidden;
 }
 
-.action-btn-main {
-  flex: 1;
+/* 通用按钮片段样式 */
+.action-btn-segment {
   padding: 0.55rem 0.5rem;
   background: #edf2f7;
   border: none;
-  border-right: 1px solid #4a5568;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
   color: #2d3748;
-  transition: background 0.2s;
+  transition: background 0.2s, flex 0.35s ease;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
-.action-btn-main:hover:not(:disabled) {
+.action-btn-segment + .action-btn-segment {
+  border-left: 1px solid #4a5568;
+}
+
+.action-btn-segment:hover:not(:disabled):not(.is-disabled) {
   background: #e2e8f0;
 }
 
-.action-btn-main:disabled {
+.action-btn-segment:disabled,
+.action-btn-segment.is-disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
+/* 默认动作（探索）按钮 - 宽度随阶段变化 */
+.action-btn-default {
+  flex: 2;
+}
+
+.phase-3 .action-btn-default {
+  flex: 1;
+}
+
+/* 上次操作按钮 */
+.action-btn-last {
+  flex: 1;
+  background: #e8f4fd;
+}
+
+.action-btn-last:hover:not(:disabled):not(.is-disabled) {
+  background: #d1ecfb;
+}
+
+/* 更多按钮 */
 .action-btn-more {
-  width: 2rem;
+  flex: 1;
   background: #e2e8f0;
-  border: none;
-  cursor: pointer;
-  font-size: 0.85rem;
   color: #4a5568;
-  transition: background 0.2s;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 0.85rem;
+}
+
+/* 阶段二：更多按钮较窄（1/3），探索较宽（2/3） */
+.phase-2 .action-btn-more {
+  flex: 1;
 }
 
 .action-btn-more:hover {
   background: #cbd5e0;
+}
+
+/* 按钮滑入动画 */
+.btn-slide-enter-active,
+.btn-slide-leave-active {
+  transition: flex 0.35s ease, opacity 0.3s ease, max-width 0.35s ease;
+  max-width: 999px;
+  overflow: hidden;
+}
+
+.btn-slide-enter-from,
+.btn-slide-leave-to {
+  flex: 0 !important;
+  max-width: 0;
+  opacity: 0;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .action-btn {

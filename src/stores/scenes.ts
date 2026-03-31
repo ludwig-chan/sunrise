@@ -3,12 +3,13 @@ import { useBaseSceneStore } from './scenes/base';
 import { useForestSceneStore } from './scenes/forest';
 import { useRiverSceneStore } from './scenes/river';
 import { useCaveSceneStore } from './scenes/cave';
-import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, ActionGroup } from './scenes/types';
+import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, ActionGroup, GameBuilding } from './scenes/types';
 
 export const useScenesStore = defineStore('scenes', {
   state: () => ({
     currentSceneId: 'base',
-    unlockedScenes: ['base'] as string[] // 初始只解锁基地场景
+    unlockedScenes: ['base'] as string[], // 初始只解锁基地场景
+    lastUsedActionName: null as string | null  // 记录上次通过"更多"菜单使用的操作名称
   }),
 
   getters: {
@@ -194,6 +195,39 @@ export const useScenesStore = defineStore('scenes', {
       if (!building) return;
       // TODO: 实现具体升级逻辑（消耗材料、增加等级）
       building.level += 1;
+    },
+
+    // 记录上次通过"更多"菜单使用的操作
+    setLastUsedAction(name: string) {
+      this.lastUsedActionName = name;
+    },
+
+    // 修复当前场景中的某个陷阱
+    repairTrapInCurrentScene(building: GameBuilding) {
+      const baseScene = useBaseSceneStore();
+      const forestScene = useForestSceneStore();
+      switch (this.currentSceneId) {
+        case 'base':
+          baseScene.repairTrap(building);
+          break;
+        case 'forest':
+          forestScene.repairTrap(building);
+          break;
+      }
+    },
+
+    // 摧毁当前场景中的某个陷阱
+    destroyTrapInCurrentScene(building: GameBuilding) {
+      const baseScene = useBaseSceneStore();
+      const forestScene = useForestSceneStore();
+      switch (this.currentSceneId) {
+        case 'base':
+          baseScene.destroyTrap(building);
+          break;
+        case 'forest':
+          forestScene.destroyTrap(building);
+          break;
+      }
     }
   },
 

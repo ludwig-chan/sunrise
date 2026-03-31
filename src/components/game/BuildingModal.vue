@@ -16,6 +16,8 @@
           <!-- 陷阱专属区块 -->
           <template v-if="building.type === 'trap'">
             <div class="section-title">陷阱状态</div>
+
+            <!-- 有猎物：显示动物信息，提供宰杀/养殖选项 -->
             <div v-if="building.trapAnimal" class="trap-section trap-has-animal">
               <div class="trap-captured-title">捕获到了：{{ building.trapAnimal.name }}</div>
               <div class="trap-yields">
@@ -26,12 +28,27 @@
                 >{{ y.name }} ×{{ y.count }}</span>
               </div>
               <div class="trap-actions">
-                <button class="trap-release-btn" @click="handleTrapRelease">放生</button>
-                <button class="trap-harvest-btn" @click="handleTrapHarvest">收获</button>
+                <button class="trap-breed-btn" @click="handleTrapBreed">养殖</button>
+                <button class="trap-harvest-btn" @click="handleTrapSlaughter">宰杀</button>
               </div>
             </div>
-            <div v-else class="trap-section trap-empty">
-              陷阱尚未捕获到动物，请稍后查看
+
+            <!-- 损坏：提供修复/摧毁选项 -->
+            <div v-if="building.trapDamaged" class="trap-section trap-damaged">
+              <div class="trap-damaged-title">⚠️ 陷阱已损坏</div>
+              <div class="trap-damaged-desc">
+                陷阱触发后损坏，需要修复才能继续捕猎
+              </div>
+              <div class="trap-actions">
+                <button class="trap-destroy-btn" @click="handleTrapDestroy">摧毁</button>
+                <button class="trap-repair-btn" @click="handleTrapRepair">修复</button>
+              </div>
+            </div>
+
+            <!-- 运作中：等待触发 -->
+            <div v-if="!building.trapAnimal && !building.trapDamaged" class="trap-section trap-empty">
+              <div class="trap-working-title">🕐 陷阱运作中</div>
+              <div class="trap-working-desc">陷阱正在等待猎物靠近，过段时间后会有结果...</div>
             </div>
           </template>
 
@@ -214,21 +231,22 @@ async function handleUpgrade() {
   });
 }
 
-function handleTrapRelease() {
+// 养殖：保留动物（为未来养殖系统埋下伏笔）
+function handleTrapBreed() {
   if (!props.building.trapAnimal) return;
   const animalName = props.building.trapAnimal.name;
   props.building.trapAnimal = undefined;
-  props.building.trapCapturedAt = Date.now();
-  toast({ message: `放生了${animalName}，陷阱重新等待捕获`, type: 'info' });
+  toast({ message: `已将${animalName}留下来养殖（养殖系统将在未来版本中实现）`, type: 'info' });
   gameLogStore.addEntry({
-    text: `放生了${animalName}`,
+    text: `将${animalName}留下来养殖`,
     type: 'ACTION',
     gameTimestamp: timeStore.timestamp,
     timestamp: Date.now()
   });
 }
 
-function handleTrapHarvest() {
+// 宰杀：获得猎物资源
+function handleTrapSlaughter() {
   if (!props.building.trapAnimal) return;
   const animal = props.building.trapAnimal;
 
@@ -237,7 +255,7 @@ function handleTrapHarvest() {
   }
 
   const yieldsText = animal.yields.map(y => `${y.name}×${y.count}`).join('，');
-  const message = `收获了${animal.name}的战利品：${yieldsText}`;
+  const message = `宰杀了${animal.name}，获得：${yieldsText}`;
   toast({ message, type: 'success' });
   gameLogStore.addEntry({
     text: message,
@@ -247,7 +265,17 @@ function handleTrapHarvest() {
   });
 
   props.building.trapAnimal = undefined;
-  props.building.trapCapturedAt = Date.now();
+}
+
+// 修复陷阱
+function handleTrapRepair() {
+  scenes.repairTrapInCurrentScene(props.building);
+}
+
+// 摧毁陷阱
+function handleTrapDestroy() {
+  emit('close');
+  scenes.destroyTrapInCurrentScene(props.building);
 }
 </script>
 
@@ -502,14 +530,22 @@ function handleTrapHarvest() {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  margin-bottom: 0.4rem;
 }
 
 .trap-empty {
-  font-size: 0.85rem;
-  color: #718096;
-  text-align: center;
-  padding: 0.75rem 0;
   background: rgba(255, 255, 255, 0.04);
+}
+
+.trap-working-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #90cdf4;
+}
+
+.trap-working-desc {
+  font-size: 0.8rem;
+  color: #718096;
 }
 
 .trap-has-animal {
@@ -537,14 +573,32 @@ function handleTrapHarvest() {
   padding: 0.1rem 0.4rem;
 }
 
+.trap-damaged {
+  background: rgba(252, 129, 74, 0.08);
+  border: 1px solid rgba(252, 129, 74, 0.35);
+}
+
+.trap-damaged-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fc8181;
+}
+
+.trap-damaged-desc {
+  font-size: 0.8rem;
+  color: #718096;
+}
+
 .trap-actions {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.25rem;
 }
 
-.trap-release-btn,
-.trap-harvest-btn {
+.trap-breed-btn,
+.trap-harvest-btn,
+.trap-repair-btn,
+.trap-destroy-btn {
   padding: 0.3rem 0.75rem;
   border-radius: 4px;
   font-size: 0.85rem;
@@ -553,13 +607,13 @@ function handleTrapHarvest() {
   transition: background 0.2s;
 }
 
-.trap-release-btn {
+.trap-breed-btn {
   border: 1px solid rgba(160, 174, 192, 0.5);
   background: rgba(160, 174, 192, 0.1);
   color: #a0aec0;
 }
 
-.trap-release-btn:hover {
+.trap-breed-btn:hover {
   background: rgba(160, 174, 192, 0.25);
 }
 
@@ -571,5 +625,25 @@ function handleTrapHarvest() {
 
 .trap-harvest-btn:hover {
   background: rgba(104, 211, 145, 0.35);
+}
+
+.trap-repair-btn {
+  border: 1px solid rgba(144, 205, 244, 0.5);
+  background: rgba(144, 205, 244, 0.15);
+  color: #90cdf4;
+}
+
+.trap-repair-btn:hover {
+  background: rgba(144, 205, 244, 0.3);
+}
+
+.trap-destroy-btn {
+  border: 1px solid rgba(252, 129, 74, 0.4);
+  background: rgba(252, 129, 74, 0.1);
+  color: #fc8181;
+}
+
+.trap-destroy-btn:hover {
+  background: rgba(252, 129, 74, 0.25);
 }
 </style>
