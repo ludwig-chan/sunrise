@@ -7,6 +7,7 @@ import { useEquipmentStore } from '../equipment';
 import { useInventoryStore } from '../inventory';
 import { toast } from '../../utils/toast';
 import { useGameLogStore } from '../gameLog';
+import { emitter } from '../../utils/eventBus';
 
 // 基地可建造的建筑配方
 export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
@@ -132,7 +133,9 @@ const RESOURCE_NAMES: { [key: string]: string } = {
   cooked_meat: '熟肉',
   tool: '工具',
   first_aid: '急救包',
-  nourishing_soup: '滋补汤'
+  nourishing_soup: '滋补汤',
+  grass: '草',
+  torch: '火把'
 };
 
 // 基地陷阱修复消耗（建造消耗 branch:8 wood:3）
@@ -145,15 +148,33 @@ const FOREST_UNLOCK_PITY_THRESHOLD = 3;
 // 每次探索时随机提前解锁树林的概率
 const FOREST_UNLOCK_CHANCE = 0.5;
 
+// 草地解锁保底次数
+const GRASSLAND_UNLOCK_PITY_THRESHOLD = 2;
+// 每次探索时随机提前解锁草地的概率
+const GRASSLAND_UNLOCK_CHANCE = 0.5;
+
 // 河边解锁保底次数
 const RIVER_UNLOCK_PITY_THRESHOLD = 3;
 // 每次探索时随机提前解锁河边的概率
 const RIVER_UNLOCK_CHANCE = 0.4;
 
+// 湖边解锁保底次数
+const LAKESIDE_UNLOCK_PITY_THRESHOLD = 3;
+// 每次探索时随机提前解锁湖边的概率
+const LAKESIDE_UNLOCK_CHANCE = 0.35;
+
 // 山洞解锁保底次数
 const CAVE_UNLOCK_PITY_THRESHOLD = 5;
 // 每次探索时随机提前解锁山洞的概率
 const CAVE_UNLOCK_CHANCE = 0.3;
+
+// 海边解锁保底次数
+const SEASIDE_UNLOCK_PITY_THRESHOLD = 4;
+// 每次探索时随机提前解锁海边的概率
+const SEASIDE_UNLOCK_CHANCE = 0.25;
+
+// 夜晚野兽袭击概率（无保护时）
+const NIGHT_ATTACK_CHANCE = 0.3;
 
 // 定义基地初始库存
 const INITIAL_STOCK = {
@@ -174,8 +195,13 @@ const INITIAL_STOCK = {
 export const useBaseSceneStore = defineStore('baseScene', {
   state: () => ({
     exploreCount: 0,
+    grasslandUnlockCount: 0,
     riverUnlockCount: 0,
+    lakesideUnlockCount: 0,
     caveUnlockCount: 0,
+    seasideUnlockCount: 0,
+    lastNightAttackDay: -1,
+    _nightAttackListenerRegistered: false,
     scene: {
       id: 'base',
       name: '基地',
@@ -201,8 +227,12 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
       // 重置探索计数
       this.exploreCount = 0
+      this.grasslandUnlockCount = 0
       this.riverUnlockCount = 0
+      this.lakesideUnlockCount = 0
       this.caveUnlockCount = 0
+      this.seasideUnlockCount = 0
+      this.lastNightAttackDay = -1
 
       // 重置动作列表，然后重新初始化
       this.scene.actions = []
@@ -245,8 +275,25 @@ export const useBaseSceneStore = defineStore('baseScene', {
       const eventRoll = Math.random();
 
       if (scenes.unlockedScenes.includes('forest')) {
-        // 树林已解锁，尝试解锁河边
-        if (!scenes.unlockedScenes.includes('river')) {
+        // 树林已解锁，依次尝试解锁后续场景
+        if (!scenes.unlockedScenes.includes('grassland')) {
+          // 尝试解锁草地
+          this.grasslandUnlockCount++;
+          if (this.grasslandUnlockCount >= GRASSLAND_UNLOCK_PITY_THRESHOLD || eventRoll < GRASSLAND_UNLOCK_CHANCE) {
+            scenes.unlockScene('grassland');
+            this.grasslandUnlockCount = 0;
+            const unlockMessage = "走出树林，眼前出现了一片开阔的草地，阳光照耀下绿意盎然…";
+            toast({ message: unlockMessage, type: 'info' });
+            useGameLogStore().addEntry({
+              text: unlockMessage,
+              type: 'ACTION',
+              gameTimestamp: useTimeStore().timestamp,
+              timestamp: Date.now()
+            });
+            return;
+          }
+        } else if (!scenes.unlockedScenes.includes('river')) {
+          // 草地已解锁，尝试解锁河边
           this.riverUnlockCount++;
           if (this.riverUnlockCount >= RIVER_UNLOCK_PITY_THRESHOLD || eventRoll < RIVER_UNLOCK_CHANCE) {
             scenes.unlockScene('river');
@@ -261,13 +308,45 @@ export const useBaseSceneStore = defineStore('baseScene', {
             });
             return;
           }
+        } else if (!scenes.unlockedScenes.includes('lakeside')) {
+          // 河边已解锁，尝试解锁湖边
+          this.lakesideUnlockCount++;
+          if (this.lakesideUnlockCount >= LAKESIDE_UNLOCK_PITY_THRESHOLD || eventRoll < LAKESIDE_UNLOCK_CHANCE) {
+            scenes.unlockScene('lakeside');
+            this.lakesideUnlockCount = 0;
+            const unlockMessage = "穿过草地深处，远远望见一片碧蓝的湖泊，波光粼粼…";
+            toast({ message: unlockMessage, type: 'info' });
+            useGameLogStore().addEntry({
+              text: unlockMessage,
+              type: 'ACTION',
+              gameTimestamp: useTimeStore().timestamp,
+              timestamp: Date.now()
+            });
+            return;
+          }
         } else if (!scenes.unlockedScenes.includes('cave')) {
-          // 河边已解锁，尝试解锁山洞
+          // 湖边已解锁，尝试解锁山洞
           this.caveUnlockCount++;
           if (this.caveUnlockCount >= CAVE_UNLOCK_PITY_THRESHOLD || eventRoll < CAVE_UNLOCK_CHANCE) {
             scenes.unlockScene('cave');
             this.caveUnlockCount = 0;
             const unlockMessage = "河边的峭壁上似乎有个隐秘的洞口…";
+            toast({ message: unlockMessage, type: 'info' });
+            useGameLogStore().addEntry({
+              text: unlockMessage,
+              type: 'ACTION',
+              gameTimestamp: useTimeStore().timestamp,
+              timestamp: Date.now()
+            });
+            return;
+          }
+        } else if (!scenes.unlockedScenes.includes('seaside')) {
+          // 山洞已解锁，尝试解锁海边
+          this.seasideUnlockCount++;
+          if (this.seasideUnlockCount >= SEASIDE_UNLOCK_PITY_THRESHOLD || eventRoll < SEASIDE_UNLOCK_CHANCE) {
+            scenes.unlockScene('seaside');
+            this.seasideUnlockCount = 0;
+            const unlockMessage = "越过山头，远方出现了蔚蓝的大海，咸湿的海风扑面而来…";
             toast({ message: unlockMessage, type: 'info' });
             useGameLogStore().addEntry({
               text: unlockMessage,
@@ -619,6 +698,26 @@ export const useBaseSceneStore = defineStore('baseScene', {
       });
     },
 
+    // 制作火把：消耗 树枝×1 + 草×2，获得火把
+    async craftTorch() {
+      const inventory = useInventoryStore();
+      if (!inventory.hasEnough('branch', 1) || !inventory.hasEnough('grass', 2)) {
+        toast({ message: '需要树枝 ×1 + 草 ×2 才能制作火把', type: 'warning' });
+        return;
+      }
+      inventory.removeItem('branch', 1);
+      inventory.removeItem('grass', 2);
+      inventory.addItem({ id: 'torch', type: 'torch', name: '火把' }, 1);
+      const message = '用树枝和草制作了一个火把，可以驱赶夜间野兽';
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'ITEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
     // 获取人物动作（与场景/建筑无关）
     getCharacterActions(): GameBuildingAction[] {
       const inventory = useInventoryStore();
@@ -672,6 +771,17 @@ export const useBaseSceneStore = defineStore('baseScene', {
           handler: async () => await this.withEnergyCost(5, async () => { await equipment.craftPickaxe() }),
           disabled: () => !inventory.hasEnough('branch', 2) || !inventory.hasEnough('ore', 3),
           tooltip: '需要树枝 ×2 + 矿石 ×3'
+        },
+        {
+          name: 'craftTorch',
+          text: '制作火把',
+          icon: '🕯️',
+          duration: 0.5,
+          energyCost: 3,
+          actionGroup: 'character',
+          handler: async () => await this.withEnergyCost(3, async () => await this.craftTorch()),
+          disabled: () => !inventory.hasEnough('branch', 1) || !inventory.hasEnough('grass', 2),
+          tooltip: '需要树枝 ×1 + 草 ×2，装备后可驱赶夜间野兽'
         }
       ];
     },
@@ -927,8 +1037,46 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
     initializeScene() {
       this.scene.actions = this.getActionConfig();
+
+      // 注册夜晚野兽袭击监听（防止重复注册）
+      if (!this._nightAttackListenerRegistered) {
+        this._nightAttackListenerRegistered = true;
+        emitter.on('hour-passed', () => {
+          const timeStore = useTimeStore();
+          if (timeStore.currentPeriod !== 'NIGHT') return;
+
+          const currentDay = timeStore.day;
+          if (this.lastNightAttackDay === currentDay) return;
+
+          // 检查保护：基地有篝火，或装备了火把
+          const hasCampfire = this.scene.buildings.some(b => b.type === 'campfire');
+          const equipment = useEquipmentStore();
+          const hasTorch = equipment.slots.accessory === 'torch';
+          if (hasCampfire || hasTorch) return;
+
+          // 30% 概率触发野兽袭击
+          if (Math.random() > NIGHT_ATTACK_CHANCE) return;
+
+          this.lastNightAttackDay = currentDay;
+
+          const character = useCharacterStore();
+          const damage = Math.floor(Math.random() * 11) + 10; // 10-20 伤害
+          character.health = Math.max(0, character.health - damage);
+
+          const message = `夜晚，一只野兽突然袭击了你！失去了 ${damage} 点血量。（提示：建造篝火或装备火把可以驱赶野兽）`;
+          toast({ message, type: 'error' });
+          useGameLogStore().addEntry({
+            text: message,
+            type: 'SYSTEM',
+            gameTimestamp: timeStore.timestamp,
+            timestamp: Date.now()
+          });
+        });
+      }
     }
   },
 
-  persist: true
+  persist: {
+    omit: ['_nightAttackListenerRegistered']
+  }
 });

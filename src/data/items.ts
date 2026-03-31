@@ -230,5 +230,45 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     icon: { type: 'text', char: '🍲' },
     description: '用蔬菜和肉炖成的滋补汤，能全面补充体力和精神。',
     use: () => ({ health: 20, energy: 40, satiety: 40, mood: 15 })
+  },
+  grass: {
+    id: 'grass',
+    name: '草',
+    category: 'material',
+    icon: { type: 'text', char: '🌱' },
+    description: '从草地采集的普通草，是制作火把的必要材料。',
+  },
+  torch: {
+    id: 'torch',
+    name: '火把',
+    category: 'equipment',
+    icon: { type: 'text', char: '🕯️' },
+    description: '用树枝和草制成的简易火把，可以驱赶夜间野兽。装备后能防止夜晚野兽袭击。',
+    equipSlot: 'accessory',
+    equipStats: { moodMod: 5 }
+  },
+  lotus_root: {
+    id: 'lotus_root',
+    name: '莲藕',
+    category: 'food',
+    icon: { type: 'text', char: '🪷' },
+    description: '湖中采到的新鲜莲藕，清脆爽口，营养丰富。',
+    use: () => ({ energy: 15, satiety: 20, health: 5 })
+  },
+  shellfish: {
+    id: 'shellfish',
+    name: '贝类',
+    category: 'food',
+    icon: { type: 'text', char: '🦪' },
+    description: '海边捡到的新鲜贝类，富含蛋白质，味道鲜美。',
+    use: () => ({ energy: 15, satiety: 20, health: 3 })
+  },
+  seaweed: {
+    id: 'seaweed',
+    name: '海藻',
+    category: 'material',
+    icon: { type: 'text', char: '🌿' },
+    description: '海边采集的海藻，可以用来制作食物或药品。',
+    use: () => ({ satiety: 5, health: 2 })
   }
 }
