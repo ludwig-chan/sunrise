@@ -62,6 +62,7 @@ export interface ActionGroup {
   actions: GameAction[];
 }
 
+export interface GameScene {
   id: string;
   name: string;
   actions: GameAction[];

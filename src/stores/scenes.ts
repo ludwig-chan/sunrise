@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { useBaseSceneStore } from './scenes/base';
 import { useForestSceneStore } from './scenes/forest';
+import { useRiverSceneStore } from './scenes/river';
+import { useCaveSceneStore } from './scenes/cave';
 import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, ActionGroup } from './scenes/types';
 
 export const useScenesStore = defineStore('scenes', {
@@ -13,12 +15,18 @@ export const useScenesStore = defineStore('scenes', {
     currentScene(): GameScene {
       const baseScene = useBaseSceneStore();
       const forestScene = useForestSceneStore();
+      const riverScene = useRiverSceneStore();
+      const caveScene = useCaveSceneStore();
       
       switch (this.currentSceneId) {
         case 'base':
           return baseScene.scene;
         case 'forest':
           return forestScene.scene;
+        case 'river':
+          return riverScene.scene;
+        case 'cave':
+          return caveScene.scene;
         default:
           return baseScene.scene;
       }
@@ -32,9 +40,13 @@ export const useScenesStore = defineStore('scenes', {
     currentActions(): GameAction[] {
       const baseScene = useBaseSceneStore();
       const forestScene = useForestSceneStore();
+      const riverScene = useRiverSceneStore();
+      const caveScene = useCaveSceneStore();
       switch (this.currentSceneId) {
         case 'base': return [...baseScene.getCharacterActions(), ...baseScene.getActionConfig()];
         case 'forest': return [...baseScene.getCharacterActions(), ...forestScene.getActionConfig()];
+        case 'river': return [...baseScene.getCharacterActions(), ...riverScene.getActionConfig()];
+        case 'cave': return [...baseScene.getCharacterActions(), ...caveScene.getActionConfig()];
         default: return baseScene.getCharacterActions();
       }
     },
@@ -43,6 +55,8 @@ export const useScenesStore = defineStore('scenes', {
     currentGroupedActions(): ActionGroup[] {
       const baseScene = useBaseSceneStore();
       const forestScene = useForestSceneStore();
+      const riverScene = useRiverSceneStore();
+      const caveScene = useCaveSceneStore();
       const characterActions = baseScene.getCharacterActions();
       let sceneActions: GameAction[] = [];
 
@@ -52,6 +66,12 @@ export const useScenesStore = defineStore('scenes', {
           break;
         case 'forest':
           sceneActions = forestScene.getActionConfig();
+          break;
+        case 'river':
+          sceneActions = riverScene.getActionConfig();
+          break;
+        case 'cave':
+          sceneActions = caveScene.getActionConfig();
           break;
       }
 
@@ -77,9 +97,13 @@ export const useScenesStore = defineStore('scenes', {
     currentBuildingRecipes(): GameBuildingRecipe[] {
       const baseScene = useBaseSceneStore();
       const forestScene = useForestSceneStore();
+      const riverScene = useRiverSceneStore();
+      const caveScene = useCaveSceneStore();
       switch (this.currentSceneId) {
         case 'base': return baseScene.buildingRecipes;
         case 'forest': return forestScene.buildingRecipes;
+        case 'river': return riverScene.buildingRecipes;
+        case 'cave': return caveScene.buildingRecipes;
         default: return [];
       }
     }
@@ -88,18 +112,26 @@ export const useScenesStore = defineStore('scenes', {
     initializeScenes() {
       const baseScene = useBaseSceneStore();
       const forestScene = useForestSceneStore();
+      const riverScene = useRiverSceneStore();
+      const caveScene = useCaveSceneStore();
       
       baseScene.initializeScene();
       forestScene.initializeScene();
+      riverScene.initializeScene();
+      caveScene.initializeScene();
     },
 
     // 重置所有场景
     resetAllScenes() {
       const baseScene = useBaseSceneStore();
       const forestScene = useForestSceneStore();
+      const riverScene = useRiverSceneStore();
+      const caveScene = useCaveSceneStore();
       
       baseScene.reset();
       forestScene.reset();
+      riverScene.reset();
+      caveScene.reset();
       
       // 重置解锁状态，只保留基地场景
       this.unlockedScenes = ['base'];
@@ -118,12 +150,20 @@ export const useScenesStore = defineStore('scenes', {
     async buildInCurrentScene(recipeType: string) {
       const baseScene = useBaseSceneStore();
       const forestScene = useForestSceneStore();
+      const riverScene = useRiverSceneStore();
+      const caveScene = useCaveSceneStore();
       switch (this.currentSceneId) {
         case 'base':
           await baseScene.build(recipeType);
           break;
         case 'forest':
           await forestScene.build(recipeType);
+          break;
+        case 'river':
+          await riverScene.build(recipeType);
+          break;
+        case 'cave':
+          await caveScene.build(recipeType);
           break;
       }
     },
@@ -132,11 +172,17 @@ export const useScenesStore = defineStore('scenes', {
     getBuildingActions(buildingType: string): GameBuildingAction[] {
       const baseScene = useBaseSceneStore();
       const forestScene = useForestSceneStore();
+      const riverScene = useRiverSceneStore();
+      const caveScene = useCaveSceneStore();
       switch (this.currentSceneId) {
         case 'base':
           return baseScene.getBuildingActions(buildingType);
         case 'forest':
           return forestScene.getBuildingActions(buildingType);
+        case 'river':
+          return riverScene.getBuildingActions(buildingType);
+        case 'cave':
+          return caveScene.getBuildingActions(buildingType);
         default:
           return [];
       }
