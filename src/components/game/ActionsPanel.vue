@@ -31,25 +31,12 @@
             <button class="action-modal-close" aria-label="关闭弹窗" @click="showActionModal = false">✕</button>
           </div>
           <div class="action-modal-body">
-            <!-- Tab 切换 -->
-            <div class="modal-tabs">
-              <button
-                class="modal-tab"
-                :class="{ active: activeTab === 'actions' }"
-                @click="activeTab = 'actions'"
-              >行动</button>
-              <button
-                class="modal-tab"
-                :class="{ active: activeTab === 'build', disabled: scenes.currentBuildingRecipes.length === 0 }"
-                :disabled="scenes.currentBuildingRecipes.length === 0"
-                @click="scenes.currentBuildingRecipes.length > 0 && (activeTab = 'build')"
-              >建造</button>
-            </div>
 
-            <!-- 行动 Tab -->
-            <template v-if="activeTab === 'actions'">
+            <!-- 分组展示：人物行动 + 场景基础行动 -->
+            <template v-for="group in scenes.currentGroupedActions" :key="group.groupId">
+              <div class="action-group-label">{{ group.label }}</div>
               <div
-                v-for="action in props.actions"
+                v-for="action in group.actions"
                 :key="action.name"
                 class="modal-action-item"
                 :class="{ 'is-disabled': !!action.disabled }"
@@ -69,29 +56,6 @@
               </div>
             </template>
 
-            <!-- 建造 Tab -->
-            <template v-if="activeTab === 'build'">
-              <div
-                v-for="recipe in scenes.currentBuildingRecipes"
-                :key="recipe.type"
-                class="modal-action-item"
-                :class="{ 'is-disabled': isBuilt(recipe.type) }"
-              >
-                <span class="modal-action-icon">🏗️</span>
-                <div class="modal-action-info">
-                  <span class="modal-action-text">{{ recipe.name }}</span>
-                  <span class="modal-action-condition">{{ formatCost(recipe.cost) }}</span>
-                </div>
-                <button
-                  class="modal-select-btn"
-                  :disabled="isBuilt(recipe.type)"
-                  @click="handleBuildStart(recipe)"
-                >
-                  {{ isBuilt(recipe.type) ? '✓ 已建造' : '选择' }}
-                </button>
-              </div>
-            </template>
-
           </div>
         </div>
       </div>
@@ -105,29 +69,12 @@ import { useCharacterStore } from '../../stores/character'
 import { useScenesStore } from '../../stores/scenes'
 import { useActivityStore } from '../../stores/activity'
 import { toast } from '../../utils/toast'
-import type { GameBuildingRecipe } from '../../stores/scenes/types'
-
-interface Action {
-  name: string;
-  text: string;
-  icon?: string;
-  duration: number;
-  energyCost: number;
-  handler: () => Promise<void>;
-  disabled?: boolean;
-  tooltip?: string;
-  group?: string;
-}
-
-const props = defineProps<{
-  actions: Action[]
-}>();
+import type { GameAction } from '../../stores/scenes/types'
 
 const character = useCharacterStore();
 const scenes = useScenesStore();
 const activity = useActivityStore();
 const showActionModal = ref(false);
-const activeTab = ref<'actions' | 'build'>('actions');
 const progress = ref(0);
 
 let progressTimer: ReturnType<typeof setInterval> | null = null;
@@ -160,7 +107,7 @@ onUnmounted(() => {
   }
 });
 
-function handleActionStart(action: Action) {
+function handleActionStart(action: GameAction) {
   if (activity.isBusy || action.disabled) return;
 
   if (character.energy < action.energyCost) {
@@ -189,44 +136,9 @@ function handleActionStart(action: Action) {
   });
 }
 
-function handleBuildStart(recipe: GameBuildingRecipe) {
-  if (activity.isBusy || isBuilt(recipe.type)) return;
-
-  if (character.energy < recipe.energyCost) {
-    toast({ message: '体力不足，无法建造', type: 'warning' });
-    return;
-  }
-
-  showActionModal.value = false;
-  activity.startActivity({
-    name: `build_${recipe.type}`,
-    label: `建造${recipe.name}`,
-    icon: '🏗️',
-    startedAt: Date.now(),
-    duration: recipe.duration * 1000,
-    onComplete: async () => {
-      await scenes.buildInCurrentScene(recipe.type);
-      character.energy = Math.max(0, character.energy - recipe.energyCost);
-    }
-  });
-}
-
 function cancelActivity() {
   activity.cancelActivity();
   progress.value = 0;
-}
-
-function isBuilt(recipeType: string): boolean {
-  return scenes.currentScene.buildings.some(b => b.type === recipeType);
-}
-
-function formatCost(cost: { [key: string]: number }): string {
-  const NAMES: { [key: string]: string } = {
-    wood: '木材', ore: '矿石', branch: '树枝', apple: '苹果'
-  };
-  return Object.entries(cost)
-    .map(([type, count]) => `${NAMES[type] ?? type}×${count}`)
-    .join(' + ');
 }
 </script>
 
@@ -402,40 +314,19 @@ function formatCost(cost: { [key: string]: number }): string {
   min-height: 280px;
 }
 
-/* Tab 切换 */
-.modal-tabs {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.5rem;
-}
-
-.modal-tab {
-  flex: 1;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.05);
+/* 分组标签 */
+.action-group-label {
+  font-size: 0.72rem;
   color: #a0aec0;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: background 0.2s, color 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.4rem;
+  margin-bottom: 0.1rem;
+  padding-left: 0.1rem;
 }
 
-.modal-tab.active {
-  background: rgba(246, 173, 85, 0.25);
-  border-color: rgba(246, 173, 85, 0.6);
-  color: #f6ad55;
-  font-weight: 600;
-}
-
-.modal-tab.disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.modal-tab:not(.active):not(.disabled):hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #e2e8f0;
+.action-group-label:first-child {
+  margin-top: 0;
 }
 
 /* 弹窗内行动项 */
@@ -501,3 +392,4 @@ function formatCost(cost: { [key: string]: number }): string {
   cursor: not-allowed;
 }
 </style>
+
