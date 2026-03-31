@@ -47,12 +47,27 @@ export interface GameResource {
   description?: string;
 }
 
+export interface TrapYield {
+  id: string;
+  name: string;
+  count: number;
+}
+
+export interface TrapAnimal {
+  id: string;
+  name: string;
+  yields: TrapYield[];
+}
+
 export interface GameBuilding {
   name: string;
   type: string;
   level: number;
   icon?: string; // 建筑图标
   storage?: GameBuildingStorage; // 仓库类建筑的库存状态（可持久化）
+  // 陷阱捕获状态（仅 trap 类型建筑使用）
+  trapCapturedAt?: number;   // 上次捕获时间戳（ms），null/undefined 表示陷阱为空
+  trapAnimal?: TrapAnimal;   // 当前捕获的动物信息
 }
 
 // UI 分组动作（供 ActionsPanel 分组展示）

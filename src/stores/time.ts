@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { gameLog, emitter } from '../utils/eventBus'
+import { useBaseSceneStore } from './scenes/base'
 
 export type Season = 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER'
 export type Weather = 'SUNNY' | 'RAINY' | 'WINDY' | 'SNOWY' | 'HAIL' | 'SANDSTORM' | 'HAZE'
@@ -95,6 +96,9 @@ export const useTimeStore = defineStore('time', {
         
         // 更新时间戳
         this.timestamp++
+
+        // 检查陷阱捕获
+        useBaseSceneStore().checkTrap()
 
         // 触发每小时事件
         emitter.emit('hour-passed')

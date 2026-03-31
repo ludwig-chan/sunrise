@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, GameBuildingUpgrade } from './types';
+import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, GameBuildingUpgrade, TrapAnimal } from './types';
 import { useCharacterStore } from '../character';
 import { useScenesStore } from '../scenes';
 import { useTimeStore } from '../time';
@@ -56,6 +56,14 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     cost: { wood: 12, branch: 8 },
     duration: 4,
     energyCost: 15
+  },
+  {
+    type: 'trap',
+    name: '陷阱',
+    description: '设置陷阱，过一段时间后可能捕获动物',
+    cost: { branch: 8, wood: 3 },
+    duration: 2,
+    energyCost: 8
   }
 ];
 
@@ -67,7 +75,8 @@ export const BASE_BUILDING_ICONS: Record<string, string> = {
   cookingTable: '🍳',
   storageBox: '📦',
   farmPlot: '🌾',
-  herbShop: '🏪'
+  herbShop: '🏪',
+  trap: '🪤'
 };
 
 // 建筑升级配方（可选，预留字段）
@@ -89,6 +98,22 @@ export const BASE_BUILDING_UPGRADES: Record<string, GameBuildingUpgrade[]> = {
       duration: 8,
       description: '扩容至200格'
     }
+  ],
+  trap: [
+    {
+      toLevel: 2,
+      cost: { wood: 5, ore: 2 },
+      energyCost: 10,
+      duration: 8,
+      description: '强化陷阱，可以捕获更大的动物（鹿），获得更多战利品'
+    },
+    {
+      toLevel: 3,
+      cost: { wood: 10, ore: 5 },
+      energyCost: 15,
+      duration: 12,
+      description: '精良陷阱，可捕获野猪，收获骨头和更多皮毛'
+    }
   ]
 };
 
@@ -100,7 +125,13 @@ const RESOURCE_NAMES: { [key: string]: string } = {
   apple: '苹果',
   herb: '草药',
   vegetable: '蔬菜',
-  raw_meat: '生肉'
+  raw_meat: '生肉',
+  fur: '皮毛',
+  bone: '骨头',
+  cooked_meat: '熟肉',
+  tool: '工具',
+  first_aid: '急救包',
+  nourishing_soup: '滋补汤'
 };
 
 // 树林解锁保底次数：最多探索此次数后必定解锁
@@ -739,6 +770,9 @@ export const useBaseSceneStore = defineStore('baseScene', {
               tooltip: '需要蔬菜 ×2 + 生肉 ×1'
             }
           ];
+        case 'trap':
+          // 陷阱无普通建筑动作，通过专属弹窗 UI 交互
+          return [];
         default:
           return [];
       }
@@ -775,6 +809,68 @@ export const useBaseSceneStore = defineStore('baseScene', {
           handler: async () => await this.withEnergyCost(5, async () => await this.tidyCamp())
         }
       ];
+    },
+
+    // 陷阱定时捕获动物
+    checkTrap() {
+      const traps = this.scene.buildings.filter(b => b.type === 'trap');
+      if (traps.length === 0) return;
+
+      const now = Date.now();
+
+      // 各等级配置
+      const TRAP_CONFIG: Record<number, { intervalMs: number; chance: number; animals: TrapAnimal[] }> = {
+        1: {
+          intervalMs: 60000,
+          chance: 0.6,
+          animals: [
+            { id: 'rabbit', name: '兔子', yields: [{ id: 'raw_meat', name: '生肉', count: 1 }, { id: 'fur', name: '皮毛', count: 1 }] }
+          ]
+        },
+        2: {
+          intervalMs: 50000,
+          chance: 0.7,
+          animals: [
+            { id: 'rabbit', name: '兔子', yields: [{ id: 'raw_meat', name: '生肉', count: 1 }, { id: 'fur', name: '皮毛', count: 1 }] },
+            { id: 'deer', name: '鹿', yields: [{ id: 'raw_meat', name: '生肉', count: 2 }, { id: 'fur', name: '皮毛', count: 2 }, { id: 'bone', name: '骨头', count: 1 }] }
+          ]
+        },
+        3: {
+          intervalMs: 45000,
+          chance: 0.8,
+          animals: [
+            { id: 'rabbit', name: '兔子', yields: [{ id: 'raw_meat', name: '生肉', count: 1 }, { id: 'fur', name: '皮毛', count: 1 }] },
+            { id: 'deer', name: '鹿', yields: [{ id: 'raw_meat', name: '生肉', count: 2 }, { id: 'fur', name: '皮毛', count: 2 }, { id: 'bone', name: '骨头', count: 1 }] },
+            { id: 'boar', name: '野猪', yields: [{ id: 'raw_meat', name: '生肉', count: 3 }, { id: 'fur', name: '皮毛', count: 3 }, { id: 'bone', name: '骨头', count: 2 }] }
+          ]
+        }
+      };
+
+      for (const trap of traps) {
+        // 已有捕获，等玩家处理
+        if (trap.trapAnimal) continue;
+
+        const level = Math.max(1, Math.min(3, trap.level));
+        const config = TRAP_CONFIG[level];
+        const lastCheck = trap.trapCapturedAt ?? 0;
+
+        if (now - lastCheck < config.intervalMs) continue;
+
+        // 重置检查时间（无论是否捕获，都更新计时）
+        trap.trapCapturedAt = now;
+
+        if (Math.random() < config.chance) {
+          const animal = config.animals[Math.floor(Math.random() * config.animals.length)];
+          trap.trapAnimal = animal;
+          toast({ message: `陷阱捕获了一只${animal.name}！`, type: 'success' });
+          useGameLogStore().addEntry({
+            text: `陷阱捕获了一只${animal.name}！`,
+            type: 'ITEM',
+            gameTimestamp: useTimeStore().timestamp,
+            timestamp: Date.now()
+          });
+        }
+      }
     },
 
     initializeScene() {
