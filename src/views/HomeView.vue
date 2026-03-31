@@ -22,6 +22,11 @@ import { useCharacterStore } from '@/stores/character'
 import { useScenesStore } from '@/stores/scenes'
 import { useBaseSceneStore } from '@/stores/scenes/base'
 import { useForestSceneStore } from '@/stores/scenes/forest'
+import { useRiverSceneStore } from '@/stores/scenes/river'
+import { useCaveSceneStore } from '@/stores/scenes/cave'
+import { useGrasslandSceneStore } from '@/stores/scenes/grassland'
+import { useLakesideSceneStore } from '@/stores/scenes/lakeside'
+import { useSeasideSceneStore } from '@/stores/scenes/seaside'
 import { emitter, gameLog } from '@/utils/eventBus'
 import GameDateTime from '@/components/game/GameDateTime.vue'
 import GameLogPreview from '@/components/game/GameLogPreview.vue'
@@ -35,12 +40,22 @@ const characterStore = useCharacterStore()
 const scenesStore = useScenesStore()
 const baseStore = useBaseSceneStore()
 const forestStore = useForestSceneStore()
+const riverStore = useRiverSceneStore()
+const caveStore = useCaveSceneStore()
+const grasslandStore = useGrasslandSceneStore()
+const lakesideStore = useLakesideSceneStore()
+const seasideStore = useSeasideSceneStore()
 
 // 组合已解锁场景信息
 const scenesList = computed(() => {
   const allScenes = [
     { id: baseStore.scene.id, name: baseStore.scene.name },
-    { id: forestStore.scene.id, name: forestStore.scene.name }
+    { id: forestStore.scene.id, name: forestStore.scene.name },
+    { id: grasslandStore.scene.id, name: grasslandStore.scene.name },
+    { id: riverStore.scene.id, name: riverStore.scene.name },
+    { id: lakesideStore.scene.id, name: lakesideStore.scene.name },
+    { id: caveStore.scene.id, name: caveStore.scene.name },
+    { id: seasideStore.scene.id, name: seasideStore.scene.name }
   ];
   return allScenes.filter(scene => scenesStore.unlockedScenes.includes(scene.id));
 });

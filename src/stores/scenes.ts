@@ -3,6 +3,9 @@ import { useBaseSceneStore } from './scenes/base';
 import { useForestSceneStore } from './scenes/forest';
 import { useRiverSceneStore } from './scenes/river';
 import { useCaveSceneStore } from './scenes/cave';
+import { useGrasslandSceneStore } from './scenes/grassland';
+import { useLakesideSceneStore } from './scenes/lakeside';
+import { useSeasideSceneStore } from './scenes/seaside';
 import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, ActionGroup, GameBuilding } from './scenes/types';
 
 export const useScenesStore = defineStore('scenes', {
@@ -18,6 +21,9 @@ export const useScenesStore = defineStore('scenes', {
       const forestScene = useForestSceneStore();
       const riverScene = useRiverSceneStore();
       const caveScene = useCaveSceneStore();
+      const grasslandScene = useGrasslandSceneStore();
+      const lakesideScene = useLakesideSceneStore();
+      const seasideScene = useSeasideSceneStore();
       
       switch (this.currentSceneId) {
         case 'base':
@@ -28,6 +34,12 @@ export const useScenesStore = defineStore('scenes', {
           return riverScene.scene;
         case 'cave':
           return caveScene.scene;
+        case 'grassland':
+          return grasslandScene.scene;
+        case 'lakeside':
+          return lakesideScene.scene;
+        case 'seaside':
+          return seasideScene.scene;
         default:
           return baseScene.scene;
       }
@@ -43,11 +55,17 @@ export const useScenesStore = defineStore('scenes', {
       const forestScene = useForestSceneStore();
       const riverScene = useRiverSceneStore();
       const caveScene = useCaveSceneStore();
+      const grasslandScene = useGrasslandSceneStore();
+      const lakesideScene = useLakesideSceneStore();
+      const seasideScene = useSeasideSceneStore();
       switch (this.currentSceneId) {
         case 'base': return [...baseScene.getCharacterActions(), ...baseScene.getActionConfig()];
         case 'forest': return [...baseScene.getCharacterActions(), ...forestScene.getActionConfig()];
         case 'river': return [...baseScene.getCharacterActions(), ...riverScene.getActionConfig()];
         case 'cave': return [...baseScene.getCharacterActions(), ...caveScene.getActionConfig()];
+        case 'grassland': return [...baseScene.getCharacterActions(), ...grasslandScene.getActionConfig()];
+        case 'lakeside': return [...baseScene.getCharacterActions(), ...lakesideScene.getActionConfig()];
+        case 'seaside': return [...baseScene.getCharacterActions(), ...seasideScene.getActionConfig()];
         default: return baseScene.getCharacterActions();
       }
     },
@@ -58,6 +76,9 @@ export const useScenesStore = defineStore('scenes', {
       const forestScene = useForestSceneStore();
       const riverScene = useRiverSceneStore();
       const caveScene = useCaveSceneStore();
+      const grasslandScene = useGrasslandSceneStore();
+      const lakesideScene = useLakesideSceneStore();
+      const seasideScene = useSeasideSceneStore();
       const characterActions = baseScene.getCharacterActions();
       let sceneActions: GameAction[] = [];
 
@@ -73,6 +94,15 @@ export const useScenesStore = defineStore('scenes', {
           break;
         case 'cave':
           sceneActions = caveScene.getActionConfig();
+          break;
+        case 'grassland':
+          sceneActions = grasslandScene.getActionConfig();
+          break;
+        case 'lakeside':
+          sceneActions = lakesideScene.getActionConfig();
+          break;
+        case 'seaside':
+          sceneActions = seasideScene.getActionConfig();
           break;
       }
 
@@ -100,11 +130,17 @@ export const useScenesStore = defineStore('scenes', {
       const forestScene = useForestSceneStore();
       const riverScene = useRiverSceneStore();
       const caveScene = useCaveSceneStore();
+      const grasslandScene = useGrasslandSceneStore();
+      const lakesideScene = useLakesideSceneStore();
+      const seasideScene = useSeasideSceneStore();
       switch (this.currentSceneId) {
         case 'base': return baseScene.buildingRecipes;
         case 'forest': return forestScene.buildingRecipes;
         case 'river': return riverScene.buildingRecipes;
         case 'cave': return caveScene.buildingRecipes;
+        case 'grassland': return grasslandScene.buildingRecipes;
+        case 'lakeside': return lakesideScene.buildingRecipes;
+        case 'seaside': return seasideScene.buildingRecipes;
         default: return [];
       }
     }
@@ -115,11 +151,17 @@ export const useScenesStore = defineStore('scenes', {
       const forestScene = useForestSceneStore();
       const riverScene = useRiverSceneStore();
       const caveScene = useCaveSceneStore();
+      const grasslandScene = useGrasslandSceneStore();
+      const lakesideScene = useLakesideSceneStore();
+      const seasideScene = useSeasideSceneStore();
       
       baseScene.initializeScene();
       forestScene.initializeScene();
       riverScene.initializeScene();
       caveScene.initializeScene();
+      grasslandScene.initializeScene();
+      lakesideScene.initializeScene();
+      seasideScene.initializeScene();
     },
 
     // 重置所有场景
@@ -128,11 +170,17 @@ export const useScenesStore = defineStore('scenes', {
       const forestScene = useForestSceneStore();
       const riverScene = useRiverSceneStore();
       const caveScene = useCaveSceneStore();
+      const grasslandScene = useGrasslandSceneStore();
+      const lakesideScene = useLakesideSceneStore();
+      const seasideScene = useSeasideSceneStore();
       
       baseScene.reset();
       forestScene.reset();
       riverScene.reset();
       caveScene.reset();
+      grasslandScene.reset();
+      lakesideScene.reset();
+      seasideScene.reset();
       
       // 重置解锁状态，只保留基地场景
       this.unlockedScenes = ['base'];
@@ -175,6 +223,9 @@ export const useScenesStore = defineStore('scenes', {
       const forestScene = useForestSceneStore();
       const riverScene = useRiverSceneStore();
       const caveScene = useCaveSceneStore();
+      const grasslandScene = useGrasslandSceneStore();
+      const lakesideScene = useLakesideSceneStore();
+      const seasideScene = useSeasideSceneStore();
       switch (this.currentSceneId) {
         case 'base':
           return baseScene.getBuildingActions(buildingType);
@@ -184,6 +235,12 @@ export const useScenesStore = defineStore('scenes', {
           return riverScene.getBuildingActions(buildingType);
         case 'cave':
           return caveScene.getBuildingActions(buildingType);
+        case 'grassland':
+          return grasslandScene.getBuildingActions(buildingType);
+        case 'lakeside':
+          return lakesideScene.getBuildingActions(buildingType);
+        case 'seaside':
+          return seasideScene.getBuildingActions(buildingType);
         default:
           return [];
       }
