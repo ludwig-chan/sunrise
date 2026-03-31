@@ -818,17 +818,17 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
       const now = Date.now();
 
-      // 各等级配置
+      // 各等级配置（intervalMs 单位：毫秒）
       const TRAP_CONFIG: Record<number, { intervalMs: number; chance: number; animals: TrapAnimal[] }> = {
         1: {
-          intervalMs: 60000,
+          intervalMs: 60000, // 60 秒
           chance: 0.6,
           animals: [
             { id: 'rabbit', name: '兔子', yields: [{ id: 'raw_meat', name: '生肉', count: 1 }, { id: 'fur', name: '皮毛', count: 1 }] }
           ]
         },
         2: {
-          intervalMs: 50000,
+          intervalMs: 50000, // 50 秒
           chance: 0.7,
           animals: [
             { id: 'rabbit', name: '兔子', yields: [{ id: 'raw_meat', name: '生肉', count: 1 }, { id: 'fur', name: '皮毛', count: 1 }] },
@@ -836,7 +836,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
           ]
         },
         3: {
-          intervalMs: 45000,
+          intervalMs: 45000, // 45 秒
           chance: 0.8,
           animals: [
             { id: 'rabbit', name: '兔子', yields: [{ id: 'raw_meat', name: '生肉', count: 1 }, { id: 'fur', name: '皮毛', count: 1 }] },
@@ -846,11 +846,14 @@ export const useBaseSceneStore = defineStore('baseScene', {
         }
       };
 
+      const maxLevel = Math.max(...Object.keys(TRAP_CONFIG).map(Number));
+      const minLevel = Math.min(...Object.keys(TRAP_CONFIG).map(Number));
+
       for (const trap of traps) {
         // 已有捕获，等玩家处理
         if (trap.trapAnimal) continue;
 
-        const level = Math.max(1, Math.min(3, trap.level));
+        const level = Math.max(minLevel, Math.min(maxLevel, trap.level));
         const config = TRAP_CONFIG[level];
         const lastCheck = trap.trapCapturedAt ?? 0;
 
