@@ -46,8 +46,11 @@
 import { useScenesStore } from '../../stores/scenes';
 import { useActivityStore } from '../../stores/activity';
 import { useCharacterStore } from '../../stores/character';
+import { useInventoryStore } from '../../stores/inventory';
 import { BASE_BUILDING_ICONS } from '../../stores/scenes/base';
 import { FOREST_BUILDING_ICONS } from '../../stores/scenes/forest';
+import { RIVER_BUILDING_ICONS } from '../../stores/scenes/river';
+import { CAVE_BUILDING_ICONS } from '../../stores/scenes/cave';
 import { toast } from '../../utils/toast';
 import type { GameBuildingRecipe } from '../../stores/scenes/types';
 
@@ -67,13 +70,14 @@ const emit = defineEmits<{
 const scenes = useScenesStore();
 const activity = useActivityStore();
 const character = useCharacterStore();
+const inventoryStore = useInventoryStore();
 
 function isBuilt(recipeType: string): boolean {
   return scenes.currentScene.buildings.some(b => b.type === recipeType);
 }
 
 function buildingIcon(type: string): string {
-  return BASE_BUILDING_ICONS[type] ?? FOREST_BUILDING_ICONS[type] ?? '🏗️';
+  return BASE_BUILDING_ICONS[type] ?? FOREST_BUILDING_ICONS[type] ?? RIVER_BUILDING_ICONS[type] ?? CAVE_BUILDING_ICONS[type] ?? '🏗️';
 }
 
 function formatCost(cost: { [key: string]: number }): string {
@@ -82,12 +86,10 @@ function formatCost(cost: { [key: string]: number }): string {
     .join(' + ');
 }
 
-/** 检查当前场景资源是否足以支付建造费用 */
+/** 检查背包是否足以支付建造费用 */
 function canAfford(recipe: GameBuildingRecipe): boolean {
   for (const [resourceType, required] of Object.entries(recipe.cost)) {
-    const resource = scenes.currentScene.resources.find(r => r.id === resourceType);
-    const current = resource?.count ?? 0;
-    if (current < required) return false;
+    if (!inventoryStore.hasEnough(resourceType, required)) return false;
   }
   return true;
 }
@@ -101,12 +103,11 @@ function handleBuildStart(recipe: GameBuildingRecipe) {
     return;
   }
 
-  // 提前检查材料（不足时直接拒绝，不启动 activity，不扣体力）
+  // 提前检查材料（不足时直接拒绝）
   if (!canAfford(recipe)) {
     const missing = Object.entries(recipe.cost)
       .map(([type, required]) => {
-        const resource = scenes.currentScene.resources.find(r => r.id === type);
-        const current = resource?.count ?? 0;
+        const current = inventoryStore.getCount(type);
         return current < required ? `${RESOURCE_NAMES[type] ?? type} x${required - current}` : null;
       })
       .filter((s): s is string => s !== null);

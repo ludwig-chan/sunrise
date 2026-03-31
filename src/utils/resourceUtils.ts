@@ -1,5 +1,3 @@
-import type { GameResource } from '../stores/scenes/types';
-
 export type ResourceInfo = {
   readonly id: string;
   readonly type: string;
@@ -31,20 +29,6 @@ export async function getStockAmount(stock: Stock, type: string, amount: number 
 export function hasStock(stock: Stock, type: string): boolean {
   const stockItem = stock[type];
   return stockItem && stockItem.current > 0;
-}
-
-export function getOrCreateResource(resources: GameResource[], resourceInfo: ResourceInfo): GameResource {
-  let resource = resources.find((r) => r.type === resourceInfo.type);
-  if (!resource) {
-    resource = {
-      id: resourceInfo.id,
-      type: resourceInfo.type,
-      name: resourceInfo.name,
-      count: 0
-    } as GameResource;
-    resources.unshift(resource);
-  }
-  return resource;
 }
 
 export function calculateExploreResources(stock: Stock, possibleResources: readonly ResourceInfo[]) {

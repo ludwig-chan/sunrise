@@ -16,9 +16,21 @@
       </div>
     </div>
 
-    <!-- 空闲中：显示行动和建造两个按钮 -->
+    <!-- 空闲中：行动分体式按钮 + 建造按钮 -->
     <div v-else class="idle-buttons">
-      <button class="action-btn" @click="showActionModal = true">行动</button>
+      <!-- 行动：分体式 -->
+      <div class="action-btn-group">
+        <button
+          class="action-btn-main"
+          :disabled="!!defaultAction?.disabled"
+          @click="defaultAction && handleActionStart(defaultAction)"
+        >
+          <span v-if="defaultAction">{{ defaultAction.icon }} {{ defaultAction.text }}</span>
+          <span v-else>行动</span>
+        </button>
+        <button class="action-btn-more" @click="showActionModal = true" title="更多行动">···</button>
+      </div>
+      <!-- 建造 -->
       <button class="action-btn" @click="showBuildModal = true">建造</button>
     </div>
 
@@ -39,16 +51,16 @@
                 v-for="action in group.actions"
                 :key="action.name"
                 class="modal-action-item"
-                :class="{ 'is-disabled': !!action.disabled }"
+                :class="{ 'is-disabled': isDisabled(action) }"
               >
                 <span class="modal-action-icon">{{ action.icon || '▶' }}</span>
                 <div class="modal-action-info">
                   <span class="modal-action-text">{{ action.text }}</span>
-                  <span v-if="action.tooltip && action.disabled" class="modal-action-condition">{{ action.tooltip }}</span>
+                  <span v-if="action.tooltip && isDisabled(action)" class="modal-action-condition">{{ action.tooltip }}</span>
                 </div>
                 <button
                   class="modal-select-btn"
-                  :disabled="!!action.disabled"
+                  :disabled="isDisabled(action)"
                   @click="handleActionStart(action)"
                 >
                   选择
@@ -71,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useCharacterStore } from '../../stores/character'
 import { useScenesStore } from '../../stores/scenes'
 import { useActivityStore } from '../../stores/activity'
@@ -88,6 +100,27 @@ const progress = ref(0);
 
 let progressTimer: ReturnType<typeof setInterval> | null = null;
 let completing = false;
+
+// 每个场景的默认动作名称
+const DEFAULT_ACTION_MAP: Record<string, string> = {
+  base: 'explore',
+  forest: 'explore',
+  river: 'fishInRiver',
+  cave: 'gatherCoal'
+};
+
+// 当前场景的默认动作
+const defaultAction = computed((): GameAction | null => {
+  const sceneId = scenes.currentSceneId;
+  const defaultName = DEFAULT_ACTION_MAP[sceneId] ?? 'explore';
+  const allActions = scenes.currentGroupedActions.flatMap(g => g.actions);
+  return (allActions.find(a => a.name === defaultName) as GameAction) ?? null;
+});
+
+function isDisabled(action: GameAction): boolean {
+  if (typeof action.disabled === 'function') return action.disabled();
+  return !!action.disabled;
+}
 
 function updateProgress() {
   if (!activity.currentActivity) {
@@ -117,7 +150,7 @@ onUnmounted(() => {
 });
 
 function handleActionStart(action: GameAction) {
-  if (activity.isBusy || action.disabled) return;
+  if (activity.isBusy || isDisabled(action)) return;
 
   if (character.energy < action.energyCost) {
     const messages = [
@@ -167,6 +200,55 @@ function cancelActivity() {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+/* 行动按钮分体式 */
+.action-btn-group {
+  display: flex;
+  border: 1px solid #4a5568;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.action-btn-main {
+  flex: 1;
+  padding: 0.55rem 0.5rem;
+  background: #edf2f7;
+  border: none;
+  border-right: 1px solid #4a5568;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2d3748;
+  transition: background 0.2s;
+  text-align: center;
+}
+
+.action-btn-main:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.action-btn-main:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn-more {
+  width: 2rem;
+  background: #e2e8f0;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #4a5568;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn-more:hover {
+  background: #cbd5e0;
 }
 
 .action-btn {
@@ -395,4 +477,3 @@ function cancelActivity() {
   cursor: not-allowed;
 }
 </style>
-

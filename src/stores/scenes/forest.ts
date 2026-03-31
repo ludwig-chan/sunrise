@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { GameScene, GameResource, GameBuildingRecipe, GameBuildingAction } from './types';
+import type { GameScene, GameBuildingRecipe, GameBuildingAction } from './types';
 import { useEquipmentStore } from '../equipment';
 import { useCharacterStore } from '../character';
 import { useTimeStore } from '../time';
@@ -7,9 +7,9 @@ import {
   type ResourceInfo, 
   getStockAmount, 
   hasStock, 
-  getOrCreateResource, 
   calculateExploreResources 
 } from '../../utils/resourceUtils';
+import { useInventoryStore } from '../inventory';
 import { toast } from '../../utils/toast';
 import { useGameLogStore } from '../gameLog';
 import { emitter } from '../../utils/eventBus';
@@ -21,7 +21,7 @@ export const FOREST_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '木屋',
     description: '提供庇护所，可以休息恢复体力',
     cost: { wood: 20, branch: 5 },
-    duration: 5,
+    duration: 1.5,
     energyCost: 20
   },
   {
@@ -29,7 +29,7 @@ export const FOREST_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '陷阱',
     description: '自动捕捉小动物，提供食物',
     cost: { branch: 3 },
-    duration: 1,
+    duration: 0.5,
     energyCost: 4
   }
 ];
@@ -83,7 +83,6 @@ export const useForestSceneStore = defineStore('forestScene', {
     scene: {
       id: 'forest',
       name: '树林',
-      resources: [],
       actions: [],
       buildings: [],
       stock: JSON.parse(JSON.stringify(INITIAL_STOCK))
@@ -93,16 +92,12 @@ export const useForestSceneStore = defineStore('forestScene', {
   }),
 
   getters: {
-    resources: (state) => state.scene.resources,
     actions: (state) => state.scene.actions,
     buildingRecipes: (): GameBuildingRecipe[] => FOREST_BUILDING_RECIPES
   },
 
   actions: {
     reset() {
-      // 清空已收集的资源
-      this.scene.resources = []
-
       // 重置建筑
       this.scene.buildings = []
       
@@ -151,13 +146,9 @@ export const useForestSceneStore = defineStore('forestScene', {
       }
 
       try {
-        const amount = await getStockAmount(this.scene.stock, 'wood');
-        const woodResource = getOrCreateResource(this.scene.resources, {
-          id: 'wood',
-          type: 'wood',
-          name: '木材'
-        });
-        woodResource.count++;
+        await getStockAmount(this.scene.stock, 'wood');
+        const inventory = useInventoryStore();
+        inventory.addItem({ id: 'wood', type: 'wood', name: '木材' }, 1);
         toast({ 
           message: "获得了一个木材", 
           type: "success" 
@@ -203,6 +194,7 @@ export const useForestSceneStore = defineStore('forestScene', {
       }
 
       const gainedResources: string[] = [];
+      const inventory = useInventoryStore();
 
       // 处理每种被选中的资源
       for (const resource of selectedResources) {
@@ -210,9 +202,8 @@ export const useForestSceneStore = defineStore('forestScene', {
           // 尝试获取资源
           const amount = await getStockAmount(this.scene.stock, resource.type, resource.expectedAmount);
 
-          // 获取或创建资源
-          const playerResource = getOrCreateResource(this.scene.resources, resource);
-          playerResource.count += amount;
+          // 写入全局背包
+          inventory.addItem(resource, amount);
           gainedResources.push(`${amount}个${resource.name}`);
         } catch (error) {
           continue;
@@ -252,13 +243,9 @@ export const useForestSceneStore = defineStore('forestScene', {
       }
 
       try {
-        const amount = await getStockAmount(this.scene.stock, 'ore');
-        const oreResource = getOrCreateResource(this.scene.resources, {
-          id: 'ore',
-          type: 'ore',
-          name: '矿石'
-        });
-        oreResource.count++;
+        await getStockAmount(this.scene.stock, 'ore');
+        const inventory = useInventoryStore();
+        inventory.addItem({ id: 'ore', type: 'ore', name: '矿石' }, 1);
         toast({ 
           message: "获得了一块矿石", 
           type: "success" 
@@ -301,16 +288,12 @@ export const useForestSceneStore = defineStore('forestScene', {
       }
 
       const gathered: string[] = [];
+      const inventory = useInventoryStore();
 
       // 尝试采集苹果
       try {
         const appleAmount = await getStockAmount(this.scene.stock, 'apple', 2);
-        const appleResource = getOrCreateResource(this.scene.resources, {
-          id: 'apple',
-          type: 'apple',
-          name: '苹果'
-        });
-        appleResource.count += appleAmount;
+        inventory.addItem({ id: 'apple', type: 'apple', name: '苹果' }, appleAmount);
         gathered.push(`${appleAmount}个苹果`);
       } catch {
         // 苹果库存不足，跳过
@@ -319,12 +302,7 @@ export const useForestSceneStore = defineStore('forestScene', {
       // 尝试采集浆果
       try {
         const berryAmount = await getStockAmount(this.scene.stock, 'berry', 3);
-        const berryResource = getOrCreateResource(this.scene.resources, {
-          id: 'berry',
-          type: 'berry',
-          name: '浆果'
-        });
-        berryResource.count += berryAmount;
+        inventory.addItem({ id: 'berry', type: 'berry', name: '浆果' }, berryAmount);
         gathered.push(`${berryAmount}把浆果`);
       } catch {
         // 浆果库存不足，跳过
@@ -361,11 +339,12 @@ export const useForestSceneStore = defineStore('forestScene', {
         return;
       }
 
+      const inventory = useInventoryStore();
+
       // 检查材料是否足够
       const missing: string[] = [];
       for (const [resourceType, required] of Object.entries(recipe.cost)) {
-        const resource = this.scene.resources.find(r => r.id === resourceType);
-        const current = resource?.count ?? 0;
+        const current = inventory.getCount(resourceType);
         if (current < required) {
           const name = RESOURCE_NAMES[resourceType] ?? resourceType;
           missing.push(`${name} x${required - current}`);
@@ -379,8 +358,7 @@ export const useForestSceneStore = defineStore('forestScene', {
 
       // 扣除材料
       for (const [resourceType, required] of Object.entries(recipe.cost)) {
-        const resource = this.scene.resources.find(r => r.id === resourceType);
-        if (resource) resource.count -= required;
+        inventory.removeItem(resourceType, required);
       }
 
       // 添加建筑（带图标）
@@ -426,7 +404,7 @@ export const useForestSceneStore = defineStore('forestScene', {
               name: 'sleep',
               text: '睡觉',
               icon: '🛏️',
-              duration: 5,
+              duration: 1.5,
               energyCost: 0,
               handler: async () => await this.sleep(),
               tooltip: '消耗饱食度恢复体力'
@@ -444,8 +422,8 @@ export const useForestSceneStore = defineStore('forestScene', {
           name: 'chopWood',
           text: '砍伐',
           icon: '🪓',
-          duration: 5,
-          energyCost: 10, // 砍树需要较多体力
+          duration: 1.5,
+          energyCost: 10,
           group: 'gather',
           actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(10, async () => await this.chopWood()),
@@ -456,8 +434,8 @@ export const useForestSceneStore = defineStore('forestScene', {
           name: 'mineOre',
           text: '采矿',
           icon: '⛏️',
-          duration: 3,
-          energyCost: 12, // 采矿需要大量体力
+          duration: 1,
+          energyCost: 12,
           group: 'gather',
           actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(12, async () => await this.mineOre()),
@@ -468,8 +446,8 @@ export const useForestSceneStore = defineStore('forestScene', {
           name: 'gatherFood',
           text: '觅食',
           icon: '🍎',
-          duration: 3,
-          energyCost: 5, // 采集食物消耗较少体力
+          duration: 1,
+          energyCost: 5,
           group: 'gather',
           actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(5, async () => await this.gatherFood())
@@ -478,8 +456,8 @@ export const useForestSceneStore = defineStore('forestScene', {
           name: 'explore',
           text: '探索',
           icon: '🔍',
-          duration: 3,
-          energyCost: 8, // 探索消耗中等体力
+          duration: 1,
+          energyCost: 8,
           actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(8, async () => await this.explore())
         }
@@ -512,12 +490,7 @@ export const useForestSceneStore = defineStore('forestScene', {
             if (Math.random() < 0.7) {
               // 成功捕获
               const meatCount = Math.floor(Math.random() * 3) + 1;
-              const meatResource = getOrCreateResource(this.scene.resources, {
-                id: 'raw_meat',
-                type: 'raw_meat',
-                name: '生肉'
-              });
-              meatResource.count += meatCount;
+              useInventoryStore().addItem({ id: 'raw_meat', type: 'raw_meat', name: '生肉' }, meatCount);
               toast({ message: `陷阱触发！捕获了${meatCount}块生肉`, type: 'success' });
               useGameLogStore().addEntry({
                 text: `陷阱触发！捕获了${meatCount}块生肉`,

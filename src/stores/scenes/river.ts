@@ -3,7 +3,8 @@ import type { GameScene, GameBuildingRecipe, GameBuildingAction } from './types'
 import { useEquipmentStore } from '../equipment';
 import { useCharacterStore } from '../character';
 import { useTimeStore } from '../time';
-import { getStockAmount, getOrCreateResource } from '../../utils/resourceUtils';
+import { getStockAmount } from '../../utils/resourceUtils';
+import { useInventoryStore } from '../inventory';
 import { toast } from '../../utils/toast';
 import { useGameLogStore } from '../gameLog';
 import { emitter } from '../../utils/eventBus';
@@ -15,7 +16,7 @@ export const RIVER_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '渔屋',
     description: '搭建简易渔屋，可以在此处更高效地钓鱼',
     cost: { wood: 15, branch: 5 },
-    duration: 4,
+    duration: 1,
     energyCost: 15
   },
   {
@@ -23,7 +24,7 @@ export const RIVER_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '水车',
     description: '建造水车，每6小时自动为基地补充水资源（恢复库存）',
     cost: { wood: 20, stone: 10 },
-    duration: 6,
+    duration: 1.5,
     energyCost: 20
   },
   {
@@ -31,7 +32,7 @@ export const RIVER_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '草药园',
     description: '在河边开辟草药园，让草药库存缓慢自然恢复',
     cost: { branch: 8, clay: 5 },
-    duration: 3,
+    duration: 1,
     energyCost: 12
   }
 ];
@@ -65,7 +66,6 @@ export const useRiverSceneStore = defineStore('riverScene', {
     scene: {
       id: 'river',
       name: '河边',
-      resources: [],
       actions: [],
       buildings: [],
       stock: JSON.parse(JSON.stringify(INITIAL_STOCK))
@@ -75,7 +75,6 @@ export const useRiverSceneStore = defineStore('riverScene', {
   }),
 
   getters: {
-    resources: (state) => state.scene.resources,
     actions: (state) => state.scene.actions,
     buildingRecipes: (): GameBuildingRecipe[] => RIVER_BUILDING_RECIPES
   },
@@ -83,9 +82,6 @@ export const useRiverSceneStore = defineStore('riverScene', {
   actions: {
     // 重置场景状态
     reset() {
-      // 清空已收集的资源
-      this.scene.resources = []
-
       // 重置建筑
       this.scene.buildings = []
 
@@ -144,12 +140,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
       try {
         const amount = Math.floor(Math.random() * 2) + 1; // 1-2
         const actualAmount = await getStockAmount(this.scene.stock, 'fish', amount);
-        const fishResource = getOrCreateResource(this.scene.resources, {
-          id: 'fish',
-          type: 'fish',
-          name: '鱼'
-        });
-        fishResource.count += actualAmount;
+        useInventoryStore().addItem({ id: 'fish', type: 'fish', name: '鱼' }, actualAmount);
         const message = `钓到了 ${actualAmount} 条鱼！`;
         toast({ message, type: 'success' });
         useGameLogStore().addEntry({
@@ -168,12 +159,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
     async digClay() {
       try {
         const actualAmount = await getStockAmount(this.scene.stock, 'clay', 1);
-        const clayResource = getOrCreateResource(this.scene.resources, {
-          id: 'clay',
-          type: 'clay',
-          name: '黏土'
-        });
-        clayResource.count += actualAmount;
+        useInventoryStore().addItem({ id: 'clay', type: 'clay', name: '黏土' }, actualAmount);
         const message = `挖出了 ${actualAmount} 块黏土`;
         toast({ message, type: 'success' });
         useGameLogStore().addEntry({
@@ -193,12 +179,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
       try {
         const amount = Math.floor(Math.random() * 2) + 1; // 1-2
         const actualAmount = await getStockAmount(this.scene.stock, 'stone', amount);
-        const stoneResource = getOrCreateResource(this.scene.resources, {
-          id: 'stone',
-          type: 'stone',
-          name: '石头'
-        });
-        stoneResource.count += actualAmount;
+        useInventoryStore().addItem({ id: 'stone', type: 'stone', name: '石头' }, actualAmount);
         const message = `捡到了 ${actualAmount} 块石头`;
         toast({ message, type: 'success' });
         useGameLogStore().addEntry({
@@ -229,12 +210,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
 
       try {
         const actualAmount = await getStockAmount(this.scene.stock, 'herb', 1);
-        const herbResource = getOrCreateResource(this.scene.resources, {
-          id: 'herb',
-          type: 'herb',
-          name: '草药'
-        });
-        herbResource.count += actualAmount;
+        useInventoryStore().addItem({ id: 'herb', type: 'herb', name: '草药' }, actualAmount);
         const message = `采集到了 ${actualAmount} 株草药`;
         toast({ message, type: 'success' });
         useGameLogStore().addEntry({
@@ -279,16 +255,12 @@ export const useRiverSceneStore = defineStore('riverScene', {
       }
 
       const gained: string[] = [];
+      const inventory = useInventoryStore();
 
       try {
         const amount = Math.floor(Math.random() * 3) + 2; // 2-4
         const actualAmount = await getStockAmount(this.scene.stock, 'fish', amount);
-        const fishResource = getOrCreateResource(this.scene.resources, {
-          id: 'fish',
-          type: 'fish',
-          name: '鱼'
-        });
-        fishResource.count += actualAmount;
+        inventory.addItem({ id: 'fish', type: 'fish', name: '鱼' }, actualAmount);
         gained.push(`${actualAmount} 条鱼`);
       } catch {
         toast({ message: '河里的鱼已经被钓光了', type: 'warning' });
@@ -297,12 +269,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
 
       // 20% 概率额外获得稀有鱼
       if (Math.random() < 0.2) {
-        const rareFishResource = getOrCreateResource(this.scene.resources, {
-          id: 'rare_fish',
-          type: 'rare_fish',
-          name: '稀有鱼'
-        });
-        rareFishResource.count += 1;
+        inventory.addItem({ id: 'rare_fish', type: 'rare_fish', name: '稀有鱼' }, 1);
         gained.push('1 条稀有鱼');
       }
 
@@ -318,18 +285,13 @@ export const useRiverSceneStore = defineStore('riverScene', {
 
     // 制作草药包（草药园建筑动作）：需要 herb×3，产出 1 个 herb_pack
     async makeHerbPack() {
-      const herbResource = this.scene.resources.find(r => r.id === 'herb');
-      if (!herbResource || herbResource.count < 3) {
+      const inventory = useInventoryStore();
+      if (!inventory.hasEnough('herb', 3)) {
         toast({ message: '需要 草药 ×3 才能制作草药包', type: 'warning' });
         return;
       }
-      herbResource.count -= 3;
-      const herbPackResource = getOrCreateResource(this.scene.resources, {
-        id: 'herb_pack',
-        type: 'herb_pack',
-        name: '草药包'
-      });
-      herbPackResource.count += 1;
+      inventory.removeItem('herb', 3);
+      inventory.addItem({ id: 'herb_pack', type: 'herb_pack', name: '草药包' }, 1);
       const message = '将草药加工成了 1 个草药包';
       toast({ message, type: 'success' });
       useGameLogStore().addEntry({
@@ -351,11 +313,12 @@ export const useRiverSceneStore = defineStore('riverScene', {
         return;
       }
 
+      const inventory = useInventoryStore();
+
       // 检查材料是否足够
       const missing: string[] = [];
       for (const [resourceType, required] of Object.entries(recipe.cost)) {
-        const resource = this.scene.resources.find(r => r.id === resourceType);
-        const current = resource?.count ?? 0;
+        const current = inventory.getCount(resourceType);
         if (current < required) {
           const name = RESOURCE_NAMES[resourceType] ?? resourceType;
           missing.push(`${name} x${required - current}`);
@@ -369,8 +332,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
 
       // 扣除材料
       for (const [resourceType, required] of Object.entries(recipe.cost)) {
-        const resource = this.scene.resources.find(r => r.id === resourceType);
-        if (resource) resource.count -= required;
+        inventory.removeItem(resourceType, required);
       }
 
       // 添加建筑（带图标）
@@ -392,7 +354,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
               name: 'precisionFish',
               text: '精准钓鱼',
               icon: '🐟',
-              duration: 5,
+              duration: 1.5,
               energyCost: 8,
               handler: async () => await this.withEnergyCost(8, async () => await this.precisionFish()),
               tooltip: '渔屋加持，更高概率钓到更多鱼'
@@ -407,7 +369,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
               name: 'makeHerbPack',
               text: '制作草药包',
               icon: '💊',
-              duration: 6,
+              duration: 1.5,
               energyCost: 5,
               handler: async () => await this.withEnergyCost(5, async () => await this.makeHerbPack()),
               tooltip: '需要草药 ×3'
@@ -426,7 +388,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
           name: 'fishInRiver',
           text: '钓鱼',
           icon: '🎣',
-          duration: 5,
+          duration: 1.5,
           energyCost: 6,
           actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(6, async () => await this.fishInRiver())
@@ -435,7 +397,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
           name: 'digClay',
           text: '挖泥',
           icon: '🪣',
-          duration: 3,
+          duration: 1,
           energyCost: 8,
           actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(8, async () => await this.digClay())
@@ -444,7 +406,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
           name: 'gatherStone',
           text: '捡石头',
           icon: '🪨',
-          duration: 2,
+          duration: 0.5,
           energyCost: 4,
           actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(4, async () => await this.gatherStone())
@@ -453,7 +415,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
           name: 'harvestHerb',
           text: '采草药',
           icon: '🌿',
-          duration: 4,
+          duration: 1,
           energyCost: 7,
           actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(7, async () => await this.harvestHerb())
@@ -462,7 +424,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
           name: 'bathe',
           text: '洗澡',
           icon: '🛁',
-          duration: 5,
+          duration: 1.5,
           energyCost: 0,
           actionGroup: 'scene' as const,
           handler: async () => await this.bathe()

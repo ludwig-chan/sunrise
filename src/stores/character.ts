@@ -1,14 +1,11 @@
 import { defineStore } from 'pinia'
 import { gameLog, emitter } from '../utils/eventBus'
 import { showDialog } from '../utils/dialog'
-import { useBaseSceneStore } from './scenes/base'
-import { useForestSceneStore } from './scenes/forest'
-import { useRiverSceneStore } from './scenes/river'
-import { useCaveSceneStore } from './scenes/cave'
 import { restartGame } from '../utils/gameSystem'
 import { toast } from '../utils/toast'
 import { ITEM_DEFINITIONS } from '../data/items'
 import { useTimeStore } from './time'
+import { useInventoryStore } from './inventory'
 
 // 挂机安全保护：血量降至此值时自动暂停，防止无人操作时角色死亡
 const HEALTH_AUTO_PAUSE_THRESHOLD = 20
@@ -130,25 +127,18 @@ export const useCharacterStore = defineStore('character', {
       }
     },
 
-    // 食用场景资源中的食物
+    // 食用背包中的食物
     eatFood(itemId: string) {
       const def = ITEM_DEFINITIONS[itemId]
       if (!def?.use) return
 
-      const allResources = [
-        ...useBaseSceneStore().scene.resources,
-        ...useForestSceneStore().scene.resources,
-        ...useRiverSceneStore().scene.resources,
-        ...useCaveSceneStore().scene.resources,
-      ]
-      const resource = allResources.find(r => r.id === itemId)
-
-      if (!resource || resource.count <= 0) {
+      const inventory = useInventoryStore()
+      if (!inventory.hasEnough(itemId, 1)) {
         toast({ message: '没有可以食用的食物', type: 'warning' })
         return
       }
 
-      resource.count -= 1
+      inventory.removeItem(itemId, 1)
 
       const effect = def.use()
 

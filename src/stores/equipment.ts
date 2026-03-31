@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { gameLog } from '../utils/eventBus'
+import { toast } from '../utils/toast'
 import type { EquipSlot, EquipStats } from '../data/items'
 import { ITEM_DEFINITIONS } from '../data/items'
+import { useInventoryStore } from './inventory'
 
 export interface EquipmentItem {
   durability: number   // 当前耐久（0 = 损坏）
@@ -86,20 +88,44 @@ export const useEquipmentStore = defineStore('equipment', {
   },
 
   actions: {
-    // 制造斧头（兼容现有逻辑）
-    async craftAxe(resources: { branch: number; ore: number }): Promise<boolean> {
-      if (resources.branch >= 3 && resources.ore >= 2) {
-        if (!this.inventory.axe) {
-          this.inventory.axe = { durability: 0, maxDurability: 100 }
-        }
-        this.inventory.axe.durability = Math.min(
-          this.inventory.axe.maxDurability,
-          this.inventory.axe.durability + 100
-        )
-        gameLog({ text: '成功打造了一把石斧！', type: 'ITEM' })
-        return true
+    // 制造斧头：消耗背包材料 树枝×3 + 矿石×2
+    async craftAxe(): Promise<boolean> {
+      const inventory = useInventoryStore()
+      if (!inventory.hasEnough('branch', 3) || !inventory.hasEnough('ore', 2)) {
+        toast({ message: '需要树枝 ×3 + 矿石 ×2 才能制作石斧', type: 'warning' })
+        return false
       }
-      return false
+      inventory.removeItem('branch', 3)
+      inventory.removeItem('ore', 2)
+      if (!this.inventory.axe) {
+        this.inventory.axe = { durability: 0, maxDurability: 100 }
+      }
+      this.inventory.axe.durability = Math.min(
+        this.inventory.axe.maxDurability,
+        this.inventory.axe.durability + 100
+      )
+      gameLog({ text: '成功打造了一把石斧！', type: 'ITEM' })
+      return true
+    },
+
+    // 制造石镐：消耗背包材料 树枝×2 + 矿石×3
+    async craftPickaxe(): Promise<boolean> {
+      const inventory = useInventoryStore()
+      if (!inventory.hasEnough('branch', 2) || !inventory.hasEnough('ore', 3)) {
+        toast({ message: '需要树枝 ×2 + 矿石 ×3 才能制作石镐', type: 'warning' })
+        return false
+      }
+      inventory.removeItem('branch', 2)
+      inventory.removeItem('ore', 3)
+      if (!this.inventory.pickaxe) {
+        this.inventory.pickaxe = { durability: 0, maxDurability: 100 }
+      }
+      this.inventory.pickaxe.durability = Math.min(
+        this.inventory.pickaxe.maxDurability,
+        this.inventory.pickaxe.durability + 100
+      )
+      gameLog({ text: '成功打造了一把石镐！', type: 'ITEM' })
+      return true
     },
 
     // 使用斧头（兼容现有逻辑）
