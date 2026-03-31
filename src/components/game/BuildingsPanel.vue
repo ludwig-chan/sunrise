@@ -20,16 +20,9 @@
         </div>
       </div>
 
-      <!-- + 建造卡片 -->
-      <div
-        class="building-card build-new-card"
-        role="button"
-        tabindex="0"
-        @click="showBuildModal = true"
-        @keydown.enter="showBuildModal = true"
-      >
-        <span class="building-card-icon">➕</span>
-        <span class="build-new-label">建造</span>
+      <!-- 无建筑时的占位提示 -->
+      <div v-if="buildings.length === 0" class="no-buildings">
+        暂无建筑
       </div>
     </div>
 
@@ -41,30 +34,19 @@
       @close="selectedBuilding = null"
     />
 
-    <!-- 建造新建筑弹窗 -->
-    <BuildModal
-      :open="showBuildModal"
-      :recipes="scenesStore.currentBuildingRecipes"
-      @close="showBuildModal = false"
-    />
-
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useScenesStore } from '../../stores/scenes';
 import BuildingModal from './BuildingModal.vue';
-import BuildModal from './BuildModal.vue';
 import type { GameBuilding } from '../../stores/scenes/types';
 
 defineProps<{
   buildings: GameBuilding[]
 }>();
 
-const scenesStore = useScenesStore();
 const selectedBuilding = ref<GameBuilding | null>(null);
-const showBuildModal = ref(false);
 
 function openBuildingModal(building: GameBuilding) {
   selectedBuilding.value = building;
@@ -134,21 +116,10 @@ function openBuildingModal(building: GameBuilding) {
   color: #718096;
 }
 
-/* 建造按钮卡片 */
-.build-new-card {
-  background: rgba(72, 187, 120, 0.1);
-  border: 1px dashed rgba(72, 187, 120, 0.5);
-  color: #38a169;
-}
-
-.build-new-card:hover {
-  background: rgba(72, 187, 120, 0.2);
-}
-
-.build-new-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #38a169;
+.no-buildings {
+  font-size: 0.78rem;
+  color: #a0aec0;
+  padding: 0.5rem 0.25rem;
 }
 </style>
 

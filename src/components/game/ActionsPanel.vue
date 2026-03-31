@@ -16,10 +16,10 @@
       </div>
     </div>
 
-    <!-- 空闲中 -->
-    <div v-else class="idle-state">
-      <span class="idle-label">💤 空闲中，什么都没做</span>
-      <button class="select-action-btn" @click="showActionModal = true">选择行动 →</button>
+    <!-- 空闲中：显示行动和建造两个按钮 -->
+    <div v-else class="idle-buttons">
+      <button class="action-btn" @click="showActionModal = true">⚔️ 行动</button>
+      <button class="action-btn build-btn" @click="showBuildModal = true">🏗️ 建造</button>
     </div>
 
     <!-- 行动选择弹窗 -->
@@ -60,6 +60,13 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- 建造弹窗 -->
+    <BuildModal
+      :open="showBuildModal"
+      :recipes="scenes.currentBuildingRecipes"
+      @close="showBuildModal = false"
+    />
   </section>
 </template>
 
@@ -70,11 +77,13 @@ import { useScenesStore } from '../../stores/scenes'
 import { useActivityStore } from '../../stores/activity'
 import { toast } from '../../utils/toast'
 import type { GameAction } from '../../stores/scenes/types'
+import BuildModal from './BuildModal.vue'
 
 const character = useCharacterStore();
 const scenes = useScenesStore();
 const activity = useActivityStore();
 const showActionModal = ref(false);
+const showBuildModal = ref(false);
 const progress = ref(0);
 
 let progressTimer: ReturnType<typeof setInterval> | null = null;
@@ -145,30 +154,23 @@ function cancelActivity() {
 <style scoped>
 .actions-panel {
   border-radius: 8px;
-  flex: 1;
   padding: 1rem;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  justify-content: center;
 }
 
-/* 空闲状态 */
-.idle-state {
+/* 空闲状态：两个按钮竖排 */
+.idle-buttons {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 0.5rem;
 }
 
-.idle-label {
-  font-size: 0.9rem;
-  color: #4a5568;
-  text-align: center;
-}
-
-.select-action-btn {
-  padding: 0.5rem;
+.action-btn {
+  padding: 0.55rem 0.5rem;
   border: 1px solid #4a5568;
   border-radius: 4px;
   background: #edf2f7;
@@ -177,10 +179,21 @@ function cancelActivity() {
   font-size: 0.9rem;
   width: 100%;
   transition: background 0.2s;
+  font-weight: 600;
 }
 
-.select-action-btn:hover {
+.action-btn:hover {
   background: #e2e8f0;
+}
+
+.build-btn {
+  background: rgba(72, 187, 120, 0.15);
+  border-color: rgba(72, 187, 120, 0.6);
+  color: #276749;
+}
+
+.build-btn:hover {
+  background: rgba(72, 187, 120, 0.28);
 }
 
 /* 当前行动区 */
