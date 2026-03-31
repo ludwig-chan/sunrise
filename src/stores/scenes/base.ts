@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, GameBuildingUpgrade } from './types';
 import { useCharacterStore } from '../character';
 import { useScenesStore } from '../scenes';
+import { useEquipmentStore } from '../equipment';
 import { useTimeStore } from '../time';
 import { getOrCreateResource } from '../../utils/resourceUtils';
 import { toast } from '../../utils/toast';
@@ -651,6 +652,56 @@ export const useBaseSceneStore = defineStore('baseScene', {
           energyCost: 0,
           actionGroup: 'character',
           handler: async () => await this.talkToSelf()
+        },
+        {
+          name: 'craftAxe',
+          text: '制作石斧',
+          icon: '🪓',
+          duration: 5,
+          energyCost: 8,
+          actionGroup: 'character',
+          tooltip: '需要树枝×3 + 石头×2',
+          handler: async () => {
+            const equipment = useEquipmentStore();
+            const scenes = useScenesStore();
+            const currentResources = scenes.currentScene.resources;
+            const branchRes = currentResources.find(r => r.id === 'branch');
+            const stoneRes = currentResources.find(r => r.id === 'stone');
+            if (!branchRes || branchRes.count < 3 || !stoneRes || stoneRes.count < 2) {
+              toast({ message: '需要树枝×3 + 石头×2 才能制作石斧', type: 'warning' });
+              return;
+            }
+            const success = await equipment.craftAxe({ branch: 3, stone: 2 });
+            if (success) {
+              branchRes.count -= 3;
+              stoneRes.count -= 2;
+            }
+          }
+        },
+        {
+          name: 'craftPickaxe',
+          text: '制作石镐',
+          icon: '⛏️',
+          duration: 5,
+          energyCost: 8,
+          actionGroup: 'character',
+          tooltip: '需要树枝×3 + 石头×2',
+          handler: async () => {
+            const equipment = useEquipmentStore();
+            const scenes = useScenesStore();
+            const currentResources = scenes.currentScene.resources;
+            const branchRes = currentResources.find(r => r.id === 'branch');
+            const stoneRes = currentResources.find(r => r.id === 'stone');
+            if (!branchRes || branchRes.count < 3 || !stoneRes || stoneRes.count < 2) {
+              toast({ message: '需要树枝×3 + 石头×2 才能制作石镐', type: 'warning' });
+              return;
+            }
+            const success = await equipment.craftPickaxe({ branch: 3, stone: 2 });
+            if (success) {
+              branchRes.count -= 3;
+              stoneRes.count -= 2;
+            }
+          }
         }
       ];
     },

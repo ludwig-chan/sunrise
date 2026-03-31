@@ -86,9 +86,9 @@ export const useEquipmentStore = defineStore('equipment', {
   },
 
   actions: {
-    // 制造斧头（兼容现有逻辑）
-    async craftAxe(resources: { branch: number; ore: number }): Promise<boolean> {
-      if (resources.branch >= 3 && resources.ore >= 2) {
+    // 制造斧头
+    async craftAxe(resources: { branch: number; stone: number }): Promise<boolean> {
+      if (resources.branch >= 3 && resources.stone >= 2) {
         if (!this.inventory.axe) {
           this.inventory.axe = { durability: 0, maxDurability: 100 }
         }
@@ -97,6 +97,22 @@ export const useEquipmentStore = defineStore('equipment', {
           this.inventory.axe.durability + 100
         )
         gameLog({ text: '成功打造了一把石斧！', type: 'ITEM' })
+        return true
+      }
+      return false
+    },
+
+    // 制造镐子
+    async craftPickaxe(resources: { branch: number; stone: number }): Promise<boolean> {
+      if (resources.branch >= 3 && resources.stone >= 2) {
+        if (!this.inventory.pickaxe) {
+          this.inventory.pickaxe = { durability: 0, maxDurability: 100 }
+        }
+        this.inventory.pickaxe.durability = Math.min(
+          this.inventory.pickaxe.maxDurability,
+          this.inventory.pickaxe.durability + 100
+        )
+        gameLog({ text: '成功打造了一把石镐！', type: 'ITEM' })
         return true
       }
       return false
