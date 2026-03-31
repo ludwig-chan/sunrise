@@ -13,11 +13,7 @@
         @click="openBuildingModal(building)"
         @keydown.enter="openBuildingModal(building)"
       >
-        <span class="building-card-icon">{{ building.icon || '🏗️' }}</span>
-        <div class="building-card-info">
-          <span class="building-card-name">{{ building.name }}</span>
-          <span class="building-card-level">Lv.{{ building.level }}</span>
-        </div>
+        <span class="building-card-name">{{ building.name }}</span>
       </div>
 
       <!-- 无建筑时的占位提示 -->
@@ -68,12 +64,10 @@ function openBuildingModal(building: GameBuilding) {
 
 .building-card {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
   width: 68px;
-  min-height: 72px;
+  min-height: 48px;
   padding: 0.4rem 0.3rem;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(0, 0, 0, 0.12);
@@ -92,28 +86,11 @@ function openBuildingModal(building: GameBuilding) {
   transform: translateY(0);
 }
 
-.building-card-icon {
-  font-size: 1.4rem;
-  line-height: 1;
-}
-
-.building-card-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.05rem;
-}
-
 .building-card-name {
   font-size: 0.7rem;
   color: #2d3748;
   font-weight: 600;
   line-height: 1.2;
-}
-
-.building-card-level {
-  font-size: 0.62rem;
-  color: #718096;
 }
 
 .no-buildings {

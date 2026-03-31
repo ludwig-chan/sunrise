@@ -18,8 +18,8 @@
 
     <!-- 空闲中：显示行动和建造两个按钮 -->
     <div v-else class="idle-buttons">
-      <button class="action-btn" @click="showActionModal = true">⚔️ 行动</button>
-      <button class="action-btn build-btn" @click="showBuildModal = true">🏗️ 建造</button>
+      <button class="action-btn" @click="showActionModal = true">行动</button>
+      <button class="action-btn" @click="showBuildModal = true">建造</button>
     </div>
 
     <!-- 行动选择弹窗 -->
@@ -184,16 +184,6 @@ function cancelActivity() {
 
 .action-btn:hover {
   background: #e2e8f0;
-}
-
-.build-btn {
-  background: rgba(72, 187, 120, 0.15);
-  border-color: rgba(72, 187, 120, 0.6);
-  color: #276749;
-}
-
-.build-btn:hover {
-  background: rgba(72, 187, 120, 0.28);
 }
 
 /* 当前行动区 */

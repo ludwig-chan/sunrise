@@ -5,7 +5,7 @@
 
         <!-- 标题栏 -->
         <div class="building-modal-header">
-          <span class="building-modal-icon">{{ building.icon || '🏗️' }}</span>
+          <span v-if="building.type === 'trap'" class="building-modal-icon">🪤</span>
           <span class="building-modal-title">{{ building.name }}</span>
           <span class="building-modal-level">Lv.{{ building.level }}</span>
           <button class="building-modal-close" aria-label="关闭" @click="$emit('close')">✕</button>
@@ -13,34 +13,58 @@
 
         <div class="building-modal-body">
 
-          <!-- 建筑动作列表 -->
-          <template v-if="buildingActions.length > 0">
-            <div class="section-title">可执行的动作</div>
-            <div
-              v-for="action in buildingActions"
-              :key="action.name"
-              class="modal-action-item"
-              :class="{ 'is-disabled': !!action.disabled }"
-            >
-              <span class="modal-action-icon">{{ action.icon || '▶' }}</span>
-              <div class="modal-action-info">
-                <span class="modal-action-text">{{ action.text }}</span>
-                <span v-if="action.tooltip && action.disabled" class="modal-action-condition">{{ action.tooltip }}</span>
+          <!-- 陷阱专属区块 -->
+          <template v-if="building.type === 'trap'">
+            <div class="section-title">陷阱状态</div>
+            <div v-if="building.trapAnimal" class="trap-section trap-has-animal">
+              <div class="trap-captured-title">捕获到了：{{ building.trapAnimal.name }}</div>
+              <div class="trap-yields">
+                <span
+                  v-for="y in building.trapAnimal.yields"
+                  :key="y.id"
+                  class="trap-yield-item"
+                >{{ y.name }} ×{{ y.count }}</span>
               </div>
-              <button
-                class="modal-select-btn"
-                :disabled="activity.isBusy || !!action.disabled"
-                @click="handleActionStart(action)"
-              >
-                开始
-              </button>
+              <div class="trap-actions">
+                <button class="trap-release-btn" @click="handleTrapRelease">放生</button>
+                <button class="trap-harvest-btn" @click="handleTrapHarvest">收获</button>
+              </div>
+            </div>
+            <div v-else class="trap-section trap-empty">
+              陷阱尚未捕获到动物，请稍后查看
             </div>
           </template>
 
-          <!-- 无动作提示 -->
-          <div v-else class="no-actions">
-            <span>该建筑暂无可执行动作</span>
-          </div>
+          <!-- 非陷阱：建筑动作列表 -->
+          <template v-else>
+            <template v-if="buildingActions.length > 0">
+              <div class="section-title">可执行的动作</div>
+              <div
+                v-for="action in buildingActions"
+                :key="action.name"
+                class="modal-action-item"
+                :class="{ 'is-disabled': !!action.disabled }"
+              >
+                <span class="modal-action-icon">{{ action.icon || '▶' }}</span>
+                <div class="modal-action-info">
+                  <span class="modal-action-text">{{ action.text }}</span>
+                  <span v-if="action.tooltip && action.disabled" class="modal-action-condition">{{ action.tooltip }}</span>
+                </div>
+                <button
+                  class="modal-select-btn"
+                  :disabled="activity.isBusy || !!action.disabled"
+                  @click="handleActionStart(action)"
+                >
+                  开始
+                </button>
+              </div>
+            </template>
+
+            <!-- 无动作提示 -->
+            <div v-else class="no-actions">
+              <span>该建筑暂无可执行动作</span>
+            </div>
+          </template>
 
           <!-- 升级区 -->
           <template v-if="upgradeInfo">
@@ -90,8 +114,12 @@ import { computed } from 'vue';
 import { useScenesStore } from '../../stores/scenes';
 import { useActivityStore } from '../../stores/activity';
 import { useCharacterStore } from '../../stores/character';
+import { useBaseSceneStore } from '../../stores/scenes/base';
 import { BASE_BUILDING_UPGRADES } from '../../stores/scenes/base';
 import { toast } from '../../utils/toast';
+import { useGameLogStore } from '../../stores/gameLog';
+import { useTimeStore } from '../../stores/time';
+import { getOrCreateResource } from '../../utils/resourceUtils';
 import type { GameBuilding, GameBuildingAction } from '../../stores/scenes/types';
 
 const props = defineProps<{
@@ -106,6 +134,9 @@ const emit = defineEmits<{
 const scenes = useScenesStore();
 const activity = useActivityStore();
 const character = useCharacterStore();
+const baseScene = useBaseSceneStore();
+const gameLogStore = useGameLogStore();
+const timeStore = useTimeStore();
 
 // 获取该建筑的可用动作
 const buildingActions = computed<GameBuildingAction[]>(() => {
@@ -182,6 +213,44 @@ async function handleUpgrade() {
       await scenes.upgradeBuildingInCurrentScene(props.building.type);
     }
   });
+}
+
+function handleTrapRelease() {
+  if (!props.building.trapAnimal) return;
+  const animalName = props.building.trapAnimal.name;
+  props.building.trapAnimal = undefined;
+  props.building.trapCapturedAt = Date.now();
+  toast({ message: `放生了${animalName}，陷阱重新等待捕获`, type: 'info' });
+  gameLogStore.addEntry({
+    text: `放生了${animalName}`,
+    type: 'ACTION',
+    gameTimestamp: timeStore.timestamp,
+    timestamp: Date.now()
+  });
+}
+
+function handleTrapHarvest() {
+  if (!props.building.trapAnimal) return;
+  const animal = props.building.trapAnimal;
+  const scene = baseScene.scene;
+
+  for (const y of animal.yields) {
+    const resource = getOrCreateResource(scene.resources, { id: y.id, type: y.id, name: y.name });
+    resource.count += y.count;
+  }
+
+  const yieldsText = animal.yields.map(y => `${y.name}×${y.count}`).join('，');
+  const message = `收获了${animal.name}的战利品：${yieldsText}`;
+  toast({ message, type: 'success' });
+  gameLogStore.addEntry({
+    text: message,
+    type: 'ITEM',
+    gameTimestamp: timeStore.timestamp,
+    timestamp: Date.now()
+  });
+
+  props.building.trapAnimal = undefined;
+  props.building.trapCapturedAt = Date.now();
 }
 </script>
 
@@ -427,5 +496,83 @@ async function handleUpgrade() {
   color: #718096;
   text-align: center;
   padding: 0.3rem 0;
+}
+
+/* 陷阱区 */
+.trap-section {
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.trap-empty {
+  font-size: 0.85rem;
+  color: #718096;
+  text-align: center;
+  padding: 0.75rem 0;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.trap-has-animal {
+  background: rgba(104, 211, 145, 0.08);
+  border: 1px solid rgba(104, 211, 145, 0.3);
+}
+
+.trap-captured-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #68d391;
+}
+
+.trap-yields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #a0aec0;
+}
+
+.trap-yield-item {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+}
+
+.trap-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.trap-release-btn,
+.trap-harvest-btn {
+  padding: 0.3rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.trap-release-btn {
+  border: 1px solid rgba(160, 174, 192, 0.5);
+  background: rgba(160, 174, 192, 0.1);
+  color: #a0aec0;
+}
+
+.trap-release-btn:hover {
+  background: rgba(160, 174, 192, 0.25);
+}
+
+.trap-harvest-btn {
+  border: 1px solid rgba(104, 211, 145, 0.5);
+  background: rgba(104, 211, 145, 0.2);
+  color: #68d391;
+}
+
+.trap-harvest-btn:hover {
+  background: rgba(104, 211, 145, 0.35);
 }
 </style>
