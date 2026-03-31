@@ -530,16 +530,6 @@ export const useBaseSceneStore = defineStore('baseScene', {
         timestamp: Date.now()
       });
     },
-      vegetableResource.count += amount;
-      const message = `在农田里种出了 ${amount} 株蔬菜！`;
-      toast({ message, type: 'success' });
-      useGameLogStore().addEntry({
-        text: message,
-        type: 'ITEM',
-        gameTimestamp: useTimeStore().timestamp,
-        timestamp: Date.now()
-      });
-    },
 
     // 制作急救包（药铺建筑动作）
     async makeFirstAid() {

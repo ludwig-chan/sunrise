@@ -59,16 +59,14 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useBaseSceneStore } from '../../stores/scenes/base'
-import { useForestSceneStore } from '../../stores/scenes/forest'
+import { useInventoryStore } from '../../stores/inventory'
 import { useCharacterStore } from '../../stores/character'
 import { ITEM_DEFINITIONS, type ItemIcon as ItemIconType, type ItemEffect } from '../../data/items'
 import ItemIcon from '../common/ItemIcon.vue'
 import StatusIcon from '../common/StatusIcon.vue'
 import FilterBar from '../common/FilterBar.vue'
 
-const baseScene = useBaseSceneStore()
-const forestScene = useForestSceneStore()
+const inventoryStore = useInventoryStore()
 const characterStore = useCharacterStore()
 
 interface DisplayItem {
@@ -98,37 +96,18 @@ function onFilterChange(newValue: Set<string>) {
   selectedItem.value = null
 }
 
-// 聚合所有场景的资源
-const aggregatedResources = computed(() => {
-  const map = new Map<string, { id: string; name: string; count: number }>()
-  const allResources = [
-    ...baseScene.scene.resources,
-    ...forestScene.scene.resources,
-  ]
-  for (const r of allResources) {
-    const existing = map.get(r.id)
-    if (existing) {
-      existing.count += r.count
-    } else {
-      map.set(r.id, { id: r.id, name: r.name, count: r.count })
-    }
-  }
-  return map
-})
-
-// 构建展示物品列表（资源）
+// 直接读全局背包构建展示物品列表
 const allDisplayItems = computed((): DisplayItem[] => {
   const items: DisplayItem[] = []
 
-  // 来自场景的资源
-  for (const [id, res] of aggregatedResources.value) {
-    if (res.count <= 0) continue
-    const def = ITEM_DEFINITIONS[id]
+  for (const invItem of inventoryStore.items) {
+    if (invItem.count <= 0) continue
+    const def = ITEM_DEFINITIONS[invItem.id]
     if (!def) continue
     items.push({
-      id,
+      id: invItem.id,
       name: def.name,
-      count: res.count,
+      count: invItem.count,
       icon: def.icon,
       description: def.description,
       hasUse: !!def.use,
@@ -156,8 +135,7 @@ function selectItem(item: DisplayItem) {
 function useItem(item: DisplayItem) {
   characterStore.eatFood(item.id)
   // 使用后若该物品已耗尽，自动关闭详情面板
-  const remaining = aggregatedResources.value.get(item.id)
-  if (!remaining || remaining.count <= 0) {
+  if (inventoryStore.getCount(item.id) <= 0) {
     selectedItem.value = null
   }
 }

@@ -114,7 +114,6 @@ import { computed } from 'vue';
 import { useScenesStore } from '../../stores/scenes';
 import { useActivityStore } from '../../stores/activity';
 import { useCharacterStore } from '../../stores/character';
-import { useBaseSceneStore } from '../../stores/scenes/base';
 import { BASE_BUILDING_UPGRADES } from '../../stores/scenes/base';
 import { useInventoryStore } from '../../stores/inventory';
 import { toast } from '../../utils/toast';
@@ -134,7 +133,6 @@ const emit = defineEmits<{
 const scenes = useScenesStore();
 const activity = useActivityStore();
 const character = useCharacterStore();
-const baseScene = useBaseSceneStore();
 const gameLogStore = useGameLogStore();
 const timeStore = useTimeStore();
 const inventoryStore = useInventoryStore();
@@ -233,11 +231,9 @@ function handleTrapRelease() {
 function handleTrapHarvest() {
   if (!props.building.trapAnimal) return;
   const animal = props.building.trapAnimal;
-  const scene = baseScene.scene;
 
   for (const y of animal.yields) {
-    const resource = getOrCreateResource(scene.resources, { id: y.id, type: y.id, name: y.name });
-    resource.count += y.count;
+    inventoryStore.addItem({ id: y.id, type: y.id, name: y.name }, y.count);
   }
 
   const yieldsText = animal.yields.map(y => `${y.name}×${y.count}`).join('，');
