@@ -5,15 +5,21 @@
     <div class="buildings-grid">
       <!-- 已建建筑卡片 -->
       <div
-        v-for="building in buildings"
-        :key="building.type"
+        v-for="(building, index) in buildings"
+        :key="`${building.type}-${index}`"
         class="building-card"
+        :class="{
+          'building-card--damaged': building.type === 'trap' && building.trapDamaged,
+          'building-card--has-animal': building.type === 'trap' && building.trapAnimal
+        }"
         role="button"
         tabindex="0"
         @click="openBuildingModal(building)"
         @keydown.enter="openBuildingModal(building)"
       >
         <span class="building-card-name">{{ building.name }}</span>
+        <span v-if="building.type === 'trap' && building.trapAnimal" class="building-card-badge">🐾</span>
+        <span v-else-if="building.type === 'trap' && building.trapDamaged" class="building-card-badge building-card-badge--warn">⚠️</span>
       </div>
 
       <!-- 无建筑时的占位提示 -->
@@ -64,6 +70,7 @@ function openBuildingModal(building: GameBuilding) {
 
 .building-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 68px;
@@ -75,6 +82,7 @@ function openBuildingModal(building: GameBuilding) {
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
   text-align: center;
+  position: relative;
 }
 
 .building-card:hover {
@@ -86,11 +94,31 @@ function openBuildingModal(building: GameBuilding) {
   transform: translateY(0);
 }
 
+.building-card--damaged {
+  border-color: rgba(252, 129, 74, 0.5);
+  background: rgba(252, 129, 74, 0.06);
+}
+
+.building-card--has-animal {
+  border-color: rgba(104, 211, 145, 0.5);
+  background: rgba(104, 211, 145, 0.06);
+}
+
 .building-card-name {
   font-size: 0.7rem;
   color: #2d3748;
   font-weight: 600;
   line-height: 1.2;
+}
+
+.building-card-badge {
+  font-size: 0.65rem;
+  margin-top: 0.1rem;
+  line-height: 1;
+}
+
+.building-card-badge--warn {
+  filter: hue-rotate(0deg);
 }
 
 .no-buildings {
@@ -99,4 +127,3 @@ function openBuildingModal(building: GameBuilding) {
   padding: 0.5rem 0.25rem;
 }
 </style>
-

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { GameScene, GameBuildingRecipe, GameBuildingAction } from './types';
+import type { GameScene, GameBuildingRecipe, GameBuildingAction, TrapAnimal } from './types';
 import { useEquipmentStore } from '../equipment';
 import { useCharacterStore } from '../character';
 import { useTimeStore } from '../time';
@@ -39,6 +39,21 @@ export const FOREST_BUILDING_ICONS: Record<string, string> = {
   woodenHut: '🏠',
   trap: '🪤'
 };
+
+// 树林陷阱修复消耗（建造消耗 branch:3）
+const TRAP_REPAIR_COST: Record<string, number> = { branch: 2 };
+// 树林陷阱摧毁回收材料
+const TRAP_DESTROY_RETURN: Record<string, number> = { branch: 1 };
+
+// 树林陷阱触发间隔（毫秒），对应约6个游戏小时
+const FOREST_TRAP_INTERVAL_MS = 60000;
+// 树林陷阱捕获概率
+const FOREST_TRAP_CATCH_CHANCE = 0.7;
+// 树林陷阱可捕获的动物列表
+const FOREST_TRAP_ANIMALS: TrapAnimal[] = [
+  { id: 'rabbit', name: '兔子', yields: [{ id: 'raw_meat', name: '生肉', count: 1 }, { id: 'fur', name: '皮毛', count: 1 }] },
+  { id: 'bird', name: '小鸟', yields: [{ id: 'raw_meat', name: '生肉', count: 1 }] }
+];
 
 const RESOURCE_NAMES: { [key: string]: string } = {
   wood: '木材',
@@ -87,7 +102,6 @@ export const useForestSceneStore = defineStore('forestScene', {
       buildings: [],
       stock: JSON.parse(JSON.stringify(INITIAL_STOCK))
     } as GameScene,
-    trapHoursElapsed: 0,
     _trapListenerRegistered: false
   }),
 
@@ -106,9 +120,6 @@ export const useForestSceneStore = defineStore('forestScene', {
 
       // 重置动作列表
       this.scene.actions = []
-
-      // 重置陷阱计时
-      this.trapHoursElapsed = 0
     },
 
     // 检查体力值是否足够
@@ -333,8 +344,8 @@ export const useForestSceneStore = defineStore('forestScene', {
       const recipe = FOREST_BUILDING_RECIPES.find(r => r.type === recipeType);
       if (!recipe) return;
 
-      // 检查是否已建造
-      if (this.scene.buildings.some(b => b.type === recipeType)) {
+      // 陷阱允许建造多个，其他建筑只允许建造一个
+      if (recipeType !== 'trap' && this.scene.buildings.some(b => b.type === recipeType)) {
         toast({ message: '该建筑已经建好了', type: 'warning' });
         return;
       }
@@ -464,6 +475,53 @@ export const useForestSceneStore = defineStore('forestScene', {
       ];
     },
 
+    // 修复陷阱：消耗资源清除损坏状态
+    repairTrap(building: import('./types').GameBuilding) {
+      const inventory = useInventoryStore();
+      const missing: string[] = [];
+      for (const [res, amount] of Object.entries(TRAP_REPAIR_COST)) {
+        if (!inventory.hasEnough(res, amount)) {
+          missing.push(`${RESOURCE_NAMES[res] ?? res}×${amount}`);
+        }
+      }
+      if (missing.length > 0) {
+        toast({ message: `修复需要：${missing.join('、')}`, type: 'warning' });
+        return;
+      }
+      for (const [res, amount] of Object.entries(TRAP_REPAIR_COST)) {
+        inventory.removeItem(res, amount);
+      }
+      building.trapDamaged = false;
+      building.trapCapturedAt = Date.now();
+      toast({ message: '陷阱已修复，重新开始等待猎物', type: 'success' });
+      useGameLogStore().addEntry({
+        text: '修复了陷阱，重新开始等待猎物',
+        type: 'ACTION',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 摧毁陷阱：删除建筑，回收部分材料
+    destroyTrap(building: import('./types').GameBuilding) {
+      const inventory = useInventoryStore();
+      for (const [res, amount] of Object.entries(TRAP_DESTROY_RETURN)) {
+        inventory.addItem({ id: res, type: res, name: RESOURCE_NAMES[res] ?? res }, amount);
+      }
+      const idx = this.scene.buildings.indexOf(building);
+      if (idx !== -1) this.scene.buildings.splice(idx, 1);
+      const returnText = Object.entries(TRAP_DESTROY_RETURN)
+        .map(([res, amt]) => `${RESOURCE_NAMES[res] ?? res}×${amt}`)
+        .join('、');
+      toast({ message: `陷阱已摧毁，回收了 ${returnText}`, type: 'info' });
+      useGameLogStore().addEntry({
+        text: `摧毁了陷阱，回收了 ${returnText}`,
+        type: 'ACTION',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
     initializeScene() {
       this.scene.actions = this.getActionConfig();
 
@@ -476,33 +534,37 @@ export const useForestSceneStore = defineStore('forestScene', {
       if (!this._trapListenerRegistered) {
         this._trapListenerRegistered = true;
         emitter.on('hour-passed', () => {
-          const trapIndex = this.scene.buildings.findIndex(b => b.type === 'trap');
-          if (trapIndex === -1) {
-            this.trapHoursElapsed = 0;
-            return;
-          }
-          this.trapHoursElapsed++;
-          if (this.trapHoursElapsed >= 6) {
-            // 移除陷阱
-            this.scene.buildings.splice(trapIndex, 1);
-            this.trapHoursElapsed = 0;
+          const trapBuildings = this.scene.buildings.filter(b => b.type === 'trap');
+          if (trapBuildings.length === 0) return;
 
-            if (Math.random() < 0.7) {
+          const now = Date.now();
+          for (const trap of trapBuildings) {
+            // 已有捕获动物或已损坏，等待玩家处理
+            if (trap.trapAnimal || trap.trapDamaged) continue;
+
+            const lastCheck = trap.trapCapturedAt ?? 0;
+            if (now - lastCheck < FOREST_TRAP_INTERVAL_MS) continue;
+
+            // 触发陷阱，标记为损坏
+            trap.trapCapturedAt = now;
+            trap.trapDamaged = true;
+
+            if (Math.random() < FOREST_TRAP_CATCH_CHANCE) {
               // 成功捕获
-              const meatCount = Math.floor(Math.random() * 3) + 1;
-              useInventoryStore().addItem({ id: 'raw_meat', type: 'raw_meat', name: '生肉' }, meatCount);
-              toast({ message: `陷阱触发！捕获了${meatCount}块生肉`, type: 'success' });
+              const animal = FOREST_TRAP_ANIMALS[Math.floor(Math.random() * FOREST_TRAP_ANIMALS.length)];
+              trap.trapAnimal = animal;
+              toast({ message: `陷阱捕获了一只${animal.name}！陷阱已损坏，需要修复才能继续使用`, type: 'success' });
               useGameLogStore().addEntry({
-                text: `陷阱触发！捕获了${meatCount}块生肉`,
+                text: `陷阱捕获了一只${animal.name}！`,
                 type: 'ITEM',
                 gameTimestamp: useTimeStore().timestamp,
                 timestamp: Date.now()
               });
             } else {
               // 失败，一无所获
-              toast({ message: '陷阱被触发了，但什么都没抓到', type: 'info' });
+              toast({ message: '陷阱被触发了，但什么都没抓到，陷阱已损坏', type: 'info' });
               useGameLogStore().addEntry({
-                text: '陷阱被触发了，但什么都没抓到',
+                text: '陷阱被触发了，但什么都没抓到，陷阱已损坏',
                 type: 'ACTION',
                 gameTimestamp: useTimeStore().timestamp,
                 timestamp: Date.now()

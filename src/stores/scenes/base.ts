@@ -135,6 +135,11 @@ const RESOURCE_NAMES: { [key: string]: string } = {
   nourishing_soup: '滋补汤'
 };
 
+// 基地陷阱修复消耗（建造消耗 branch:8 wood:3）
+const TRAP_REPAIR_COST: Record<string, number> = { branch: 5 };
+// 基地陷阱摧毁回收材料
+const TRAP_DESTROY_RETURN: Record<string, number> = { branch: 4 };
+
 // 树林解锁保底次数：最多探索此次数后必定解锁
 const FOREST_UNLOCK_PITY_THRESHOLD = 3;
 // 每次探索时随机提前解锁树林的概率
@@ -381,8 +386,8 @@ export const useBaseSceneStore = defineStore('baseScene', {
       const recipe = BASE_BUILDING_RECIPES.find(r => r.type === recipeType);
       if (!recipe) return;
 
-      // 检查是否已建造
-      if (this.scene.buildings.some(b => b.type === recipeType)) {
+      // 陷阱允许建造多个，其他建筑只允许建造一个
+      if (recipeType !== 'trap' && this.scene.buildings.some(b => b.type === recipeType)) {
         toast({ message: '该建筑已经建好了', type: 'warning' });
         return;
       }
@@ -838,27 +843,86 @@ export const useBaseSceneStore = defineStore('baseScene', {
         // 已有捕获，等玩家处理
         if (trap.trapAnimal) continue;
 
+        // 已损坏，等待修复
+        if (trap.trapDamaged) continue;
+
         const level = Math.max(minLevel, Math.min(maxLevel, trap.level));
         const config = TRAP_CONFIG[level];
         const lastCheck = trap.trapCapturedAt ?? 0;
 
         if (now - lastCheck < config.intervalMs) continue;
 
-        // 重置检查时间（无论是否捕获，都更新计时）
+        // 重置检查时间（无论是否捕获，都更新计时），并标记为损坏
         trap.trapCapturedAt = now;
+        trap.trapDamaged = true;
 
         if (Math.random() < config.chance) {
           const animal = config.animals[Math.floor(Math.random() * config.animals.length)];
           trap.trapAnimal = animal;
-          toast({ message: `陷阱捕获了一只${animal.name}！`, type: 'success' });
+          toast({ message: `陷阱捕获了一只${animal.name}！陷阱已损坏，需要修复才能继续使用`, type: 'success' });
           useGameLogStore().addEntry({
             text: `陷阱捕获了一只${animal.name}！`,
             type: 'ITEM',
             gameTimestamp: useTimeStore().timestamp,
             timestamp: Date.now()
           });
+        } else {
+          toast({ message: '陷阱被触发了，但什么都没抓到，陷阱已损坏', type: 'info' });
+          useGameLogStore().addEntry({
+            text: '陷阱被触发了，但什么都没抓到，陷阱已损坏',
+            type: 'ACTION',
+            gameTimestamp: useTimeStore().timestamp,
+            timestamp: Date.now()
+          });
         }
       }
+    },
+
+    // 修复陷阱：消耗资源清除损坏状态
+    repairTrap(building: import('./types').GameBuilding) {
+      const inventory = useInventoryStore();
+      const missing: string[] = [];
+      for (const [res, amount] of Object.entries(TRAP_REPAIR_COST)) {
+        if (!inventory.hasEnough(res, amount)) {
+          missing.push(`${RESOURCE_NAMES[res] ?? res}×${amount}`);
+        }
+      }
+      if (missing.length > 0) {
+        toast({ message: `修复需要：${missing.join('、')}`, type: 'warning' });
+        return;
+      }
+      for (const [res, amount] of Object.entries(TRAP_REPAIR_COST)) {
+        inventory.removeItem(res, amount);
+      }
+      building.trapDamaged = false;
+      building.trapCapturedAt = Date.now();
+      toast({ message: '陷阱已修复，重新开始等待猎物', type: 'success' });
+      useGameLogStore().addEntry({
+        text: '修复了陷阱，重新开始等待猎物',
+        type: 'ACTION',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 摧毁陷阱：删除建筑，回收部分材料
+    destroyTrap(building: import('./types').GameBuilding) {
+      const inventory = useInventoryStore();
+      for (const [res, amount] of Object.entries(TRAP_DESTROY_RETURN)) {
+        inventory.addItem({ id: res, type: res, name: RESOURCE_NAMES[res] ?? res }, amount);
+      }
+      const idx = this.scene.buildings.indexOf(building);
+      if (idx !== -1) this.scene.buildings.splice(idx, 1);
+      const returnText = Object.entries(TRAP_DESTROY_RETURN)
+        .map(([res, amt]) => `${RESOURCE_NAMES[res] ?? res}×${amt}`)
+        .join('、');
+      toast({ message: `陷阱已摧毁，回收了 ${returnText}`, type: 'info' });
+      useGameLogStore().addEntry({
+        text: `摧毁了陷阱，回收了 ${returnText}`,
+        type: 'ACTION',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
     },
 
     initializeScene() {
