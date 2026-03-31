@@ -116,10 +116,10 @@ import { useActivityStore } from '../../stores/activity';
 import { useCharacterStore } from '../../stores/character';
 import { useBaseSceneStore } from '../../stores/scenes/base';
 import { BASE_BUILDING_UPGRADES } from '../../stores/scenes/base';
+import { useInventoryStore } from '../../stores/inventory';
 import { toast } from '../../utils/toast';
 import { useGameLogStore } from '../../stores/gameLog';
 import { useTimeStore } from '../../stores/time';
-import { getOrCreateResource } from '../../utils/resourceUtils';
 import type { GameBuilding, GameBuildingAction } from '../../stores/scenes/types';
 
 const props = defineProps<{
@@ -137,6 +137,7 @@ const character = useCharacterStore();
 const baseScene = useBaseSceneStore();
 const gameLogStore = useGameLogStore();
 const timeStore = useTimeStore();
+const inventoryStore = useInventoryStore();
 
 // 获取该建筑的可用动作
 const buildingActions = computed<GameBuildingAction[]>(() => {

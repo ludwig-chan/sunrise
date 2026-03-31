@@ -3,7 +3,8 @@ import type { GameScene, GameBuildingRecipe, GameBuildingAction } from './types'
 import { useEquipmentStore } from '../equipment';
 import { useCharacterStore } from '../character';
 import { useTimeStore } from '../time';
-import { getStockAmount, getOrCreateResource } from '../../utils/resourceUtils';
+import { getStockAmount } from '../../utils/resourceUtils';
+import { useInventoryStore } from '../inventory';
 import { toast } from '../../utils/toast';
 import { useGameLogStore } from '../gameLog';
 
@@ -14,7 +15,7 @@ export const CAVE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '矿工营地',
     description: '在山洞口扎营，可以更高效地开采资源',
     cost: { wood: 10, stone: 8 },
-    duration: 3,
+    duration: 1,
     energyCost: 14
   },
   {
@@ -22,7 +23,7 @@ export const CAVE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '熔炉',
     description: '可以将铁矿石冶炼成铁锭',
     cost: { stone: 15, coal: 5 },
-    duration: 5,
+    duration: 1.5,
     energyCost: 18
   },
   {
@@ -30,7 +31,7 @@ export const CAVE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '水晶祭坛',
     description: '神秘的祭坛，可以放大魔法效果，也许藏有秘密',
     cost: { crystal: 3, stone: 10 },
-    duration: 4,
+    duration: 1,
     energyCost: 10
   }
 ];
@@ -63,7 +64,6 @@ export const useCaveSceneStore = defineStore('caveScene', {
     scene: {
       id: 'cave',
       name: '山洞',
-      resources: [],
       actions: [],
       buildings: [],
       stock: JSON.parse(JSON.stringify(INITIAL_STOCK))
@@ -71,7 +71,6 @@ export const useCaveSceneStore = defineStore('caveScene', {
   }),
 
   getters: {
-    resources: (state) => state.scene.resources,
     actions: (state) => state.scene.actions,
     buildingRecipes: (): GameBuildingRecipe[] => CAVE_BUILDING_RECIPES
   },
@@ -79,9 +78,6 @@ export const useCaveSceneStore = defineStore('caveScene', {
   actions: {
     // 重置场景状态
     reset() {
-      // 清空已收集的资源
-      this.scene.resources = []
-
       // 重置建筑
       this.scene.buildings = []
 
@@ -130,12 +126,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
       try {
         const amount = Math.floor(Math.random() * 2) + 1; // 1-2
         const actualAmount = await getStockAmount(this.scene.stock, 'iron_ore', amount);
-        const ironOreResource = getOrCreateResource(this.scene.resources, {
-          id: 'iron_ore',
-          type: 'iron_ore',
-          name: '铁矿石'
-        });
-        ironOreResource.count += actualAmount;
+        useInventoryStore().addItem({ id: 'iron_ore', type: 'iron_ore', name: '铁矿石' }, actualAmount);
         const message = `挖到了 ${actualAmount} 块铁矿石！`;
         toast({ message, type: 'success' });
         useGameLogStore().addEntry({
@@ -155,12 +146,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
       try {
         const amount = Math.floor(Math.random() * 3) + 1; // 1-3
         const actualAmount = await getStockAmount(this.scene.stock, 'coal', amount);
-        const coalResource = getOrCreateResource(this.scene.resources, {
-          id: 'coal',
-          type: 'coal',
-          name: '煤炭'
-        });
-        coalResource.count += actualAmount;
+        useInventoryStore().addItem({ id: 'coal', type: 'coal', name: '煤炭' }, actualAmount);
         const message = `采集到了 ${actualAmount} 块煤炭`;
         toast({ message, type: 'success' });
         useGameLogStore().addEntry({
@@ -178,17 +164,13 @@ export const useCaveSceneStore = defineStore('caveScene', {
     // 搜寻宝物：30% 概率获得水晶，20% 概率获得骨头，50% 什么都没有
     async searchTreasure() {
       const roll = Math.random();
+      const inventory = useInventoryStore();
 
       if (roll < 0.3) {
         // 30% 概率获得 1 块水晶
         try {
           const actualAmount = await getStockAmount(this.scene.stock, 'crystal', 1);
-          const crystalResource = getOrCreateResource(this.scene.resources, {
-            id: 'crystal',
-            type: 'crystal',
-            name: '水晶'
-          });
-          crystalResource.count += actualAmount;
+          inventory.addItem({ id: 'crystal', type: 'crystal', name: '水晶' }, actualAmount);
           const message = `在黑暗中摸到了一块发光的水晶！`;
           toast({ message, type: 'success' });
           useGameLogStore().addEntry({
@@ -206,12 +188,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
         try {
           const amount = Math.floor(Math.random() * 2) + 1; // 1-2
           const actualAmount = await getStockAmount(this.scene.stock, 'bone', amount);
-          const boneResource = getOrCreateResource(this.scene.resources, {
-            id: 'bone',
-            type: 'bone',
-            name: '骨头'
-          });
-          boneResource.count += actualAmount;
+          inventory.addItem({ id: 'bone', type: 'bone', name: '骨头' }, actualAmount);
           const message = `发现了 ${actualAmount} 根奇怪的骨头`;
           toast({ message, type: 'success' });
           useGameLogStore().addEntry({
@@ -260,16 +237,12 @@ export const useCaveSceneStore = defineStore('caveScene', {
       }
 
       const gained: string[] = [];
+      const inventory = useInventoryStore();
 
       try {
         const amount = Math.floor(Math.random() * 3) + 2; // 2-4
         const actualAmount = await getStockAmount(this.scene.stock, 'iron_ore', amount);
-        const ironOreResource = getOrCreateResource(this.scene.resources, {
-          id: 'iron_ore',
-          type: 'iron_ore',
-          name: '铁矿石'
-        });
-        ironOreResource.count += actualAmount;
+        inventory.addItem({ id: 'iron_ore', type: 'iron_ore', name: '铁矿石' }, actualAmount);
         gained.push(`${actualAmount} 块铁矿石`);
       } catch {
         toast({ message: '铁矿石已经被挖完了', type: 'warning' });
@@ -280,12 +253,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
       if (Math.random() < 0.4) {
         try {
           const crystalAmount = await getStockAmount(this.scene.stock, 'crystal', 1);
-          const crystalResource = getOrCreateResource(this.scene.resources, {
-            id: 'crystal',
-            type: 'crystal',
-            name: '水晶'
-          });
-          crystalResource.count += crystalAmount;
+          inventory.addItem({ id: 'crystal', type: 'crystal', name: '水晶' }, crystalAmount);
           gained.push('1 块水晶');
         } catch {
           // 水晶库存不足，跳过
@@ -304,23 +272,15 @@ export const useCaveSceneStore = defineStore('caveScene', {
 
     // 冶炼铁锭（熔炉建筑动作）：需要 iron_ore×3 + coal×2，产出 1 个铁锭
     async smeltIron() {
-      const ironOreRes = this.scene.resources.find(r => r.id === 'iron_ore');
-      const coalRes = this.scene.resources.find(r => r.id === 'coal');
-
-      if (!ironOreRes || ironOreRes.count < 3 || !coalRes || coalRes.count < 2) {
+      const inventory = useInventoryStore();
+      if (!inventory.hasEnough('iron_ore', 3) || !inventory.hasEnough('coal', 2)) {
         toast({ message: '需要铁矿石 ×3 + 煤炭 ×2 才能冶炼铁锭', type: 'warning' });
         return;
       }
 
-      ironOreRes.count -= 3;
-      coalRes.count -= 2;
-
-      const ironIngotResource = getOrCreateResource(this.scene.resources, {
-        id: 'iron_ingot',
-        type: 'iron_ingot',
-        name: '铁锭'
-      });
-      ironIngotResource.count += 1;
+      inventory.removeItem('iron_ore', 3);
+      inventory.removeItem('coal', 2);
+      inventory.addItem({ id: 'iron_ingot', type: 'iron_ingot', name: '铁锭' }, 1);
 
       const message = '在熔炉中冶炼出了 1 块铁锭！';
       toast({ message, type: 'success' });
@@ -349,13 +309,13 @@ export const useCaveSceneStore = defineStore('caveScene', {
 
     // 水晶共鸣（水晶祭坛建筑动作）：需要 crystal×1，全属性 +20
     async crystalResonance() {
-      const crystalRes = this.scene.resources.find(r => r.id === 'crystal');
-      if (!crystalRes || crystalRes.count < 1) {
+      const inventory = useInventoryStore();
+      if (!inventory.hasEnough('crystal', 1)) {
         toast({ message: '需要水晶 ×1 才能进行水晶共鸣', type: 'warning' });
         return;
       }
 
-      crystalRes.count -= 1;
+      inventory.removeItem('crystal', 1);
 
       const character = useCharacterStore();
       character.health = Math.min(100, character.health + 20);
@@ -384,11 +344,12 @@ export const useCaveSceneStore = defineStore('caveScene', {
         return;
       }
 
+      const inventory = useInventoryStore();
+
       // 检查材料是否足够
       const missing: string[] = [];
       for (const [resourceType, required] of Object.entries(recipe.cost)) {
-        const resource = this.scene.resources.find(r => r.id === resourceType);
-        const current = resource?.count ?? 0;
+        const current = inventory.getCount(resourceType);
         if (current < required) {
           const name = RESOURCE_NAMES[resourceType] ?? resourceType;
           missing.push(`${name} x${required - current}`);
@@ -402,8 +363,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
 
       // 扣除材料
       for (const [resourceType, required] of Object.entries(recipe.cost)) {
-        const resource = this.scene.resources.find(r => r.id === resourceType);
-        if (resource) resource.count -= required;
+        inventory.removeItem(resourceType, required);
       }
 
       // 添加建筑（带图标）
@@ -425,7 +385,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
               name: 'enhancedMine',
               text: '强化采矿',
               icon: '🔩',
-              duration: 6,
+              duration: 1.5,
               energyCost: 12,
               handler: async () => await this.withEnergyCost(12, async () => await this.enhancedMine()),
               tooltip: '需要石镐，有概率额外获得水晶'
@@ -437,7 +397,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
               name: 'smeltIron',
               text: '冶炼铁锭',
               icon: '🔥',
-              duration: 8,
+              duration: 2,
               energyCost: 10,
               handler: async () => await this.withEnergyCost(10, async () => await this.smeltIron()),
               tooltip: '需要铁矿石 ×3 + 煤炭 ×2'
@@ -449,7 +409,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
               name: 'pray',
               text: '祈祷',
               icon: '🌟',
-              duration: 3,
+              duration: 1,
               energyCost: 0,
               handler: async () => await this.pray()
             },
@@ -457,7 +417,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
               name: 'crystalResonance',
               text: '水晶共鸣',
               icon: '💎',
-              duration: 6,
+              duration: 1.5,
               energyCost: 0,
               handler: async () => await this.crystalResonance(),
               tooltip: '需要水晶 ×1，全属性 +20'
@@ -476,7 +436,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
           name: 'deepMine',
           text: '深度挖矿',
           icon: '⛏️',
-          duration: 8,
+          duration: 2,
           energyCost: 15,
           actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(15, async () => await this.deepMine()),
@@ -487,7 +447,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
           name: 'gatherCoal',
           text: '采集煤炭',
           icon: '🪨',
-          duration: 5,
+          duration: 1.5,
           energyCost: 10,
           actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(10, async () => await this.gatherCoal())
@@ -496,7 +456,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
           name: 'searchTreasure',
           text: '搜寻宝物',
           icon: '🔦',
-          duration: 6,
+          duration: 1.5,
           energyCost: 12,
           actionGroup: 'scene' as const,
           handler: async () => await this.withEnergyCost(12, async () => await this.searchTreasure())
@@ -505,7 +465,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
           name: 'meditate',
           text: '冥想',
           icon: '🧘',
-          duration: 4,
+          duration: 1,
           energyCost: 0,
           actionGroup: 'scene' as const,
           handler: async () => await this.meditate()

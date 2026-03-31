@@ -3,7 +3,8 @@ import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, Gam
 import { useCharacterStore } from '../character';
 import { useScenesStore } from '../scenes';
 import { useTimeStore } from '../time';
-import { getOrCreateResource } from '../../utils/resourceUtils';
+import { useEquipmentStore } from '../equipment';
+import { useInventoryStore } from '../inventory';
 import { toast } from '../../utils/toast';
 import { useGameLogStore } from '../gameLog';
 
@@ -14,7 +15,7 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '篝火',
     description: '提供温暖和光源，可以烹饪食物',
     cost: { branch: 5 },
-    duration: 1,
+    duration: 0.5,
     energyCost: 7
   },
   {
@@ -22,7 +23,7 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '木屋',
     description: '提供庇护所，有了木屋可以睡觉恢复体力',
     cost: { wood: 20, branch: 5 },
-    duration: 5,
+    duration: 1.5,
     energyCost: 20
   },
   {
@@ -30,7 +31,7 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '工作台',
     description: '可以制作和修理各种工具、装备',
     cost: { wood: 8, ore: 3 },
-    duration: 2,
+    duration: 0.5,
     energyCost: 14
   },
   {
@@ -38,7 +39,7 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '储藏箱',
     description: '增加物品储存空间',
     cost: { wood: 10 },
-    duration: 2,
+    duration: 0.5,
     energyCost: 10
   },
   {
@@ -46,7 +47,7 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '农田',
     description: '开垦一块小农田，可以种植简单蔬菜',
     cost: { branch: 3, ore: 2 },
-    duration: 3,
+    duration: 1,
     energyCost: 12
   },
   {
@@ -54,7 +55,7 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '药铺',
     description: '用草药制作各种药品，恢复体力和健康',
     cost: { wood: 12, branch: 8 },
-    duration: 4,
+    duration: 1,
     energyCost: 15
   },
   {
@@ -62,7 +63,7 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     name: '陷阱',
     description: '设置陷阱，过一段时间后可能捕获动物',
     cost: { branch: 8, wood: 3 },
-    duration: 2,
+    duration: 0.5,
     energyCost: 8
   }
 ];
@@ -86,7 +87,7 @@ export const BASE_BUILDING_UPGRADES: Record<string, GameBuildingUpgrade[]> = {
       toLevel: 2,
       cost: { ore: 5, branch: 10 },
       energyCost: 15,
-      duration: 10,
+      duration: 2,
       description: '升级为石炉，可以冶炼矿石'
     }
   ],
@@ -95,7 +96,7 @@ export const BASE_BUILDING_UPGRADES: Record<string, GameBuildingUpgrade[]> = {
       toLevel: 2,
       cost: { wood: 15 },
       energyCost: 12,
-      duration: 8,
+      duration: 2,
       description: '扩容至200格'
     }
   ],
@@ -104,14 +105,14 @@ export const BASE_BUILDING_UPGRADES: Record<string, GameBuildingUpgrade[]> = {
       toLevel: 2,
       cost: { wood: 5, ore: 2 },
       energyCost: 10,
-      duration: 8,
+      duration: 2,
       description: '强化陷阱，可以捕获更大的动物（鹿），获得更多战利品'
     },
     {
       toLevel: 3,
       cost: { wood: 10, ore: 5 },
       energyCost: 15,
-      duration: 12,
+      duration: 2,
       description: '精良陷阱，可捕获野猪，收获骨头和更多皮毛'
     }
   ]
@@ -173,7 +174,6 @@ export const useBaseSceneStore = defineStore('baseScene', {
     scene: {
       id: 'base',
       name: '基地',
-      resources: [],
       actions: [],
       buildings: [],
       stock: JSON.parse(JSON.stringify(INITIAL_STOCK))
@@ -181,7 +181,6 @@ export const useBaseSceneStore = defineStore('baseScene', {
   }),
 
   getters: {
-    resources: (state) => state.scene.resources,
     actions: (state) => state.scene.actions,
     buildingRecipes: (): GameBuildingRecipe[] => BASE_BUILDING_RECIPES
   },
@@ -189,9 +188,6 @@ export const useBaseSceneStore = defineStore('baseScene', {
   actions: {
     // 重置场景状态
     reset() {
-      // 清空已收集的资源
-      this.scene.resources = []
-
       // 重置建筑
       this.scene.buildings = []
 
@@ -283,15 +279,11 @@ export const useBaseSceneStore = defineStore('baseScene', {
           const resources = ['branch', 'ore'];
           const resourceType = resources[Math.floor(Math.random() * resources.length)];
           const amount = Math.floor(Math.random() * 2) + 1; // 1-2个
+          const resourceName = resourceType === 'branch' ? '树枝' : '矿石';
 
-          const resource = getOrCreateResource(this.scene.resources, {
-            id: resourceType,
-            type: resourceType,
-            name: resourceType === 'branch' ? '树枝' : '矿石'
-          });
-          resource.count += amount;
+          useInventoryStore().addItem({ id: resourceType, type: resourceType, name: resourceName }, amount);
 
-          const message = `在附近发现了${amount}个${resource.name}！`;
+          const message = `在附近发现了${amount}个${resourceName}！`;
           toast({
             message,
             type: 'success'
@@ -346,15 +338,11 @@ export const useBaseSceneStore = defineStore('baseScene', {
             const resources = ['branch', 'ore'];
             const resourceType = resources[Math.floor(Math.random() * resources.length)];
             const amount = Math.floor(Math.random() * 2) + 1;
+            const resourceName = resourceType === 'branch' ? '树枝' : '矿石';
 
-            const resource = getOrCreateResource(this.scene.resources, {
-              id: resourceType,
-              type: resourceType,
-              name: resourceType === 'branch' ? '树枝' : '矿石'
-            });
-            resource.count += amount;
+            useInventoryStore().addItem({ id: resourceType, type: resourceType, name: resourceName }, amount);
 
-            const resourceMessage = `在附近发现了${amount}个${resource.name}！`;
+            const resourceMessage = `在附近发现了${amount}个${resourceName}！`;
             toast({
               message: resourceMessage,
               type: 'success'
@@ -399,11 +387,12 @@ export const useBaseSceneStore = defineStore('baseScene', {
         return;
       }
 
+      const inventory = useInventoryStore();
+
       // 检查材料是否足够
       const missing: string[] = [];
       for (const [resourceType, required] of Object.entries(recipe.cost)) {
-        const resource = this.scene.resources.find(r => r.id === resourceType);
-        const current = resource?.count ?? 0;
+        const current = inventory.getCount(resourceType);
         if (current < required) {
           const name = RESOURCE_NAMES[resourceType] ?? resourceType;
           missing.push(`${name} x${required - current}`);
@@ -417,8 +406,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
       // 扣除材料
       for (const [resourceType, required] of Object.entries(recipe.cost)) {
-        const resource = this.scene.resources.find(r => r.id === resourceType);
-        if (resource) resource.count -= required;
+        inventory.removeItem(resourceType, required);
       }
 
       // 添加建筑（带图标）
@@ -472,18 +460,13 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
     // 烤食物（篝火建筑动作）
     async cookFood() {
-      const resource = this.scene.resources.find(r => r.id === 'raw_meat');
-      if (!resource || resource.count <= 0) {
+      const inventory = useInventoryStore();
+      if (!inventory.hasEnough('raw_meat', 1)) {
         toast({ message: '没有生肉可以烤', type: 'warning' });
         return;
       }
-      resource.count -= 1;
-      const cookedMeat = getOrCreateResource(this.scene.resources, {
-        id: 'cooked_meat',
-        type: 'cooked_meat',
-        name: '熟肉'
-      });
-      cookedMeat.count += 1;
+      inventory.removeItem('raw_meat', 1);
+      inventory.addItem({ id: 'cooked_meat', type: 'cooked_meat', name: '熟肉' }, 1);
       const message = '用篝火烤了一块肉，获得了熟肉';
       toast({ message, type: 'success' });
       useGameLogStore().addEntry({
@@ -510,20 +493,14 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
     // 制作工具（工作台建筑动作）
     async craftTool() {
-      const woodRes = this.scene.resources.find(r => r.id === 'wood');
-      const oreRes = this.scene.resources.find(r => r.id === 'ore');
-      if (!woodRes || woodRes.count < 2 || !oreRes || oreRes.count < 1) {
+      const inventory = useInventoryStore();
+      if (!inventory.hasEnough('wood', 2) || !inventory.hasEnough('ore', 1)) {
         toast({ message: '需要木材×2 + 矿石×1 才能制作工具', type: 'warning' });
         return;
       }
-      woodRes.count -= 2;
-      oreRes.count -= 1;
-      const tool = getOrCreateResource(this.scene.resources, {
-        id: 'tool',
-        type: 'tool',
-        name: '工具'
-      });
-      tool.count += 1;
+      inventory.removeItem('wood', 2);
+      inventory.removeItem('ore', 1);
+      inventory.addItem({ id: 'tool', type: 'tool', name: '工具' }, 1);
       const message = '在工作台上制作了一件工具';
       toast({ message, type: 'success' });
       useGameLogStore().addEntry({
@@ -536,18 +513,23 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
     // 种植蔬菜（农田建筑动作）
     async plantVegetable() {
-      const branchRes = this.scene.resources.find(r => r.id === 'branch');
-      if (!branchRes || branchRes.count < 1) {
+      const inventory = useInventoryStore();
+      if (!inventory.hasEnough('branch', 1)) {
         toast({ message: '需要树枝 ×1 才能种植蔬菜', type: 'warning' });
         return;
       }
-      branchRes.count -= 1;
+      inventory.removeItem('branch', 1);
       const amount = Math.floor(Math.random() * 2) + 1; // 1-2
-      const vegetableResource = getOrCreateResource(this.scene.resources, {
-        id: 'vegetable',
-        type: 'vegetable',
-        name: '蔬菜'
+      inventory.addItem({ id: 'vegetable', type: 'vegetable', name: '蔬菜' }, amount);
+      const message = `在农田里种出了 ${amount} 株蔬菜！`;
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'ITEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
       });
+    },
       vegetableResource.count += amount;
       const message = `在农田里种出了 ${amount} 株蔬菜！`;
       toast({ message, type: 'success' });
@@ -561,18 +543,13 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
     // 制作急救包（药铺建筑动作）
     async makeFirstAid() {
-      const herbRes = this.scene.resources.find(r => r.id === 'herb');
-      if (!herbRes || herbRes.count < 2) {
+      const inventory = useInventoryStore();
+      if (!inventory.hasEnough('herb', 2)) {
         toast({ message: '需要草药 ×2 才能制作急救包', type: 'warning' });
         return;
       }
-      herbRes.count -= 2;
-      const firstAidResource = getOrCreateResource(this.scene.resources, {
-        id: 'first_aid',
-        type: 'first_aid',
-        name: '急救包'
-      });
-      firstAidResource.count += 1;
+      inventory.removeItem('herb', 2);
+      inventory.addItem({ id: 'first_aid', type: 'first_aid', name: '急救包' }, 1);
       const message = '用草药制作了 1 个急救包';
       toast({ message, type: 'success' });
       useGameLogStore().addEntry({
@@ -585,20 +562,14 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
     // 制作滋补汤（药铺建筑动作）
     async makeNourishingSoup() {
-      const vegetableRes = this.scene.resources.find(r => r.id === 'vegetable');
-      const rawMeatRes = this.scene.resources.find(r => r.id === 'raw_meat');
-      if (!vegetableRes || vegetableRes.count < 2 || !rawMeatRes || rawMeatRes.count < 1) {
+      const inventory = useInventoryStore();
+      if (!inventory.hasEnough('vegetable', 2) || !inventory.hasEnough('raw_meat', 1)) {
         toast({ message: '需要蔬菜 ×2 + 生肉 ×1 才能制作滋补汤', type: 'warning' });
         return;
       }
-      vegetableRes.count -= 2;
-      rawMeatRes.count -= 1;
-      const soupResource = getOrCreateResource(this.scene.resources, {
-        id: 'nourishing_soup',
-        type: 'nourishing_soup',
-        name: '滋补汤'
-      });
-      soupResource.count += 1;
+      inventory.removeItem('vegetable', 2);
+      inventory.removeItem('raw_meat', 1);
+      inventory.addItem({ id: 'nourishing_soup', type: 'nourishing_soup', name: '滋补汤' }, 1);
       const message = '用蔬菜和生肉炖出了 1 碗滋补汤！';
       toast({ message, type: 'success' });
       useGameLogStore().addEntry({
@@ -655,12 +626,14 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
     // 获取人物动作（与场景/建筑无关）
     getCharacterActions(): GameBuildingAction[] {
+      const inventory = useInventoryStore();
+      const equipment = useEquipmentStore();
       return [
         {
           name: 'rest',
           text: '休息',
           icon: '💤',
-          duration: 3,
+          duration: 1,
           energyCost: 0,
           actionGroup: 'character',
           handler: async () => await this.rest()
@@ -669,7 +642,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
           name: 'meditate',
           text: '冥想',
           icon: '🧘',
-          duration: 4,
+          duration: 1,
           energyCost: 0,
           actionGroup: 'character',
           handler: async () => await this.meditateCharacter()
@@ -678,10 +651,32 @@ export const useBaseSceneStore = defineStore('baseScene', {
           name: 'talkToSelf',
           text: '自言自语',
           icon: '💬',
-          duration: 2,
+          duration: 0.5,
           energyCost: 0,
           actionGroup: 'character',
           handler: async () => await this.talkToSelf()
+        },
+        {
+          name: 'craftAxe',
+          text: '制作石斧',
+          icon: '🪓',
+          duration: 1,
+          energyCost: 5,
+          actionGroup: 'character',
+          handler: async () => await this.withEnergyCost(5, async () => { await equipment.craftAxe() }),
+          disabled: () => !inventory.hasEnough('branch', 3) || !inventory.hasEnough('ore', 2),
+          tooltip: '需要树枝 ×3 + 矿石 ×2'
+        },
+        {
+          name: 'craftPickaxe',
+          text: '制作石镐',
+          icon: '⛏️',
+          duration: 1,
+          energyCost: 5,
+          actionGroup: 'character',
+          handler: async () => await this.withEnergyCost(5, async () => { await equipment.craftPickaxe() }),
+          disabled: () => !inventory.hasEnough('branch', 2) || !inventory.hasEnough('ore', 3),
+          tooltip: '需要树枝 ×2 + 矿石 ×3'
         }
       ];
     },
@@ -695,7 +690,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
               name: 'cookFood',
               text: '烤食物',
               icon: '🍖',
-              duration: 5,
+              duration: 1.5,
               energyCost: 5,
               handler: async () => await this.withEnergyCost(5, async () => await this.cookFood()),
               tooltip: '需要生肉'
@@ -704,7 +699,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
               name: 'warmUp',
               text: '取暖',
               icon: '🌡️',
-              duration: 3,
+              duration: 1,
               energyCost: 0,
               handler: async () => await this.warmUp()
             }
@@ -715,7 +710,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
               name: 'sleep',
               text: '睡觉',
               icon: '🛏️',
-              duration: 5,
+              duration: 1.5,
               energyCost: 0,
               handler: async () => await this.sleep(),
               tooltip: '消耗饱食度恢复体力'
@@ -728,7 +723,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
               name: 'craftTool',
               text: '制作工具',
               icon: '🔧',
-              duration: 8,
+              duration: 2,
               energyCost: 10,
               handler: async () => await this.withEnergyCost(10, async () => await this.craftTool()),
               tooltip: '需要木材×2 + 矿石×1'
@@ -743,7 +738,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
               name: 'plantVegetable',
               text: '种植蔬菜',
               icon: '🥬',
-              duration: 8,
+              duration: 2,
               energyCost: 8,
               handler: async () => await this.withEnergyCost(8, async () => await this.plantVegetable()),
               tooltip: '需要树枝 ×1'
@@ -755,7 +750,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
               name: 'makeFirstAid',
               text: '制作急救包',
               icon: '🩹',
-              duration: 6,
+              duration: 1.5,
               energyCost: 5,
               handler: async () => await this.withEnergyCost(5, async () => await this.makeFirstAid()),
               tooltip: '需要草药 ×2'
@@ -764,7 +759,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
               name: 'makeNourishingSoup',
               text: '制作滋补汤',
               icon: '🍲',
-              duration: 5,
+              duration: 1.5,
               energyCost: 5,
               handler: async () => await this.withEnergyCost(5, async () => await this.makeNourishingSoup()),
               tooltip: '需要蔬菜 ×2 + 生肉 ×1'
@@ -785,7 +780,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
           name: 'explore',
           text: '探索',
           icon: '🔍',
-          duration: 5,
+          duration: 1.5,
           energyCost: 10,
           actionGroup: 'scene',
           handler: async () => await this.withEnergyCost(10, async () => await this.explore())
@@ -794,7 +789,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
           name: 'meditate',
           text: '冥想',
           icon: '🧘',
-          duration: 4,
+          duration: 1,
           energyCost: 0,
           actionGroup: 'scene',
           handler: async () => await this.meditateCharacter()
@@ -803,7 +798,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
           name: 'tidyCamp',
           text: '整理营地',
           icon: '🧹',
-          duration: 3,
+          duration: 1,
           energyCost: 5,
           actionGroup: 'scene',
           handler: async () => await this.withEnergyCost(5, async () => await this.tidyCamp())

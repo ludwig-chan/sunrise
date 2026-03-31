@@ -38,15 +38,6 @@ export interface GameBuildingRecipe {
   energyCost: number;
 }
 
-export interface GameResource {
-  id: string;
-  type: string;
-  name: string;
-  count: number;
-  maxCount?: number;
-  description?: string;
-}
-
 export interface TrapYield {
   id: string;
   name: string;
@@ -81,7 +72,6 @@ export interface GameScene {
   id: string;
   name: string;
   actions: GameAction[];
-  resources: GameResource[];
   buildings: GameBuilding[];
   // 场景库存,记录场景中资源的当前数量和最大数量
   stock: {

@@ -32,8 +32,8 @@ export const useScenesStore = defineStore('scenes', {
       }
     },
 
-    currentResources(): GameScene['resources'] {
-      return this.currentScene.resources;
+    currentResources(): never[] {
+      return [];
     },
 
     // 返回所有动作（兼容旧用法，已废弃，请改用 currentGroupedActions）
