@@ -534,11 +534,11 @@ export const useForestSceneStore = defineStore('forestScene', {
       if (!this._trapListenerRegistered) {
         this._trapListenerRegistered = true;
         emitter.on('hour-passed', () => {
-          const traps = this.scene.buildings.filter(b => b.type === 'trap');
-          if (traps.length === 0) return;
+          const trapBuildings = this.scene.buildings.filter(b => b.type === 'trap');
+          if (trapBuildings.length === 0) return;
 
           const now = Date.now();
-          for (const trap of traps) {
+          for (const trap of trapBuildings) {
             // 已有捕获动物或已损坏，等待玩家处理
             if (trap.trapAnimal || trap.trapDamaged) continue;
 

@@ -232,11 +232,12 @@ async function handleUpgrade() {
 }
 
 // 养殖：保留动物（为未来养殖系统埋下伏笔）
+// 注意：trapDamaged 保持 true，猎物处理后需要玩家另行修复陷阱
 function handleTrapBreed() {
   if (!props.building.trapAnimal) return;
   const animalName = props.building.trapAnimal.name;
   props.building.trapAnimal = undefined;
-  toast({ message: `已将${animalName}留下来养殖（养殖系统将在未来版本中实现）`, type: 'info' });
+  toast({ message: `已将${animalName}留下来养殖（养殖系统将在未来版本中实现）。陷阱需要修复才能继续使用`, type: 'info' });
   gameLogStore.addEntry({
     text: `将${animalName}留下来养殖`,
     type: 'ACTION',
@@ -246,6 +247,7 @@ function handleTrapBreed() {
 }
 
 // 宰杀：获得猎物资源
+// 注意：trapDamaged 保持 true，猎物处理后需要玩家另行修复陷阱
 function handleTrapSlaughter() {
   if (!props.building.trapAnimal) return;
   const animal = props.building.trapAnimal;
@@ -255,10 +257,10 @@ function handleTrapSlaughter() {
   }
 
   const yieldsText = animal.yields.map(y => `${y.name}×${y.count}`).join('，');
-  const message = `宰杀了${animal.name}，获得：${yieldsText}`;
+  const message = `宰杀了${animal.name}，获得：${yieldsText}。陷阱需要修复才能继续使用`;
   toast({ message, type: 'success' });
   gameLogStore.addEntry({
-    text: message,
+    text: `宰杀了${animal.name}，获得：${yieldsText}`,
     type: 'ITEM',
     gameTimestamp: timeStore.timestamp,
     timestamp: Date.now()

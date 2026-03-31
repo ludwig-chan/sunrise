@@ -149,11 +149,11 @@ const lastAction = computed((): GameAction | null => {
 });
 
 // 渐进式阶段：
-// 1 = 仅探索（游戏初始）
-// 2 = 探索(2/3) + 更多(1/3)（解锁树林后）
+// 1 = 仅探索（游戏初始，只解锁了基地）
+// 2 = 探索(2/3) + 更多(1/3)（解锁了任意新场景后）
 // 3 = 探索(1/3) + 上次操作(1/3) + 更多(1/3)（使用过更多菜单的功能后）
 const phase = computed((): 1 | 2 | 3 => {
-  if (!scenes.unlockedScenes.includes('forest')) return 1;
+  if (scenes.unlockedScenes.length <= 1) return 1;
   if (!scenes.lastUsedActionName) return 2;
   return 3;
 });
