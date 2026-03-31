@@ -34,7 +34,10 @@
     </div>
     <div class="game-messages" ref="messagesContainer">
       <div v-if="filteredMessages.length === 0" class="empty-state">
-        <p>暂无消息</p>
+        <p>{{ hasRetryCriteria ? '暂无匹配消息' : '暂无消息' }}</p>
+        <button v-if="hasRetryCriteria" type="button" class="retry-button" @click="retryMessages">
+          重试
+        </button>
       </div>
       <template v-else v-for="(message, index) in filteredMessages" :key="index">
         <!-- 日期分割线 -->
@@ -135,6 +138,10 @@ const filteredMessages = computed(() => {
   })
 })
 
+const hasRetryCriteria = computed(() => {
+  return searchText.value.trim() !== '' || selectedTypes.value.length !== messageTypes.length
+})
+
 // 更新当前时间
 const updateTimer = setInterval(() => {
   currentTime.value = Date.now()
@@ -153,7 +160,9 @@ const getMessageStyle = (timestamp: number) => {
 const scrollToBottom = () => {
   if (messagesContainer.value) {
     setTimeout(() => {
-      messagesContainer.value!.scrollTop = messagesContainer.value!.scrollHeight
+      const container = messagesContainer.value
+      if (!container) return
+      container.scrollTop = container.scrollHeight
     }, 0)
   }
 }
@@ -215,6 +224,13 @@ const toggleFilter = (type: MessageType) => {
     selectedTypes.value.splice(index, 1);
   }
 };
+
+const retryMessages = () => {
+  searchText.value = ''
+  selectedTypes.value = [...messageTypes]
+  messages.value = [...gameLogStore.entries].slice(-100)
+  scrollToBottom()
+}
 
 </script>
 
@@ -360,17 +376,36 @@ h2 {
 
 .empty-state {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 0.75rem;
   height: 100%;
   color: #666;
   font-size: 1.1em;
 }
 
 .empty-state p {
+  margin: 0;
   background-color: white;
   padding: 1rem 2rem;
   border-radius: 4px;
   border: 1px dashed #ccc;
+}
+
+.retry-button {
+  border: none;
+  border-radius: 999px;
+  background: #4a5568;
+  color: white;
+  padding: 0.45rem 1.1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.retry-button:hover {
+  transform: translateY(-1px);
+  background: #2d3748;
 }
 </style>

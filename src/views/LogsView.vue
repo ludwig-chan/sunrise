@@ -41,7 +41,12 @@
 
       <!-- Log entries -->
       <div class="log-messages" ref="logContainer">
-        <div v-if="filteredEntries.length === 0" class="empty-hint">暂无日志</div>
+        <div v-if="filteredEntries.length === 0" class="empty-hint">
+          <p>{{ hasRetryCriteria ? '暂无匹配日志' : '暂无日志' }}</p>
+          <button v-if="hasRetryCriteria" type="button" class="retry-button" @click="retryFilter">
+            重试
+          </button>
+        </div>
         <template v-else v-for="(entry, index) in filteredEntries" :key="index">
           <div
             v-if="shouldShowDateDivider(entry, filteredEntries[index - 1])"
@@ -91,6 +96,15 @@ const filteredEntries = computed(() => {
     return matchesType && matchesSearch
   })
 })
+
+const hasRetryCriteria = computed(() => {
+  return searchText.value.trim() !== '' || selectedTypes.value.size > 0
+})
+
+function retryFilter() {
+  searchText.value = ''
+  selectedTypes.value = new Set()
+}
 
 function shouldShowDateDivider(current: GameLogEntry, previous: GameLogEntry | undefined) {
   if (!previous) return true
@@ -272,10 +286,42 @@ function hailStyle(i: number): Record<string, string> {
   color: #999;
   text-align: center;
   padding: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .is-night .empty-hint {
   color: rgba(255, 255, 255, 0.35);
+}
+
+.empty-hint p {
+  margin: 0;
+}
+
+.retry-button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.retry-button:hover {
+  transform: translateY(-1px);
+}
+
+.is-day .retry-button {
+  background: #3182ce;
+  color: #fff;
+}
+
+.is-night .retry-button {
+  background: rgba(99, 179, 237, 0.24);
+  color: #bee3f8;
+  border: 1px solid rgba(99, 179, 237, 0.35);
 }
 
 .date-divider {
