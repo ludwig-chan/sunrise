@@ -40,6 +40,22 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
     cost: { wood: 10 },
     duration: 2,
     energyCost: 10
+  },
+  {
+    type: 'farmPlot',
+    name: '农田',
+    description: '开垦一块小农田，可以种植简单蔬菜',
+    cost: { branch: 3, ore: 2 },
+    duration: 3,
+    energyCost: 12
+  },
+  {
+    type: 'herbShop',
+    name: '药铺',
+    description: '用草药制作各种药品，恢复体力和健康',
+    cost: { wood: 12, branch: 8 },
+    duration: 4,
+    energyCost: 15
   }
 ];
 
@@ -49,7 +65,9 @@ export const BASE_BUILDING_ICONS: Record<string, string> = {
   woodenHut: '🏠',
   workbench: '🔨',
   cookingTable: '🍳',
-  storageBox: '📦'
+  storageBox: '📦',
+  farmPlot: '🌾',
+  herbShop: '🏪'
 };
 
 // 建筑升级配方（可选，预留字段）
@@ -79,13 +97,26 @@ const RESOURCE_NAMES: { [key: string]: string } = {
   wood: '木材',
   ore: '矿石',
   branch: '树枝',
-  apple: '苹果'
+  apple: '苹果',
+  herb: '草药',
+  vegetable: '蔬菜',
+  raw_meat: '生肉'
 };
 
 // 树林解锁保底次数：最多探索此次数后必定解锁
 const FOREST_UNLOCK_PITY_THRESHOLD = 3;
 // 每次探索时随机提前解锁树林的概率
 const FOREST_UNLOCK_CHANCE = 0.5;
+
+// 河边解锁保底次数
+const RIVER_UNLOCK_PITY_THRESHOLD = 3;
+// 每次探索时随机提前解锁河边的概率
+const RIVER_UNLOCK_CHANCE = 0.4;
+
+// 山洞解锁保底次数
+const CAVE_UNLOCK_PITY_THRESHOLD = 5;
+// 每次探索时随机提前解锁山洞的概率
+const CAVE_UNLOCK_CHANCE = 0.3;
 
 // 定义基地初始库存
 const INITIAL_STOCK = {
@@ -106,6 +137,8 @@ const INITIAL_STOCK = {
 export const useBaseSceneStore = defineStore('baseScene', {
   state: () => ({
     exploreCount: 0,
+    riverUnlockCount: 0,
+    caveUnlockCount: 0,
     scene: {
       id: 'base',
       name: '基地',
@@ -136,6 +169,8 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
       // 重置探索计数
       this.exploreCount = 0
+      this.riverUnlockCount = 0
+      this.caveUnlockCount = 0
 
       // 重置动作列表，然后重新初始化
       this.scene.actions = []
@@ -178,7 +213,41 @@ export const useBaseSceneStore = defineStore('baseScene', {
       const eventRoll = Math.random();
 
       if (scenes.unlockedScenes.includes('forest')) {
-        // 树林已解锁：30%概率发现资源，70%普通消息
+        // 树林已解锁，尝试解锁河边
+        if (!scenes.unlockedScenes.includes('river')) {
+          this.riverUnlockCount++;
+          if (this.riverUnlockCount >= RIVER_UNLOCK_PITY_THRESHOLD || eventRoll < RIVER_UNLOCK_CHANCE) {
+            scenes.unlockScene('river');
+            this.riverUnlockCount = 0;
+            const unlockMessage = "沿着山路走了走，远处听到了潺潺的水声，似乎有条河…";
+            toast({ message: unlockMessage, type: 'info' });
+            useGameLogStore().addEntry({
+              text: unlockMessage,
+              type: 'ACTION',
+              gameTimestamp: useTimeStore().timestamp,
+              timestamp: Date.now()
+            });
+            return;
+          }
+        } else if (!scenes.unlockedScenes.includes('cave')) {
+          // 河边已解锁，尝试解锁山洞
+          this.caveUnlockCount++;
+          if (this.caveUnlockCount >= CAVE_UNLOCK_PITY_THRESHOLD || eventRoll < CAVE_UNLOCK_CHANCE) {
+            scenes.unlockScene('cave');
+            this.caveUnlockCount = 0;
+            const unlockMessage = "河边的峭壁上似乎有个隐秘的洞口…";
+            toast({ message: unlockMessage, type: 'info' });
+            useGameLogStore().addEntry({
+              text: unlockMessage,
+              type: 'ACTION',
+              gameTimestamp: useTimeStore().timestamp,
+              timestamp: Date.now()
+            });
+            return;
+          }
+        }
+
+        // 已解锁所有场景：30%概率发现资源，70%普通消息
         if (eventRoll < 0.3) {
           const resources = ['branch', 'ore'];
           const resourceType = resources[Math.floor(Math.random() * resources.length)];
@@ -434,6 +503,125 @@ export const useBaseSceneStore = defineStore('baseScene', {
       });
     },
 
+    // 种植蔬菜（农田建筑动作）
+    async plantVegetable() {
+      const branchRes = this.scene.resources.find(r => r.id === 'branch');
+      if (!branchRes || branchRes.count < 1) {
+        toast({ message: '需要树枝 ×1 才能种植蔬菜', type: 'warning' });
+        return;
+      }
+      branchRes.count -= 1;
+      const amount = Math.floor(Math.random() * 2) + 1; // 1-2
+      const vegetableResource = getOrCreateResource(this.scene.resources, {
+        id: 'vegetable',
+        type: 'vegetable',
+        name: '蔬菜'
+      });
+      vegetableResource.count += amount;
+      const message = `在农田里种出了 ${amount} 株蔬菜！`;
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'ITEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 制作急救包（药铺建筑动作）
+    async makeFirstAid() {
+      const herbRes = this.scene.resources.find(r => r.id === 'herb');
+      if (!herbRes || herbRes.count < 2) {
+        toast({ message: '需要草药 ×2 才能制作急救包', type: 'warning' });
+        return;
+      }
+      herbRes.count -= 2;
+      const firstAidResource = getOrCreateResource(this.scene.resources, {
+        id: 'first_aid',
+        type: 'first_aid',
+        name: '急救包'
+      });
+      firstAidResource.count += 1;
+      const message = '用草药制作了 1 个急救包';
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'ITEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 制作滋补汤（药铺建筑动作）
+    async makeNourishingSoup() {
+      const vegetableRes = this.scene.resources.find(r => r.id === 'vegetable');
+      const rawMeatRes = this.scene.resources.find(r => r.id === 'raw_meat');
+      if (!vegetableRes || vegetableRes.count < 2 || !rawMeatRes || rawMeatRes.count < 1) {
+        toast({ message: '需要蔬菜 ×2 + 生肉 ×1 才能制作滋补汤', type: 'warning' });
+        return;
+      }
+      vegetableRes.count -= 2;
+      rawMeatRes.count -= 1;
+      const soupResource = getOrCreateResource(this.scene.resources, {
+        id: 'nourishing_soup',
+        type: 'nourishing_soup',
+        name: '滋补汤'
+      });
+      soupResource.count += 1;
+      const message = '用蔬菜和生肉炖出了 1 碗滋补汤！';
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'ITEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 冥想（人物动作版）：mana +15，mood +10
+    async meditateCharacter() {
+      const character = useCharacterStore();
+      character.mana = Math.min(100, character.mana + 15);
+      character.mood = Math.min(100, character.mood + 10);
+      const message = '静心冥想，法力和心情都好了不少。法力 +15，心情 +10';
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'SYSTEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 整理营地（场景行动）：hygiene +10，mood +5
+    async tidyCamp() {
+      const character = useCharacterStore();
+      character.hygiene = Math.min(100, character.hygiene + 10);
+      character.mood = Math.min(100, character.mood + 5);
+      const message = '营地整洁了许多。卫生度 +10，心情 +5';
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'SYSTEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 自言自语（人物动作）：mood +5
+    async talkToSelf() {
+      const character = useCharacterStore();
+      character.mood = Math.min(100, character.mood + 5);
+      const message = '自言自语了一阵子，感觉好多了。心情 +5';
+      toast({ message, type: 'info' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'SYSTEM',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
     // 获取人物动作（与场景/建筑无关）
     getCharacterActions(): GameBuildingAction[] {
       return [
@@ -445,6 +633,24 @@ export const useBaseSceneStore = defineStore('baseScene', {
           energyCost: 0,
           actionGroup: 'character',
           handler: async () => await this.rest()
+        },
+        {
+          name: 'meditate',
+          text: '冥想',
+          icon: '🧘',
+          duration: 4,
+          energyCost: 0,
+          actionGroup: 'character',
+          handler: async () => await this.meditateCharacter()
+        },
+        {
+          name: 'talkToSelf',
+          text: '自言自语',
+          icon: '💬',
+          duration: 2,
+          energyCost: 0,
+          actionGroup: 'character',
+          handler: async () => await this.talkToSelf()
         }
       ];
     },
@@ -500,6 +706,39 @@ export const useBaseSceneStore = defineStore('baseScene', {
         case 'storageBox':
           // 储藏箱无动作，只显示库存
           return [];
+        case 'farmPlot':
+          return [
+            {
+              name: 'plantVegetable',
+              text: '种植蔬菜',
+              icon: '🥬',
+              duration: 8,
+              energyCost: 8,
+              handler: async () => await this.withEnergyCost(8, async () => await this.plantVegetable()),
+              tooltip: '需要树枝 ×1'
+            }
+          ];
+        case 'herbShop':
+          return [
+            {
+              name: 'makeFirstAid',
+              text: '制作急救包',
+              icon: '🩹',
+              duration: 6,
+              energyCost: 5,
+              handler: async () => await this.withEnergyCost(5, async () => await this.makeFirstAid()),
+              tooltip: '需要草药 ×2'
+            },
+            {
+              name: 'makeNourishingSoup',
+              text: '制作滋补汤',
+              icon: '🍲',
+              duration: 5,
+              energyCost: 5,
+              handler: async () => await this.withEnergyCost(5, async () => await this.makeNourishingSoup()),
+              tooltip: '需要蔬菜 ×2 + 生肉 ×1'
+            }
+          ];
         default:
           return [];
       }
@@ -516,6 +755,24 @@ export const useBaseSceneStore = defineStore('baseScene', {
           energyCost: 10,
           actionGroup: 'scene',
           handler: async () => await this.withEnergyCost(10, async () => await this.explore())
+        },
+        {
+          name: 'meditate',
+          text: '冥想',
+          icon: '🧘',
+          duration: 4,
+          energyCost: 0,
+          actionGroup: 'scene',
+          handler: async () => await this.meditateCharacter()
+        },
+        {
+          name: 'tidyCamp',
+          text: '整理营地',
+          icon: '🧹',
+          duration: 3,
+          energyCost: 5,
+          actionGroup: 'scene',
+          handler: async () => await this.withEnergyCost(5, async () => await this.tidyCamp())
         }
       ];
     },

@@ -3,6 +3,8 @@ import { gameLog, emitter } from '../utils/eventBus'
 import { showDialog } from '../utils/dialog'
 import { useBaseSceneStore } from './scenes/base'
 import { useForestSceneStore } from './scenes/forest'
+import { useRiverSceneStore } from './scenes/river'
+import { useCaveSceneStore } from './scenes/cave'
 import { restartGame } from '../utils/gameSystem'
 import { toast } from '../utils/toast'
 import { ITEM_DEFINITIONS } from '../data/items'
@@ -136,6 +138,8 @@ export const useCharacterStore = defineStore('character', {
       const allResources = [
         ...useBaseSceneStore().scene.resources,
         ...useForestSceneStore().scene.resources,
+        ...useRiverSceneStore().scene.resources,
+        ...useCaveSceneStore().scene.resources,
       ]
       const resource = allResources.find(r => r.id === itemId)
 
