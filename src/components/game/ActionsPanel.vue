@@ -193,19 +193,27 @@ onUnmounted(() => {
 function handleActionStart(action: GameAction) {
   if (activity.isBusy || isDisabled(action)) return;
 
-  if (character.energy < action.energyCost) {
-    const messages = [
-      '你感到精疲力尽，需要休息一下...',
-      '你的双腿像灌了铅一样沉重...',
-      '你气喘吁吁，暂时无法继续...',
-      '你的手臂已经抬不起来了...',
-      '你需要缓一缓，恢复些体力...'
-    ];
-    toast({
-      message: messages[Math.floor(Math.random() * messages.length)],
-      type: 'warning'
-    });
-    return;
+  // 若动作定义了 preExecute，则在进度条启动前执行条件校验和资源消耗。
+  // preExecute 返回 false 时已内部 toast 提示，直接中止。
+  // TODO: 后续所有动作均应迁移到 preExecute 模式，旧的 withEnergyCost 包装器逐步淘汰。
+  if (action.preExecute) {
+    if (!action.preExecute()) return;
+  } else {
+    // 兼容旧逻辑：仅做体力检查（不消耗，handler 内部处理）
+    if (character.energy < action.energyCost) {
+      const messages = [
+        '你感到精疲力尽，需要休息一下...',
+        '你的双腿像灌了铅一样沉重...',
+        '你气喘吁吁，暂时无法继续...',
+        '你的手臂已经抬不起来了...',
+        '你需要缓一缓，恢复些体力...'
+      ];
+      toast({
+        message: messages[Math.floor(Math.random() * messages.length)],
+        type: 'warning'
+      });
+      return;
+    }
   }
 
   // 若从"更多"弹窗中选择且不是当前场景默认动作，记录为上次使用的操作

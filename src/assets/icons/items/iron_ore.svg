@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 铁矿石 - 灰棕带锈斑 -->
+  <!-- 矿石主体 -->
+  <rect x="7" y="10" width="18" height="14" fill="#7a7060"/>
+  <rect x="6" y="11" width="20" height="12" fill="#8a8070"/>
+  <rect x="7" y="10" width="18" height="1" fill="#9a9080"/>
+  <!-- 铁锈纹路 -->
+  <rect x="10" y="13" width="4" height="3" fill="#a06030"/>
+  <rect x="18" y="15" width="4" height="3" fill="#a06030"/>
+  <rect x="14" y="11" width="3" height="2" fill="#905828"/>
+  <!-- 金属光泽 -->
+  <rect x="8" y="12" width="5" height="3" fill="#c0b8a8"/>
+  <rect x="9" y="13" width="3" height="2" fill="#d0c8b8"/>
+  <!-- 阴影 -->
+  <rect x="6" y="21" width="20" height="2" fill="#6a6050"/>
+  <rect x="8" y="23" width="16" height="1" fill="#5a5040"/>
+  <!-- 棱角 -->
+  <rect x="7" y="11" width="2" height="2" fill="#c0b8a8"/>
+  <rect x="23" y="19" width="2" height="4" fill="#6a6050"/>
+</svg>

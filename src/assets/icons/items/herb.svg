@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 草药 - 绿色叶子束 -->
+  <!-- 茎 -->
+  <rect x="15" y="20" width="2" height="8" fill="#5a8a2a"/>
+  <rect x="14" y="24" width="1" height="2" fill="#4a7a20"/>
+  <rect x="17" y="22" width="1" height="2" fill="#4a7a20"/>
+  <!-- 左叶 -->
+  <rect x="7" y="12" width="8" height="2" fill="#4a9a30"/>
+  <rect x="6" y="14" width="9" height="3" fill="#5aaa3a"/>
+  <rect x="7" y="17" width="7" height="2" fill="#4a9a30"/>
+  <rect x="8" y="19" width="5" height="2" fill="#3a8a20"/>
+  <rect x="9" y="10" width="5" height="3" fill="#5aaa3a"/>
+  <rect x="7" y="13" width="2" height="2" fill="#7acc50"/>
+  <!-- 右叶 -->
+  <rect x="17" y="9" width="8" height="2" fill="#4a9a30"/>
+  <rect x="17" y="11" width="9" height="3" fill="#5aaa3a"/>
+  <rect x="17" y="14" width="8" height="3" fill="#4a9a30"/>
+  <rect x="18" y="17" width="6" height="2" fill="#3a8a20"/>
+  <rect x="22" y="7" width="5" height="3" fill="#5aaa3a"/>
+  <rect x="22" y="11" width="2" height="2" fill="#7acc50"/>
+  <!-- 中间叶 -->
+  <rect x="13" y="7" width="6" height="3" fill="#6abb45"/>
+  <rect x="13" y="10" width="6" height="6" fill="#5aaa3a"/>
+  <rect x="14" y="8" width="4" height="2" fill="#7acc50"/>
+</svg>

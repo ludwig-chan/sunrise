@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 石头 - 灰色圆润块状 -->
+  <rect x="8" y="12" width="16" height="2" fill="#8a8a8a"/>
+  <rect x="6" y="14" width="20" height="8" fill="#9a9a9a"/>
+  <rect x="7" y="22" width="18" height="2" fill="#8a8a8a"/>
+  <rect x="9" y="24" width="14" height="1" fill="#7a7a7a"/>
+  <!-- 高光 -->
+  <rect x="8" y="14" width="5" height="3" fill="#b8b8b8"/>
+  <rect x="9" y="13" width="4" height="2" fill="#cacaca"/>
+  <rect x="8" y="15" width="2" height="2" fill="#d8d8d8"/>
+  <!-- 阴影 -->
+  <rect x="20" y="19" width="4" height="4" fill="#787878"/>
+  <rect x="7" y="22" width="18" height="1" fill="#686868"/>
+  <!-- 纹理 -->
+  <rect x="13" y="17" width="2" height="2" fill="#8a8a8a"/>
+  <rect x="17" y="15" width="3" height="2" fill="#888888"/>
+</svg>

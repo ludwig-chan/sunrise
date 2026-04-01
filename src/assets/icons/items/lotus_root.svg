@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 莲藕 - 米白色多孔藕节 -->
+  <!-- 主体 -->
+  <rect x="6" y="10" width="20" height="14" fill="#e8dcc8"/>
+  <rect x="5" y="11" width="22" height="12" fill="#f0e4d0"/>
+  <!-- 藕孔 -->
+  <rect x="9" y="13" width="3" height="3" fill="#c8b8a0"/>
+  <rect x="14" y="12" width="4" height="5" fill="#c8b8a0"/>
+  <rect x="20" y="13" width="3" height="3" fill="#c8b8a0"/>
+  <rect x="11" y="17" width="3" height="3" fill="#c8b8a0"/>
+  <rect x="17" y="17" width="3" height="3" fill="#c8b8a0"/>
+  <!-- 孔内 -->
+  <rect x="10" y="14" width="1" height="1" fill="#a09080"/>
+  <rect x="15" y="14" width="2" height="3" fill="#a09080"/>
+  <rect x="21" y="14" width="1" height="1" fill="#a09080"/>
+  <rect x="12" y="18" width="1" height="1" fill="#a09080"/>
+  <rect x="18" y="18" width="1" height="1" fill="#a09080"/>
+  <!-- 节端 -->
+  <rect x="4" y="12" width="3" height="10" fill="#d8c8b0"/>
+  <rect x="25" y="12" width="3" height="10" fill="#d8c8b0"/>
+  <!-- 高光 -->
+  <rect x="7" y="11" width="6" height="2" fill="#fffff0"/>
+  <!-- 阴影 -->
+  <rect x="5" y="21" width="22" height="2" fill="#c0b0a0"/>
+</svg>

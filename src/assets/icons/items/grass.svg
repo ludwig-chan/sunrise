@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 草 - 嫩绿色草叶 -->
+  <!-- 地面线 -->
+  <rect x="4" y="26" width="24" height="2" fill="#8a6a30"/>
+  <!-- 左草 -->
+  <rect x="5" y="14" width="2" height="12" fill="#5aaa30"/>
+  <rect x="4" y="10" width="3" height="5" fill="#4a9a25"/>
+  <rect x="3" y="7" width="3" height="4" fill="#5aaa30"/>
+  <rect x="4" y="8" width="1" height="2" fill="#7acc50"/>
+  <!-- 左二草 -->
+  <rect x="9" y="16" width="2" height="10" fill="#5aaa30"/>
+  <rect x="8" y="11" width="3" height="6" fill="#4a9a25"/>
+  <rect x="7" y="8" width="3" height="4" fill="#5aaa30"/>
+  <rect x="9" y="9" width="1" height="2" fill="#7acc50"/>
+  <!-- 中草 -->
+  <rect x="15" y="15" width="2" height="11" fill="#6abb35"/>
+  <rect x="14" y="9" width="4" height="7" fill="#5aaa30"/>
+  <rect x="14" y="6" width="4" height="4" fill="#4a9a25"/>
+  <rect x="15" y="7" width="2" height="3" fill="#7acc50"/>
+  <!-- 右二草 -->
+  <rect x="21" y="16" width="2" height="10" fill="#5aaa30"/>
+  <rect x="20" y="11" width="3" height="6" fill="#4a9a25"/>
+  <rect x="21" y="8" width="3" height="4" fill="#5aaa30"/>
+  <rect x="21" y="9" width="1" height="2" fill="#7acc50"/>
+  <!-- 右草 -->
+  <rect x="26" y="14" width="2" height="12" fill="#5aaa30"/>
+  <rect x="25" y="9" width="3" height="6" fill="#4a9a25"/>
+  <rect x="26" y="7" width="3" height="3" fill="#5aaa30"/>
+  <rect x="26" y="8" width="1" height="2" fill="#7acc50"/>
+</svg>

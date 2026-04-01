@@ -3,10 +3,12 @@ import type { GameScene, GameBuildingRecipe, GameBuildingAction } from './types'
 import { useEquipmentStore } from '../equipment';
 import { useCharacterStore } from '../character';
 import { useTimeStore } from '../time';
+import { useScenesStore } from '../scenes';
 import { getStockAmount } from '../../utils/resourceUtils';
 import { useInventoryStore } from '../inventory';
 import { toast } from '../../utils/toast';
 import { useGameLogStore } from '../gameLog';
+import { emitter } from '../../utils/eventBus';
 
 // 山洞可建造的建筑配方
 export const CAVE_BUILDING_RECIPES: GameBuildingRecipe[] = [
@@ -59,6 +61,9 @@ const INITIAL_STOCK = {
   bone: { current: 20, max: 20 }
 } as const;
 
+// 海边解锁阈值：在山洞完成 3 次行动后解锁海边
+const SEASIDE_UNLOCK_THRESHOLD = 3;
+
 export const useCaveSceneStore = defineStore('caveScene', {
   state: () => ({
     scene: {
@@ -67,7 +72,10 @@ export const useCaveSceneStore = defineStore('caveScene', {
       actions: [],
       buildings: [],
       stock: JSON.parse(JSON.stringify(INITIAL_STOCK))
-    } as GameScene
+    } as GameScene,
+    // 山洞行动次数计数，达到阈值后解锁海边
+    caveActionCount: 0,
+    _recoveryListenerRegistered: false
   }),
 
   getters: {
@@ -86,6 +94,26 @@ export const useCaveSceneStore = defineStore('caveScene', {
 
       // 重置动作列表
       this.scene.actions = []
+
+      // 重置行动计数
+      this.caveActionCount = 0
+    },
+
+    // 检查并触发海边解锁
+    // 海边：在山洞完成 3 次行动后解锁
+    checkUnlockProgress() {
+      const scenes = useScenesStore();
+      if (!scenes.unlockedScenes.includes('seaside') && this.caveActionCount >= SEASIDE_UNLOCK_THRESHOLD) {
+        scenes.unlockScene('seaside');
+        const msg = '走出山洞，翻过山坡，眼前是一望无际的大海，海风带来咸腥的气息…';
+        toast({ message: msg, type: 'info' });
+        useGameLogStore().addEntry({
+          text: msg,
+          type: 'ACTION',
+          gameTimestamp: useTimeStore().timestamp,
+          timestamp: Date.now()
+        });
+      }
     },
 
     // 检查体力值是否足够
@@ -118,6 +146,9 @@ export const useCaveSceneStore = defineStore('caveScene', {
 
     // 深度挖矿：需要石镐，从 stock 获得 1-2 块铁矿石
     async deepMine() {
+      // 记录行动次数并检查海边解锁
+      this.caveActionCount++;
+
       const equipment = useEquipmentStore();
       if (!equipment.usePickaxe()) {
         return;
@@ -139,10 +170,15 @@ export const useCaveSceneStore = defineStore('caveScene', {
         const message = '这里的铁矿石已经被挖光了';
         toast({ message, type: 'warning' });
       }
+
+      this.checkUnlockProgress();
     },
 
     // 采集煤炭：从 stock 获得 1-3 块煤炭
     async gatherCoal() {
+      // 记录行动次数并检查海边解锁
+      this.caveActionCount++;
+
       try {
         const amount = Math.floor(Math.random() * 3) + 1; // 1-3
         const actualAmount = await getStockAmount(this.scene.stock, 'coal', amount);
@@ -159,10 +195,15 @@ export const useCaveSceneStore = defineStore('caveScene', {
         const message = '洞里的煤炭已经被采完了';
         toast({ message, type: 'warning' });
       }
+
+      this.checkUnlockProgress();
     },
 
     // 搜寻宝物：30% 概率获得水晶，20% 概率获得骨头，50% 什么都没有
     async searchTreasure() {
+      // 记录行动次数并检查海边解锁
+      this.caveActionCount++;
+
       const roll = Math.random();
       const inventory = useInventoryStore();
 
@@ -212,6 +253,9 @@ export const useCaveSceneStore = defineStore('caveScene', {
           timestamp: Date.now()
         });
       }
+
+      // 检查是否解锁海边
+      this.checkUnlockProgress();
     },
 
     // 冥想：mana +20，mood +8
@@ -431,6 +475,7 @@ export const useCaveSceneStore = defineStore('caveScene', {
     // 获取场景基础动作
     getActionConfig() {
       const equipment = useEquipmentStore();
+      const character = useCharacterStore();
       return [
         {
           name: 'deepMine',
@@ -439,8 +484,20 @@ export const useCaveSceneStore = defineStore('caveScene', {
           duration: 2,
           energyCost: 15,
           actionGroup: 'scene' as const,
-          handler: async () => await this.withEnergyCost(15, async () => await this.deepMine()),
-          disabled: equipment.slots.mainHand !== 'pickaxe' && equipment.pickaxeCount === 0,
+          preExecute: () => {
+            if (equipment.slots.mainHand !== 'pickaxe' && equipment.pickaxeCount === 0) {
+              toast({ message: '需要石镐才能挖矿', type: 'warning' });
+              return false;
+            }
+            if (character.energy < 15) {
+              toast({ message: '体力不足，无法深度挖矿', type: 'warning' });
+              return false;
+            }
+            character.energy = Math.max(0, character.energy - 15);
+            return true;
+          },
+          handler: async () => await this.deepMine(),
+          disabled: () => equipment.slots.mainHand !== 'pickaxe' && equipment.pickaxeCount === 0,
           tooltip: '需要石镐才能挖矿'
         },
         {
@@ -450,7 +507,15 @@ export const useCaveSceneStore = defineStore('caveScene', {
           duration: 1.5,
           energyCost: 10,
           actionGroup: 'scene' as const,
-          handler: async () => await this.withEnergyCost(10, async () => await this.gatherCoal())
+          preExecute: () => {
+            if (character.energy < 10) {
+              toast({ message: '体力不足，无法采集煤炭', type: 'warning' });
+              return false;
+            }
+            character.energy = Math.max(0, character.energy - 10);
+            return true;
+          },
+          handler: async () => await this.gatherCoal()
         },
         {
           name: 'searchTreasure',
@@ -459,7 +524,15 @@ export const useCaveSceneStore = defineStore('caveScene', {
           duration: 1.5,
           energyCost: 12,
           actionGroup: 'scene' as const,
-          handler: async () => await this.withEnergyCost(12, async () => await this.searchTreasure())
+          preExecute: () => {
+            if (character.energy < 12) {
+              toast({ message: '体力不足，无法搜寻宝物', type: 'warning' });
+              return false;
+            }
+            character.energy = Math.max(0, character.energy - 12);
+            return true;
+          },
+          handler: async () => await this.searchTreasure()
         },
         {
           name: 'meditate',
@@ -480,8 +553,27 @@ export const useCaveSceneStore = defineStore('caveScene', {
       if (!this.scene.stock) {
         this.scene.stock = JSON.parse(JSON.stringify(INITIAL_STOCK));
       }
+
+      // 注册山洞资源自然恢复监听（防止重复注册）
+      // 每游戏小时：煤炭 +1（不超过最大值）；铁矿和水晶恢复极慢
+      if (!this._recoveryListenerRegistered) {
+        this._recoveryListenerRegistered = true;
+        emitter.on('hour-passed', () => {
+          const stock = this.scene.stock;
+          // 煤炭每小时 +1
+          if (stock.coal && stock.coal.current < stock.coal.max) {
+            stock.coal.current = Math.min(stock.coal.max, stock.coal.current + 1);
+          }
+          // 铁矿石每2小时 +1
+          if (stock.iron_ore && stock.iron_ore.current < stock.iron_ore.max && Math.random() < 0.5) {
+            stock.iron_ore.current = Math.min(stock.iron_ore.max, stock.iron_ore.current + 1);
+          }
+        });
+      }
     }
   },
 
-  persist: true
+  persist: {
+    omit: ['_recoveryListenerRegistered']
+  }
 });

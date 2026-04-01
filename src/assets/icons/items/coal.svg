@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 煤炭 - 黑色不规则块 -->
+  <!-- 主体 -->
+  <rect x="6" y="10" width="20" height="14" fill="#2a2a2a"/>
+  <rect x="5" y="11" width="22" height="12" fill="#333333"/>
+  <rect x="6" y="11" width="20" height="1" fill="#444444"/>
+  <!-- 光泽 -->
+  <rect x="7" y="12" width="5" height="4" fill="#4a4a4a"/>
+  <rect x="8" y="13" width="3" height="2" fill="#5a5a5a"/>
+  <rect x="8" y="13" width="2" height="1" fill="#6a6a6a"/>
+  <!-- 纹路 -->
+  <rect x="15" y="14" width="6" height="3" fill="#1a1a1a"/>
+  <rect x="10" y="18" width="8" height="3" fill="#1a1a1a"/>
+  <!-- 边缘阴影 -->
+  <rect x="21" y="11" width="4" height="13" fill="#1a1a1a"/>
+  <rect x="6" y="22" width="20" height="2" fill="#1a1a1a"/>
+  <!-- 闪光点 -->
+  <rect x="12" y="12" width="1" height="1" fill="#888888"/>
+  <rect x="18" y="17" width="1" height="1" fill="#666666"/>
+</svg>

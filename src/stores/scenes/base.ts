@@ -143,40 +143,15 @@ const TRAP_REPAIR_COST: Record<string, number> = { branch: 5 };
 // 基地陷阱摧毁回收材料
 const TRAP_DESTROY_RETURN: Record<string, number> = { branch: 4 };
 
-// 树林解锁保底次数：最多探索此次数后必定解锁
+// 树林解锁保底次数：基地探索最多此次数后必定解锁树林
 const FOREST_UNLOCK_PITY_THRESHOLD = 3;
-// 每次探索时随机提前解锁树林的概率
+// 每次基地探索时随机提前解锁树林的概率
 const FOREST_UNLOCK_CHANCE = 0.5;
 
-// 草地解锁保底次数
-const GRASSLAND_UNLOCK_PITY_THRESHOLD = 2;
-// 每次探索时随机提前解锁草地的概率
-const GRASSLAND_UNLOCK_CHANCE = 0.5;
-
-// 河边解锁保底次数
-const RIVER_UNLOCK_PITY_THRESHOLD = 3;
-// 每次探索时随机提前解锁河边的概率
-const RIVER_UNLOCK_CHANCE = 0.4;
-
-// 湖边解锁保底次数
-const LAKESIDE_UNLOCK_PITY_THRESHOLD = 3;
-// 每次探索时随机提前解锁湖边的概率
-const LAKESIDE_UNLOCK_CHANCE = 0.35;
-
-// 山洞解锁保底次数
-const CAVE_UNLOCK_PITY_THRESHOLD = 5;
-// 每次探索时随机提前解锁山洞的概率
-const CAVE_UNLOCK_CHANCE = 0.3;
-
-// 海边解锁保底次数
-const SEASIDE_UNLOCK_PITY_THRESHOLD = 4;
-// 每次探索时随机提前解锁海边的概率
-const SEASIDE_UNLOCK_CHANCE = 0.25;
-
-// 夜晚野兽袭击概率（无保护时）
+// 夜晚野兽袭击概率（无篝火/火把保护时）
 const NIGHT_ATTACK_CHANCE = 0.3;
 
-// 定义基地初始库存
+// 定义基地初始库存（基地本身无资源存储，靠探索和采集获取）
 const INITIAL_STOCK = {
   wood: {
     current: 0,
@@ -195,11 +170,6 @@ const INITIAL_STOCK = {
 export const useBaseSceneStore = defineStore('baseScene', {
   state: () => ({
     exploreCount: 0,
-    grasslandUnlockCount: 0,
-    riverUnlockCount: 0,
-    lakesideUnlockCount: 0,
-    caveUnlockCount: 0,
-    seasideUnlockCount: 0,
     lastNightAttackDay: -1,
     _nightAttackListenerRegistered: false,
     scene: {
@@ -227,11 +197,6 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
       // 重置探索计数
       this.exploreCount = 0
-      this.grasslandUnlockCount = 0
-      this.riverUnlockCount = 0
-      this.lakesideUnlockCount = 0
-      this.caveUnlockCount = 0
-      this.seasideUnlockCount = 0
       this.lastNightAttackDay = -1
 
       // 重置动作列表，然后重新初始化
@@ -267,196 +232,68 @@ export const useBaseSceneStore = defineStore('baseScene', {
       this.consumeEnergy(cost);
     },
 
-    // 探索
+    // 探索基地周边
+    // 说明：树林解锁由此处触发；草地、河边等后续场景的解锁
+    //       改为依赖各自场景的行为计数，见 forest.ts / grassland.ts 等。
     async explore() {
       const scenes = useScenesStore();
 
       // 随机事件和发现的处理
       const eventRoll = Math.random();
 
-      if (scenes.unlockedScenes.includes('forest')) {
-        // 树林已解锁，依次尝试解锁后续场景
-        if (!scenes.unlockedScenes.includes('grassland')) {
-          // 尝试解锁草地
-          this.grasslandUnlockCount++;
-          if (this.grasslandUnlockCount >= GRASSLAND_UNLOCK_PITY_THRESHOLD || eventRoll < GRASSLAND_UNLOCK_CHANCE) {
-            scenes.unlockScene('grassland');
-            this.grasslandUnlockCount = 0;
-            const unlockMessage = "走出树林，眼前出现了一片开阔的草地，阳光照耀下绿意盎然…";
-            toast({ message: unlockMessage, type: 'info' });
-            useGameLogStore().addEntry({
-              text: unlockMessage,
-              type: 'ACTION',
-              gameTimestamp: useTimeStore().timestamp,
-              timestamp: Date.now()
-            });
-            return;
-          }
-        } else if (!scenes.unlockedScenes.includes('river')) {
-          // 草地已解锁，尝试解锁河边
-          this.riverUnlockCount++;
-          if (this.riverUnlockCount >= RIVER_UNLOCK_PITY_THRESHOLD || eventRoll < RIVER_UNLOCK_CHANCE) {
-            scenes.unlockScene('river');
-            this.riverUnlockCount = 0;
-            const unlockMessage = "沿着山路走了走，远处听到了潺潺的水声，似乎有条河…";
-            toast({ message: unlockMessage, type: 'info' });
-            useGameLogStore().addEntry({
-              text: unlockMessage,
-              type: 'ACTION',
-              gameTimestamp: useTimeStore().timestamp,
-              timestamp: Date.now()
-            });
-            return;
-          }
-        } else if (!scenes.unlockedScenes.includes('lakeside')) {
-          // 河边已解锁，尝试解锁湖边
-          this.lakesideUnlockCount++;
-          if (this.lakesideUnlockCount >= LAKESIDE_UNLOCK_PITY_THRESHOLD || eventRoll < LAKESIDE_UNLOCK_CHANCE) {
-            scenes.unlockScene('lakeside');
-            this.lakesideUnlockCount = 0;
-            const unlockMessage = "穿过草地深处，远远望见一片碧蓝的湖泊，波光粼粼…";
-            toast({ message: unlockMessage, type: 'info' });
-            useGameLogStore().addEntry({
-              text: unlockMessage,
-              type: 'ACTION',
-              gameTimestamp: useTimeStore().timestamp,
-              timestamp: Date.now()
-            });
-            return;
-          }
-        } else if (!scenes.unlockedScenes.includes('cave')) {
-          // 湖边已解锁，尝试解锁山洞
-          this.caveUnlockCount++;
-          if (this.caveUnlockCount >= CAVE_UNLOCK_PITY_THRESHOLD || eventRoll < CAVE_UNLOCK_CHANCE) {
-            scenes.unlockScene('cave');
-            this.caveUnlockCount = 0;
-            const unlockMessage = "河边的峭壁上似乎有个隐秘的洞口…";
-            toast({ message: unlockMessage, type: 'info' });
-            useGameLogStore().addEntry({
-              text: unlockMessage,
-              type: 'ACTION',
-              gameTimestamp: useTimeStore().timestamp,
-              timestamp: Date.now()
-            });
-            return;
-          }
-        } else if (!scenes.unlockedScenes.includes('seaside')) {
-          // 山洞已解锁，尝试解锁海边
-          this.seasideUnlockCount++;
-          if (this.seasideUnlockCount >= SEASIDE_UNLOCK_PITY_THRESHOLD || eventRoll < SEASIDE_UNLOCK_CHANCE) {
-            scenes.unlockScene('seaside');
-            this.seasideUnlockCount = 0;
-            const unlockMessage = "越过山头，远方出现了蔚蓝的大海，咸湿的海风扑面而来…";
-            toast({ message: unlockMessage, type: 'info' });
-            useGameLogStore().addEntry({
-              text: unlockMessage,
-              type: 'ACTION',
-              gameTimestamp: useTimeStore().timestamp,
-              timestamp: Date.now()
-            });
-            return;
-          }
-        }
-
-        // 已解锁所有场景：30%概率发现资源，70%普通消息
-        if (eventRoll < 0.3) {
-          const resources = ['branch', 'ore'];
-          const resourceType = resources[Math.floor(Math.random() * resources.length)];
-          const amount = Math.floor(Math.random() * 2) + 1; // 1-2个
-          const resourceName = resourceType === 'branch' ? '树枝' : '矿石';
-
-          useInventoryStore().addItem({ id: resourceType, type: resourceType, name: resourceName }, amount);
-
-          const message = `在附近发现了${amount}个${resourceName}！`;
-          toast({
-            message,
-            type: 'success'
-          });
-          useGameLogStore().addEntry({
-            text: message,
-            type: 'ITEM',
-            gameTimestamp: useTimeStore().timestamp,
-            timestamp: Date.now()
-          });
-        } else {
-          const messages = [
-            "四周很安静，什么特别的都没有发现。",
-            "在附近转了转，风景不错。",
-            "周围一切如常。",
-            "这个地方好像已经很熟悉了。"
-          ];
-          const message = messages[Math.floor(Math.random() * messages.length)];
-          toast({
-            message,
-            type: 'info'
-          });
-          useGameLogStore().addEntry({
-            text: message,
-            type: 'ACTION',
-            gameTimestamp: useTimeStore().timestamp,
-            timestamp: Date.now()
-          });
-        }
-      } else {
-        // 树林未解锁：保底机制
+      if (!scenes.unlockedScenes.includes('forest')) {
+        // 树林尚未解锁：保底机制（3次内必解锁，或 50% 概率提前）
         this.exploreCount++;
         if (this.exploreCount >= FOREST_UNLOCK_PITY_THRESHOLD || eventRoll < FOREST_UNLOCK_CHANCE) {
-          // 第3次必定解锁，或随机提前解锁
           scenes.unlockScene('forest');
           this.exploreCount = 0;
           const unlockMessage = "在远处发现了一片茂密的树林，看起来那里会有不少资源...";
-          toast({
-            message: unlockMessage,
-            type: 'info'
-          });
+          toast({ message: unlockMessage, type: 'info' });
           useGameLogStore().addEntry({
             text: unlockMessage,
             type: 'ACTION',
             gameTimestamp: useTimeStore().timestamp,
             timestamp: Date.now()
           });
-        } else {
-          // 未触发解锁：30%概率发现少量资源，否则普通消息
-          const resourceRoll = Math.random();
-          if (resourceRoll < 0.3) {
-            const resources = ['branch', 'ore'];
-            const resourceType = resources[Math.floor(Math.random() * resources.length)];
-            const amount = Math.floor(Math.random() * 2) + 1;
-            const resourceName = resourceType === 'branch' ? '树枝' : '矿石';
-
-            useInventoryStore().addItem({ id: resourceType, type: resourceType, name: resourceName }, amount);
-
-            const resourceMessage = `在附近发现了${amount}个${resourceName}！`;
-            toast({
-              message: resourceMessage,
-              type: 'success'
-            });
-            useGameLogStore().addEntry({
-              text: resourceMessage,
-              type: 'ITEM',
-              gameTimestamp: useTimeStore().timestamp,
-              timestamp: Date.now()
-            });
-          } else {
-            const messages = [
-              "四周很安静，什么特别的都没有发现。",
-              "在附近转了转，风景不错。",
-              "周围一切如常。",
-              "这个地方好像已经很熟悉了。"
-            ];
-            const message = messages[Math.floor(Math.random() * messages.length)];
-            toast({
-              message,
-              type: 'info'
-            });
-            useGameLogStore().addEntry({
-              text: message,
-              type: 'ACTION',
-              gameTimestamp: useTimeStore().timestamp,
-              timestamp: Date.now()
-            });
-          }
+          return;
         }
+      }
+
+      // 树林已解锁后：30% 概率发现少量资源（树枝/矿石/草），其余普通消息
+      if (eventRoll < 0.3) {
+        const resources = [
+          { id: 'branch', name: '树枝' },
+          { id: 'ore', name: '矿石' },
+          { id: 'grass', name: '草' }
+        ];
+        const picked = resources[Math.floor(Math.random() * resources.length)];
+        const amount = Math.floor(Math.random() * 2) + 1; // 1-2 个
+
+        useInventoryStore().addItem({ id: picked.id, type: picked.id, name: picked.name }, amount);
+
+        const message = `在附近发现了 ${amount} 个${picked.name}！`;
+        toast({ message, type: 'success' });
+        useGameLogStore().addEntry({
+          text: message,
+          type: 'ITEM',
+          gameTimestamp: useTimeStore().timestamp,
+          timestamp: Date.now()
+        });
+      } else {
+        const messages = [
+          "四周很安静，什么特别的都没有发现。",
+          "在附近转了转，风景不错。",
+          "周围一切如常。",
+          "这个地方好像已经很熟悉了。"
+        ];
+        const message = messages[Math.floor(Math.random() * messages.length)];
+        toast({ message, type: 'info' });
+        useGameLogStore().addEntry({
+          text: message,
+          type: 'ACTION',
+          gameTimestamp: useTimeStore().timestamp,
+          timestamp: Date.now()
+        });
       }
     },
 
@@ -722,6 +559,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
     getCharacterActions(): GameBuildingAction[] {
       const inventory = useInventoryStore();
       const equipment = useEquipmentStore();
+      const character = useCharacterStore();
       return [
         {
           name: 'rest',
@@ -757,7 +595,39 @@ export const useBaseSceneStore = defineStore('baseScene', {
           duration: 1,
           energyCost: 5,
           actionGroup: 'character',
-          handler: async () => await this.withEnergyCost(5, async () => { await equipment.craftAxe() }),
+          // preExecute：先校验材料和体力，全部扣除后进度条才启动
+          preExecute: () => {
+            if (!inventory.hasEnough('branch', 3) || !inventory.hasEnough('ore', 2)) {
+              toast({ message: '需要树枝 ×3 + 矿石 ×2 才能制作石斧', type: 'warning' });
+              return false;
+            }
+            if (character.energy < 5) {
+              toast({ message: '体力不足，无法制作石斧', type: 'warning' });
+              return false;
+            }
+            inventory.removeItem('branch', 3);
+            inventory.removeItem('ore', 2);
+            character.energy = Math.max(0, character.energy - 5);
+            return true;
+          },
+          handler: async () => {
+            // 材料已在 preExecute 中消耗，直接创建石斧耐久
+            if (!equipment.inventory.axe) {
+              equipment.inventory.axe = { durability: 0, maxDurability: 100 };
+            }
+            equipment.inventory.axe.durability = Math.min(
+              equipment.inventory.axe.maxDurability,
+              equipment.inventory.axe.durability + 100
+            );
+            const message = '成功打造了一把石斧！';
+            toast({ message, type: 'success' });
+            useGameLogStore().addEntry({
+              text: message,
+              type: 'ITEM',
+              gameTimestamp: useTimeStore().timestamp,
+              timestamp: Date.now()
+            });
+          },
           disabled: () => !inventory.hasEnough('branch', 3) || !inventory.hasEnough('ore', 2),
           tooltip: '需要树枝 ×3 + 矿石 ×2'
         },
@@ -768,7 +638,38 @@ export const useBaseSceneStore = defineStore('baseScene', {
           duration: 1,
           energyCost: 5,
           actionGroup: 'character',
-          handler: async () => await this.withEnergyCost(5, async () => { await equipment.craftPickaxe() }),
+          preExecute: () => {
+            if (!inventory.hasEnough('branch', 2) || !inventory.hasEnough('ore', 3)) {
+              toast({ message: '需要树枝 ×2 + 矿石 ×3 才能制作石镐', type: 'warning' });
+              return false;
+            }
+            if (character.energy < 5) {
+              toast({ message: '体力不足，无法制作石镐', type: 'warning' });
+              return false;
+            }
+            inventory.removeItem('branch', 2);
+            inventory.removeItem('ore', 3);
+            character.energy = Math.max(0, character.energy - 5);
+            return true;
+          },
+          handler: async () => {
+            // 材料已在 preExecute 中消耗，直接创建石镐耐久
+            if (!equipment.inventory.pickaxe) {
+              equipment.inventory.pickaxe = { durability: 0, maxDurability: 100 };
+            }
+            equipment.inventory.pickaxe.durability = Math.min(
+              equipment.inventory.pickaxe.maxDurability,
+              equipment.inventory.pickaxe.durability + 100
+            );
+            const message = '成功打造了一把石镐！';
+            toast({ message, type: 'success' });
+            useGameLogStore().addEntry({
+              text: message,
+              type: 'ITEM',
+              gameTimestamp: useTimeStore().timestamp,
+              timestamp: Date.now()
+            });
+          },
           disabled: () => !inventory.hasEnough('branch', 2) || !inventory.hasEnough('ore', 3),
           tooltip: '需要树枝 ×2 + 矿石 ×3'
         },
@@ -779,7 +680,32 @@ export const useBaseSceneStore = defineStore('baseScene', {
           duration: 0.5,
           energyCost: 3,
           actionGroup: 'character',
-          handler: async () => await this.withEnergyCost(3, async () => await this.craftTorch()),
+          preExecute: () => {
+            if (!inventory.hasEnough('branch', 1) || !inventory.hasEnough('grass', 2)) {
+              toast({ message: '需要树枝 ×1 + 草 ×2 才能制作火把', type: 'warning' });
+              return false;
+            }
+            if (character.energy < 3) {
+              toast({ message: '体力不足，无法制作火把', type: 'warning' });
+              return false;
+            }
+            inventory.removeItem('branch', 1);
+            inventory.removeItem('grass', 2);
+            character.energy = Math.max(0, character.energy - 3);
+            return true;
+          },
+          handler: async () => {
+            // 材料已在 preExecute 中消耗，直接产出
+            inventory.addItem({ id: 'torch', type: 'torch', name: '火把' }, 1);
+            const message = '用树枝和草制作了一个火把，可以驱赶夜间野兽';
+            toast({ message, type: 'success' });
+            useGameLogStore().addEntry({
+              text: message,
+              type: 'ITEM',
+              gameTimestamp: useTimeStore().timestamp,
+              timestamp: Date.now()
+            });
+          },
           disabled: () => !inventory.hasEnough('branch', 1) || !inventory.hasEnough('grass', 2),
           tooltip: '需要树枝 ×1 + 草 ×2，装备后可驱赶夜间野兽'
         }
@@ -788,6 +714,8 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
     // 获取建筑动作（根据建筑类型返回对应动作列表）
     getBuildingActions(buildingType: string): GameBuildingAction[] {
+      const inventory = useInventoryStore();
+      const character = useCharacterStore();
       switch (buildingType) {
         case 'campfire':
           return [
@@ -797,8 +725,35 @@ export const useBaseSceneStore = defineStore('baseScene', {
               icon: '🍖',
               duration: 1.5,
               energyCost: 5,
-              handler: async () => await this.withEnergyCost(5, async () => await this.cookFood()),
-              tooltip: '需要生肉'
+              // preExecute：进度条启动前立即校验并消耗生肉和体力
+              preExecute: () => {
+                if (!inventory.hasEnough('raw_meat', 1)) {
+                  toast({ message: '没有生肉可以烤，请先通过陷阱获取生肉', type: 'warning' });
+                  return false;
+                }
+                if (character.energy < 5) {
+                  toast({ message: '体力不足，无法烤食物', type: 'warning' });
+                  return false;
+                }
+                // 立即消耗生肉和体力，进度条开始倒计时
+                inventory.removeItem('raw_meat', 1);
+                character.energy = Math.max(0, character.energy - 5);
+                return true;
+              },
+              handler: async () => {
+                // 材料已在 preExecute 中消耗，直接产出熟肉
+                inventory.addItem({ id: 'cooked_meat', type: 'cooked_meat', name: '熟肉' }, 1);
+                const message = '用篝火烤了一块肉，获得了熟肉';
+                toast({ message, type: 'success' });
+                useGameLogStore().addEntry({
+                  text: message,
+                  type: 'ITEM',
+                  gameTimestamp: useTimeStore().timestamp,
+                  timestamp: Date.now()
+                });
+              },
+              tooltip: '需要生肉',
+              disabled: () => !inventory.hasEnough('raw_meat', 1)
             },
             {
               name: 'warmUp',
@@ -817,7 +772,29 @@ export const useBaseSceneStore = defineStore('baseScene', {
               icon: '🛏️',
               duration: 1.5,
               energyCost: 0,
-              handler: async () => await this.sleep(),
+              preExecute: () => {
+                const SATIETY_COST = 20;
+                if (character.satiety <= SATIETY_COST) {
+                  toast({ message: '太饿了，睡不着...', type: 'warning' });
+                  return false;
+                }
+                // 立即消耗饱食度，进度条（睡觉动画）后产出体力
+                character.satiety = Math.max(0, character.satiety - SATIETY_COST);
+                return true;
+              },
+              handler: async () => {
+                // 饱食度已在 preExecute 中消耗，直接产出体力
+                const ENERGY_RESTORE = 30;
+                character.energy = Math.min(100, character.energy + ENERGY_RESTORE);
+                const message = `睡了一觉，体力恢复了 +${ENERGY_RESTORE}，饱食度 -20`;
+                toast({ message, type: 'success' });
+                useGameLogStore().addEntry({
+                  text: message,
+                  type: 'SYSTEM',
+                  gameTimestamp: useTimeStore().timestamp,
+                  timestamp: Date.now()
+                });
+              },
               tooltip: '消耗饱食度恢复体力'
             }
           ];
@@ -830,8 +807,33 @@ export const useBaseSceneStore = defineStore('baseScene', {
               icon: '🔧',
               duration: 2,
               energyCost: 10,
-              handler: async () => await this.withEnergyCost(10, async () => await this.craftTool()),
-              tooltip: '需要木材×2 + 矿石×1'
+              preExecute: () => {
+                if (!inventory.hasEnough('wood', 2) || !inventory.hasEnough('ore', 1)) {
+                  toast({ message: '需要木材 ×2 + 矿石 ×1 才能制作工具', type: 'warning' });
+                  return false;
+                }
+                if (character.energy < 10) {
+                  toast({ message: '体力不足，无法制作工具', type: 'warning' });
+                  return false;
+                }
+                inventory.removeItem('wood', 2);
+                inventory.removeItem('ore', 1);
+                character.energy = Math.max(0, character.energy - 10);
+                return true;
+              },
+              handler: async () => {
+                inventory.addItem({ id: 'tool', type: 'tool', name: '工具' }, 1);
+                const message = '在工作台上制作了一件工具';
+                toast({ message, type: 'success' });
+                useGameLogStore().addEntry({
+                  text: message,
+                  type: 'ITEM',
+                  gameTimestamp: useTimeStore().timestamp,
+                  timestamp: Date.now()
+                });
+              },
+              tooltip: '需要木材×2 + 矿石×1',
+              disabled: () => !inventory.hasEnough('wood', 2) || !inventory.hasEnough('ore', 1)
             }
           ];
         case 'storageBox':
@@ -845,8 +847,33 @@ export const useBaseSceneStore = defineStore('baseScene', {
               icon: '🥬',
               duration: 2,
               energyCost: 8,
-              handler: async () => await this.withEnergyCost(8, async () => await this.plantVegetable()),
-              tooltip: '需要树枝 ×1'
+              preExecute: () => {
+                if (!inventory.hasEnough('branch', 1)) {
+                  toast({ message: '需要树枝 ×1 才能种植蔬菜', type: 'warning' });
+                  return false;
+                }
+                if (character.energy < 8) {
+                  toast({ message: '体力不足，无法种植蔬菜', type: 'warning' });
+                  return false;
+                }
+                inventory.removeItem('branch', 1);
+                character.energy = Math.max(0, character.energy - 8);
+                return true;
+              },
+              handler: async () => {
+                const amount = Math.floor(Math.random() * 2) + 1; // 1-2
+                inventory.addItem({ id: 'vegetable', type: 'vegetable', name: '蔬菜' }, amount);
+                const message = `在农田里种出了 ${amount} 株蔬菜！`;
+                toast({ message, type: 'success' });
+                useGameLogStore().addEntry({
+                  text: message,
+                  type: 'ITEM',
+                  gameTimestamp: useTimeStore().timestamp,
+                  timestamp: Date.now()
+                });
+              },
+              tooltip: '需要树枝 ×1',
+              disabled: () => !inventory.hasEnough('branch', 1)
             }
           ];
         case 'herbShop':
@@ -857,8 +884,32 @@ export const useBaseSceneStore = defineStore('baseScene', {
               icon: '🩹',
               duration: 1.5,
               energyCost: 5,
-              handler: async () => await this.withEnergyCost(5, async () => await this.makeFirstAid()),
-              tooltip: '需要草药 ×2'
+              preExecute: () => {
+                if (!inventory.hasEnough('herb', 2)) {
+                  toast({ message: '需要草药 ×2 才能制作急救包', type: 'warning' });
+                  return false;
+                }
+                if (character.energy < 5) {
+                  toast({ message: '体力不足，无法制作急救包', type: 'warning' });
+                  return false;
+                }
+                inventory.removeItem('herb', 2);
+                character.energy = Math.max(0, character.energy - 5);
+                return true;
+              },
+              handler: async () => {
+                inventory.addItem({ id: 'first_aid', type: 'first_aid', name: '急救包' }, 1);
+                const message = '用草药制作了 1 个急救包';
+                toast({ message, type: 'success' });
+                useGameLogStore().addEntry({
+                  text: message,
+                  type: 'ITEM',
+                  gameTimestamp: useTimeStore().timestamp,
+                  timestamp: Date.now()
+                });
+              },
+              tooltip: '需要草药 ×2',
+              disabled: () => !inventory.hasEnough('herb', 2)
             },
             {
               name: 'makeNourishingSoup',
@@ -866,8 +917,33 @@ export const useBaseSceneStore = defineStore('baseScene', {
               icon: '🍲',
               duration: 1.5,
               energyCost: 5,
-              handler: async () => await this.withEnergyCost(5, async () => await this.makeNourishingSoup()),
-              tooltip: '需要蔬菜 ×2 + 生肉 ×1'
+              preExecute: () => {
+                if (!inventory.hasEnough('vegetable', 2) || !inventory.hasEnough('raw_meat', 1)) {
+                  toast({ message: '需要蔬菜 ×2 + 生肉 ×1 才能制作滋补汤', type: 'warning' });
+                  return false;
+                }
+                if (character.energy < 5) {
+                  toast({ message: '体力不足，无法制作滋补汤', type: 'warning' });
+                  return false;
+                }
+                inventory.removeItem('vegetable', 2);
+                inventory.removeItem('raw_meat', 1);
+                character.energy = Math.max(0, character.energy - 5);
+                return true;
+              },
+              handler: async () => {
+                inventory.addItem({ id: 'nourishing_soup', type: 'nourishing_soup', name: '滋补汤' }, 1);
+                const message = '用蔬菜和生肉炖出了 1 碗滋补汤！';
+                toast({ message, type: 'success' });
+                useGameLogStore().addEntry({
+                  text: message,
+                  type: 'ITEM',
+                  gameTimestamp: useTimeStore().timestamp,
+                  timestamp: Date.now()
+                });
+              },
+              tooltip: '需要蔬菜 ×2 + 生肉 ×1',
+              disabled: () => !inventory.hasEnough('vegetable', 2) || !inventory.hasEnough('raw_meat', 1)
             }
           ];
         case 'trap':
@@ -880,6 +956,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
     // 获取场景基础动作（场景相关，与建筑无关）
     getActionConfig(): GameAction[] {
+      const character = useCharacterStore();
       return [
         {
           name: 'explore',
@@ -888,7 +965,15 @@ export const useBaseSceneStore = defineStore('baseScene', {
           duration: 1.5,
           energyCost: 10,
           actionGroup: 'scene',
-          handler: async () => await this.withEnergyCost(10, async () => await this.explore())
+          preExecute: () => {
+            if (character.energy < 10) {
+              toast({ message: '体力不足，无法探索', type: 'warning' });
+              return false;
+            }
+            character.energy = Math.max(0, character.energy - 10);
+            return true;
+          },
+          handler: async () => await this.explore()
         },
         {
           name: 'meditate',
@@ -906,7 +991,15 @@ export const useBaseSceneStore = defineStore('baseScene', {
           duration: 1,
           energyCost: 5,
           actionGroup: 'scene',
-          handler: async () => await this.withEnergyCost(5, async () => await this.tidyCamp())
+          preExecute: () => {
+            if (character.energy < 5) {
+              toast({ message: '体力不足，无法整理营地', type: 'warning' });
+              return false;
+            }
+            character.energy = Math.max(0, character.energy - 5);
+            return true;
+          },
+          handler: async () => await this.tidyCamp()
         }
       ];
     },
