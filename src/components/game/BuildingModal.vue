@@ -52,7 +52,80 @@
             </div>
           </template>
 
-          <!-- 非陷阱：建筑动作列表 -->
+          <!-- 篝火专属区块 -->
+          <template v-else-if="building.type === 'campfire'">
+            <!-- 燃料状态 -->
+            <div class="section-title">篝火状态</div>
+            <div class="campfire-fuel-section">
+              <div class="fuel-label">
+                <span>🔥 燃料值</span>
+                <span class="fuel-value-text">{{ campfireFuel }} / {{ CAMPFIRE_MAX_FUEL }}</span>
+              </div>
+              <div class="fuel-bar-wrap">
+                <div class="fuel-bar-fill" :style="{ width: `${campfireFuelPercent}%` }"></div>
+              </div>
+              <div v-if="campfireFuel === 0" class="fuel-empty-hint">篝火已熄灭，请添加燃料才能烤制物品</div>
+            </div>
+
+            <!-- 添加燃料 -->
+            <div class="section-title" style="margin-top: 0.5rem;">操作</div>
+            <div class="modal-action-item">
+              <span class="modal-action-icon">🪵</span>
+              <div class="modal-action-info">
+                <span class="modal-action-text">添加燃料</span>
+                <span class="modal-action-condition">{{ fuelItemsHint }}</span>
+              </div>
+              <button class="modal-select-btn" :disabled="activity.isBusy || !canAddFuel" @click="showFuelSelector = true">选择</button>
+            </div>
+
+            <!-- 烤制 -->
+            <div class="modal-action-item">
+              <span class="modal-action-icon">🍖</span>
+              <div class="modal-action-info">
+                <span class="modal-action-text">烤制物品</span>
+                <span v-if="!hasCookableItems && campfireFuel === 0" class="modal-action-condition">篝火已熄灭，请添加燃料</span>
+                <span v-else-if="!hasCookableItems" class="modal-action-condition">背包中没有可烤物品（或燃料不足）</span>
+              </div>
+              <button class="modal-select-btn" :disabled="activity.isBusy || !hasCookableItems" @click="showCookSelector = true">选择</button>
+            </div>
+
+            <!-- 取暖 -->
+            <div v-for="action in buildingActions" :key="action.name" class="modal-action-item">
+              <span class="modal-action-icon">{{ action.icon || '▶' }}</span>
+              <div class="modal-action-info">
+                <span class="modal-action-text">{{ action.text }}</span>
+              </div>
+              <button class="modal-select-btn" :disabled="activity.isBusy" @click="handleActionStart(action)">开始</button>
+            </div>
+
+            <!-- 燃料选择弹窗 -->
+            <div v-if="showFuelSelector" class="sub-selector-overlay" @click.self="showFuelSelector = false">
+              <div class="sub-selector">
+                <div class="sub-selector-title">选择燃料材料</div>
+                <div v-for="item in availableFuelItems" :key="item.id" class="sub-selector-item" @click="handleAddFuel(item.id)">
+                  <span>{{ item.name }}</span>
+                  <span class="sub-item-count">×{{ item.count }}</span>
+                  <span class="sub-item-hint">燃料值 +{{ CAMPFIRE_FUEL_ITEMS[item.id].value }}</span>
+                </div>
+                <button class="sub-selector-cancel" @click="showFuelSelector = false">取消</button>
+              </div>
+            </div>
+
+            <!-- 烤制选择弹窗 -->
+            <div v-if="showCookSelector" class="sub-selector-overlay" @click.self="showCookSelector = false">
+              <div class="sub-selector">
+                <div class="sub-selector-title">选择要烤制的物品</div>
+                <div v-for="item in availableCookItems" :key="item.input" class="sub-selector-item" @click="handleCookItem(item)">
+                  <span>{{ item.inputName }}</span>
+                  <span class="sub-item-count">×{{ inventoryStore.getCount(item.input) }}</span>
+                  <span class="sub-item-hint">→ {{ item.outputName }}（{{ item.duration }}s，燃料-{{ item.fuelCost }}）</span>
+                </div>
+                <button class="sub-selector-cancel" @click="showCookSelector = false">取消</button>
+              </div>
+            </div>
+          </template>
+
+          <!-- 非陷阱非篝火：建筑动作列表 -->
           <template v-else>
             <template v-if="buildingActions.length > 0">
               <div class="section-title">可执行的动作</div>
@@ -127,11 +200,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useScenesStore } from '../../stores/scenes';
 import { useActivityStore } from '../../stores/activity';
 import { useCharacterStore } from '../../stores/character';
-import { BASE_BUILDING_UPGRADES } from '../../stores/scenes/base';
+import { BASE_BUILDING_UPGRADES, CAMPFIRE_MAX_FUEL, CAMPFIRE_FUEL_ITEMS, CAMPFIRE_COOKABLE_ITEMS, useBaseSceneStore } from '../../stores/scenes/base';
+import type { CampfireCookable } from '../../stores/scenes/base';
 import { useInventoryStore } from '../../stores/inventory';
 import { toast } from '../../utils/toast';
 import { useGameLogStore } from '../../stores/gameLog';
@@ -153,6 +227,60 @@ const character = useCharacterStore();
 const gameLogStore = useGameLogStore();
 const timeStore = useTimeStore();
 const inventoryStore = useInventoryStore();
+const baseScene = useBaseSceneStore();
+
+const showFuelSelector = ref(false);
+const showCookSelector = ref(false);
+
+// 篝火燃料相关
+const campfireFuel = computed(() => props.building.fuelValue ?? 0);
+const campfireFuelPercent = computed(() => Math.round((campfireFuel.value / CAMPFIRE_MAX_FUEL) * 100));
+
+// 背包中可用的燃料物品
+const availableFuelItems = computed(() => {
+  return Object.keys(CAMPFIRE_FUEL_ITEMS)
+    .filter(id => inventoryStore.getCount(id) > 0)
+    .map(id => ({ id, name: CAMPFIRE_FUEL_ITEMS[id].name, count: inventoryStore.getCount(id) }));
+});
+
+const canAddFuel = computed(() => availableFuelItems.value.length > 0 && campfireFuel.value < CAMPFIRE_MAX_FUEL);
+
+const fuelItemsHint = computed(() => {
+  if (!canAddFuel.value) return '背包中没有可用燃料';
+  return '树枝(+10) / 木材(+30) / 煤炭(+60)';
+});
+
+// 背包中可烤的物品（需要有足够燃料）
+const availableCookItems = computed(() => {
+  return CAMPFIRE_COOKABLE_ITEMS.filter(c =>
+    inventoryStore.getCount(c.input) > 0 && campfireFuel.value >= c.fuelCost
+  );
+});
+
+const hasCookableItems = computed(() => availableCookItems.value.length > 0);
+
+function handleAddFuel(fuelItemId: string) {
+  showFuelSelector.value = false;
+  baseScene.addCampfireFuel(props.building, fuelItemId);
+}
+
+function handleCookItem(cookable: CampfireCookable) {
+  showCookSelector.value = false;
+  if (activity.isBusy) return;
+
+  const handler = baseScene.startCampfireCook(props.building, cookable);
+  if (!handler) return;
+
+  emit('close');
+  activity.startActivity({
+    name: `campfire_cook_${cookable.input}`,
+    label: `烤制${cookable.inputName}`,
+    icon: '🔥',
+    startedAt: Date.now(),
+    duration: cookable.duration * 1000,
+    onComplete: handler
+  });
+}
 
 // 获取该建筑的可用动作
 const buildingActions = computed<GameBuildingAction[]>(() => {
@@ -523,6 +651,121 @@ function handleTrapDestroy() {
   color: #718096;
   text-align: center;
   padding: 0.3rem 0;
+}
+
+/* 篝火燃料区 */
+.campfire-fuel-section {
+  background: rgba(255, 165, 0, 0.08);
+  border: 1px solid rgba(255, 165, 0, 0.25);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.fuel-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.fuel-value-text {
+  color: #f6ad55;
+  font-weight: 600;
+}
+
+.fuel-bar-wrap {
+  height: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.fuel-bar-fill {
+  height: 100%;
+  background: linear-gradient(to right, #f6ad55, #f97316);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.fuel-empty-hint {
+  font-size: 0.75rem;
+  color: #fc8181;
+}
+
+/* 子选择器弹窗 */
+.sub-selector-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+
+.sub-selector {
+  background: #1a202c;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  min-width: 280px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sub-selector-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 0.2rem;
+}
+
+.sub-selector-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255,255,255,0.06);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  transition: background 0.15s;
+}
+
+.sub-selector-item:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+.sub-item-count {
+  font-weight: 600;
+  color: #90cdf4;
+}
+
+.sub-item-hint {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin-left: auto;
+}
+
+.sub-selector-cancel {
+  margin-top: 0.3rem;
+  padding: 0.3rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  color: #a0aec0;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.sub-selector-cancel:hover {
+  background: rgba(255,255,255,0.1);
 }
 
 /* 陷阱区 */

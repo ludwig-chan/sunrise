@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 灰烬 - 灰色灰堆 -->
+  <rect x="3" y="22" width="26" height="5" fill="#7a7a7a"/>
+  <rect x="5" y="20" width="22" height="4" fill="#8a8a8a"/>
+  <rect x="7" y="18" width="18" height="4" fill="#9a9a9a"/>
+  <rect x="10" y="16" width="12" height="4" fill="#aaaaaa"/>
+  <rect x="13" y="14" width="6" height="4" fill="#bcbcbc"/>
+  <rect x="8" y="19" width="6" height="1" fill="#cccccc"/>
+  <rect x="11" y="17" width="5" height="1" fill="#d4d4d4"/>
+  <rect x="14" y="15" width="3" height="1" fill="#dddddd"/>
+  <rect x="6" y="13" width="2" height="2" fill="#aaaaaa"/>
+  <rect x="20" y="11" width="2" height="2" fill="#bcbcbc"/>
+  <rect x="24" y="15" width="2" height="2" fill="#9a9a9a"/>
+  <rect x="11" y="10" width="1" height="1" fill="#cccccc"/>
+  <rect x="3" y="26" width="26" height="1" fill="#5a5a5a"/>
+</svg>

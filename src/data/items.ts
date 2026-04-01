@@ -215,6 +215,28 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     description: '经过烹饪的肉食，美味可口，比生肉更加安全健康。',
     use: () => ({ energy: 30, satiety: 35, health: 10, mood: 5 })
   },
+  cooked_fish: {
+    id: 'cooked_fish',
+    name: '烤鱼',
+    category: 'food',
+    icon: { type: 'svg', path: 'cooked_fish' },
+    description: '用篝火烤制的鲜鱼，外焦里嫩，鲜美可口。',
+    use: () => ({ energy: 25, satiety: 30, health: 8, mood: 5 })
+  },
+  fired_clay: {
+    id: 'fired_clay',
+    name: '陶器',
+    category: 'material',
+    icon: { type: 'svg', path: 'fired_clay' },
+    description: '用篝火烧制的黏土器皿，坚硬耐用，可用于盛水或储存物品。',
+  },
+  ash: {
+    id: 'ash',
+    name: '灰烬',
+    category: 'material',
+    icon: { type: 'svg', path: 'ash' },
+    description: '燃烧后剩余的灰烬，也许在某些制作配方中会有用处。',
+  },
   first_aid: {
     id: 'first_aid',
     name: '急救包',
