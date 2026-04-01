@@ -75,7 +75,7 @@
                 <span class="modal-action-text">添加燃料</span>
                 <span class="modal-action-condition">{{ fuelItemsHint }}</span>
               </div>
-              <button class="modal-select-btn" :disabled="activity.isBusy || !hasFuelItems" @click="showFuelSelector = true">选择</button>
+              <button class="modal-select-btn" :disabled="activity.isBusy || !canAddFuel" @click="showFuelSelector = true">选择</button>
             </div>
 
             <!-- 烤制 -->
@@ -243,10 +243,10 @@ const availableFuelItems = computed(() => {
     .map(id => ({ id, name: CAMPFIRE_FUEL_ITEMS[id].name, count: inventoryStore.getCount(id) }));
 });
 
-const hasFuelItems = computed(() => availableFuelItems.value.length > 0 && campfireFuel.value < CAMPFIRE_MAX_FUEL);
+const canAddFuel = computed(() => availableFuelItems.value.length > 0 && campfireFuel.value < CAMPFIRE_MAX_FUEL);
 
 const fuelItemsHint = computed(() => {
-  if (!hasFuelItems.value) return '背包中没有可用燃料';
+  if (!canAddFuel.value) return '背包中没有可用燃料';
   return '树枝(+10) / 木材(+30) / 煤炭(+60)';
 });
 

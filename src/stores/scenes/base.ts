@@ -146,6 +146,9 @@ const TRAP_DESTROY_RETURN: Record<string, number> = { branch: 4 };
 // ===== 篝火燃料系统 =====
 export const CAMPFIRE_MAX_FUEL = 200;
 
+// 火把每次制作增加的耐久度
+const TORCH_DURABILITY_INCREMENT = 100;
+
 // 可添加为燃料的物品及其燃料值
 export const CAMPFIRE_FUEL_ITEMS: Record<string, { name: string; value: number }> = {
   branch: { name: '树枝', value: 10 },
@@ -655,14 +658,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
       }
       inventory.removeItem('branch', 1);
       inventory.removeItem('grass', 2);
-      // 火把直接加入装备库存，不占用背包格
-      if (!equipment.inventory.torch) {
-        equipment.inventory.torch = { durability: 0, maxDurability: 100 };
-      }
-      equipment.inventory.torch.durability = Math.min(
-        equipment.inventory.torch.maxDurability,
-        equipment.inventory.torch.durability + 100
-      );
+      this.addTorchDurability(equipment);
       const message = '用树枝和草制作了一个火把，可在装备页面装备到饰品槽';
       toast({ message, type: 'success' });
       useGameLogStore().addEntry({
@@ -671,6 +667,17 @@ export const useBaseSceneStore = defineStore('baseScene', {
         gameTimestamp: useTimeStore().timestamp,
         timestamp: Date.now()
       });
+    },
+
+    // 向装备库存增加火把耐久度（辅助方法）
+    addTorchDurability(equipment: ReturnType<typeof useEquipmentStore>) {
+      if (!equipment.inventory.torch) {
+        equipment.inventory.torch = { durability: 0, maxDurability: TORCH_DURABILITY_INCREMENT };
+      }
+      equipment.inventory.torch.durability = Math.min(
+        equipment.inventory.torch.maxDurability,
+        equipment.inventory.torch.durability + TORCH_DURABILITY_INCREMENT
+      );
     },
 
     // 获取人物动作（与场景/建筑无关）
@@ -814,13 +821,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
           },
           handler: async () => {
             // 材料已在 preExecute 中消耗，火把加入装备库存
-            if (!equipment.inventory.torch) {
-              equipment.inventory.torch = { durability: 0, maxDurability: 100 };
-            }
-            equipment.inventory.torch.durability = Math.min(
-              equipment.inventory.torch.maxDurability,
-              equipment.inventory.torch.durability + 100
-            );
+            this.addTorchDurability(equipment);
             const message = '用树枝和草制作了一个火把，可在装备页面装备到饰品槽';
             toast({ message, type: 'success' });
             useGameLogStore().addEntry({
