@@ -70,6 +70,8 @@ export interface GameBuilding {
   trapCapturedAt?: number;   // 上次捕获时间戳（ms），null/undefined 表示陷阱为空
   trapAnimal?: TrapAnimal;   // 当前捕获的动物信息
   trapDamaged?: boolean;     // 陷阱是否已损坏，需要修复才能继续使用
+  // 篝火燃料值（仅 campfire 类型建筑使用）
+  fuelValue?: number;  // 当前燃料值，最大 200
 }
 
 // UI 分组动作（供 ActionsPanel 分组展示）

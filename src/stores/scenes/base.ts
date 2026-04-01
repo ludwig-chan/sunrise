@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, GameBuildingUpgrade, TrapAnimal } from './types';
+import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, GameBuildingUpgrade, GameBuilding, TrapAnimal } from './types';
 import { useCharacterStore } from '../character';
 import { useScenesStore } from '../scenes';
 import { useTimeStore } from '../time';
@@ -142,6 +142,37 @@ const RESOURCE_NAMES: { [key: string]: string } = {
 const TRAP_REPAIR_COST: Record<string, number> = { branch: 5 };
 // 基地陷阱摧毁回收材料
 const TRAP_DESTROY_RETURN: Record<string, number> = { branch: 4 };
+
+// ===== 篝火燃料系统 =====
+export const CAMPFIRE_MAX_FUEL = 200;
+
+// 可添加为燃料的物品及其燃料值
+export const CAMPFIRE_FUEL_ITEMS: Record<string, { name: string; value: number }> = {
+  branch: { name: '树枝', value: 10 },
+  wood: { name: '木材', value: 30 },
+  coal: { name: '煤炭', value: 60 }
+};
+
+// 篝火可烤物品配置
+export interface CampfireCookable {
+  input: string;
+  inputName: string;
+  output: string | null;
+  outputName: string;
+  duration: number;
+  fuelCost: number;
+  message: string;
+}
+
+export const CAMPFIRE_COOKABLE_ITEMS: CampfireCookable[] = [
+  { input: 'raw_meat', inputName: '生肉', output: 'cooked_meat', outputName: '熟肉', duration: 1.5, fuelCost: 10, message: '烤好了一块肉，获得了熟肉' },
+  { input: 'fish', inputName: '鱼', output: 'cooked_fish', outputName: '烤鱼', duration: 1.5, fuelCost: 10, message: '烤好了一条鱼，获得了烤鱼' },
+  { input: 'wood', inputName: '木材', output: 'coal', outputName: '煤炭', duration: 2, fuelCost: 5, message: '将木材烧制成了煤炭' },
+  { input: 'branch', inputName: '树枝', output: 'ash', outputName: '灰烬', duration: 1, fuelCost: 0, message: '树枝被烧成了灰烬' },
+  { input: 'clay', inputName: '黏土', output: 'fired_clay', outputName: '陶器', duration: 3, fuelCost: 15, message: '烧制完成，获得了陶器' },
+  { input: 'herb', inputName: '草药', output: 'ash', outputName: '灰烬', duration: 1, fuelCost: 5, message: '草药被烤焦了，变成了灰烬' },
+  { input: 'diamond', inputName: '钻石', output: null, outputName: '钻石', duration: 1, fuelCost: 0, message: '钻石无法被烤化，原路返回' }
+];
 
 // 树林解锁保底次数：基地探索最多此次数后必定解锁树林
 const FOREST_UNLOCK_PITY_THRESHOLD = 3;
@@ -330,13 +361,17 @@ export const useBaseSceneStore = defineStore('baseScene', {
         inventory.removeItem(resourceType, required);
       }
 
-      // 添加建筑（带图标）
-      this.scene.buildings.push({
+      // 添加建筑（带图标），篝火初始燃料值为 0
+      const newBuilding: GameBuilding = {
         name: recipe.name,
         type: recipe.type,
         level: 1,
         icon: BASE_BUILDING_ICONS[recipe.type]
-      });
+      };
+      if (recipe.type === 'campfire') {
+        newBuilding.fuelValue = 0;
+      }
+      this.scene.buildings.push(newBuilding);
       toast({ message: `${recipe.name}建造成功！`, type: 'success' });
 
       // 建造完成后刷新动作列表
@@ -410,6 +445,81 @@ export const useBaseSceneStore = defineStore('baseScene', {
         gameTimestamp: useTimeStore().timestamp,
         timestamp: Date.now()
       });
+    },
+
+    // 向篝火添加燃料
+    addCampfireFuel(building: GameBuilding, fuelItemId: string): boolean {
+      const inventory = useInventoryStore();
+      const fuelDef = CAMPFIRE_FUEL_ITEMS[fuelItemId];
+      if (!fuelDef) {
+        toast({ message: '该物品不能作为燃料', type: 'warning' });
+        return false;
+      }
+      if (!inventory.hasEnough(fuelItemId, 1)) {
+        toast({ message: `背包中没有${fuelDef.name}`, type: 'warning' });
+        return false;
+      }
+      const currentFuel = building.fuelValue ?? 0;
+      if (currentFuel >= CAMPFIRE_MAX_FUEL) {
+        toast({ message: '篝火燃料已满', type: 'warning' });
+        return false;
+      }
+      inventory.removeItem(fuelItemId, 1);
+      building.fuelValue = Math.min(CAMPFIRE_MAX_FUEL, currentFuel + fuelDef.value);
+      const message = `向篝火添加了${fuelDef.name}，燃料值 +${fuelDef.value}，当前：${building.fuelValue}/${CAMPFIRE_MAX_FUEL}`;
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({ text: message, type: 'ITEM', gameTimestamp: useTimeStore().timestamp, timestamp: Date.now() });
+      return true;
+    },
+
+    // 篝火烤制物品（preExecute 模式：立即消耗材料和燃料，进度条后产出）
+    startCampfireCook(building: GameBuilding, cookable: CampfireCookable): (() => Promise<void>) | null {
+      const inventory = useInventoryStore();
+      const character = useCharacterStore();
+      const currentFuel = building.fuelValue ?? 0;
+
+      // 特殊：钻石烤不化，不消耗燃料，直接返回
+      if (cookable.input === 'diamond') {
+        toast({ message: '钻石无法被烤化，它完好无损地回来了', type: 'info' });
+        return null;
+      }
+
+      if (!inventory.hasEnough(cookable.input, 1)) {
+        toast({ message: `背包中没有${cookable.inputName}`, type: 'warning' });
+        return null;
+      }
+      if (currentFuel < cookable.fuelCost) {
+        toast({ message: '篝火已熄灭，请先添加燃料', type: 'warning' });
+        return null;
+      }
+      if (character.energy < 3) {
+        toast({ message: '体力不足，无法烤制', type: 'warning' });
+        return null;
+      }
+
+      // 立即消耗：材料 + 燃料 + 体力
+      inventory.removeItem(cookable.input, 1);
+      building.fuelValue = Math.max(0, currentFuel - cookable.fuelCost);
+      character.energy = Math.max(0, character.energy - 3);
+
+      // 返回完成回调（进度条结束后调用）
+      return async () => {
+        if (cookable.output) {
+          const outputDef = this.getCookableOutputDef(cookable.output);
+          inventory.addItem({ id: cookable.output, type: cookable.output, name: outputDef }, 1);
+        }
+        toast({ message: cookable.message, type: 'success' });
+        useGameLogStore().addEntry({ text: cookable.message, type: 'ITEM', gameTimestamp: useTimeStore().timestamp, timestamp: Date.now() });
+      };
+    },
+
+    // 获取产出物品名称（辅助方法）
+    getCookableOutputDef(outputId: string): string {
+      const names: Record<string, string> = {
+        cooked_meat: '熟肉', cooked_fish: '烤鱼', coal: '煤炭',
+        ash: '灰烬', fired_clay: '陶器'
+      };
+      return names[outputId] ?? outputId;
     },
 
     // 制作工具（工作台建筑动作）
@@ -535,17 +645,25 @@ export const useBaseSceneStore = defineStore('baseScene', {
       });
     },
 
-    // 制作火把：消耗 树枝×1 + 草×2，获得火把
+    // 制作火把：消耗 树枝×1 + 草×2，火把直接进入装备系统（不占背包）
     async craftTorch() {
       const inventory = useInventoryStore();
+      const equipment = useEquipmentStore();
       if (!inventory.hasEnough('branch', 1) || !inventory.hasEnough('grass', 2)) {
         toast({ message: '需要树枝 ×1 + 草 ×2 才能制作火把', type: 'warning' });
         return;
       }
       inventory.removeItem('branch', 1);
       inventory.removeItem('grass', 2);
-      inventory.addItem({ id: 'torch', type: 'torch', name: '火把' }, 1);
-      const message = '用树枝和草制作了一个火把，可以驱赶夜间野兽';
+      // 火把直接加入装备库存，不占用背包格
+      if (!equipment.inventory.torch) {
+        equipment.inventory.torch = { durability: 0, maxDurability: 100 };
+      }
+      equipment.inventory.torch.durability = Math.min(
+        equipment.inventory.torch.maxDurability,
+        equipment.inventory.torch.durability + 100
+      );
+      const message = '用树枝和草制作了一个火把，可在装备页面装备到饰品槽';
       toast({ message, type: 'success' });
       useGameLogStore().addEntry({
         text: message,
@@ -695,9 +813,15 @@ export const useBaseSceneStore = defineStore('baseScene', {
             return true;
           },
           handler: async () => {
-            // 材料已在 preExecute 中消耗，直接产出
-            inventory.addItem({ id: 'torch', type: 'torch', name: '火把' }, 1);
-            const message = '用树枝和草制作了一个火把，可以驱赶夜间野兽';
+            // 材料已在 preExecute 中消耗，火把加入装备库存
+            if (!equipment.inventory.torch) {
+              equipment.inventory.torch = { durability: 0, maxDurability: 100 };
+            }
+            equipment.inventory.torch.durability = Math.min(
+              equipment.inventory.torch.maxDurability,
+              equipment.inventory.torch.durability + 100
+            );
+            const message = '用树枝和草制作了一个火把，可在装备页面装备到饰品槽';
             toast({ message, type: 'success' });
             useGameLogStore().addEntry({
               text: message,
@@ -719,42 +843,6 @@ export const useBaseSceneStore = defineStore('baseScene', {
       switch (buildingType) {
         case 'campfire':
           return [
-            {
-              name: 'cookFood',
-              text: '烤食物',
-              icon: '🍖',
-              duration: 1.5,
-              energyCost: 5,
-              // preExecute：进度条启动前立即校验并消耗生肉和体力
-              preExecute: () => {
-                if (!inventory.hasEnough('raw_meat', 1)) {
-                  toast({ message: '没有生肉可以烤，请先通过陷阱获取生肉', type: 'warning' });
-                  return false;
-                }
-                if (character.energy < 5) {
-                  toast({ message: '体力不足，无法烤食物', type: 'warning' });
-                  return false;
-                }
-                // 立即消耗生肉和体力，进度条开始倒计时
-                inventory.removeItem('raw_meat', 1);
-                character.energy = Math.max(0, character.energy - 5);
-                return true;
-              },
-              handler: async () => {
-                // 材料已在 preExecute 中消耗，直接产出熟肉
-                inventory.addItem({ id: 'cooked_meat', type: 'cooked_meat', name: '熟肉' }, 1);
-                const message = '用篝火烤了一块肉，获得了熟肉';
-                toast({ message, type: 'success' });
-                useGameLogStore().addEntry({
-                  text: message,
-                  type: 'ITEM',
-                  gameTimestamp: useTimeStore().timestamp,
-                  timestamp: Date.now()
-                });
-              },
-              tooltip: '需要生肉',
-              disabled: () => !inventory.hasEnough('raw_meat', 1)
-            },
             {
               name: 'warmUp',
               text: '取暖',
