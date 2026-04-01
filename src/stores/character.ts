@@ -10,6 +10,14 @@ import { useInventoryStore } from './inventory'
 // 挂机安全保护：血量降至此值时自动暂停，防止无人操作时角色死亡
 const HEALTH_AUTO_PAUSE_THRESHOLD = 20
 
+// 吃水果时有概率产出种子（水果id → 种子掉落概率）
+const FRUIT_SEED_CHANCE: Record<string, number> = {
+  apple: 0.4,
+  berry: 0.15,
+  wild_grape: 0.25,
+  wild_pear: 0.35,
+}
+
 type Gender = 'male' | 'female'
 
 interface CharacterState {
@@ -62,6 +70,27 @@ export const useCharacterStore = defineStore('character', {
             text: '你感到饥肠辘辘...',
             type: 'SYSTEM'
           })
+        }
+      }
+
+      // 卫生度消耗：每小时 -1
+      if (this.hygiene > 0) {
+        this.hygiene = Math.max(0, this.hygiene - 1)
+        if (this.hygiene === 0) {
+          gameLog({ text: '你脏得连自己都难以忍受，必须去洗澡！', type: 'SYSTEM' })
+        } else if (this.hygiene < 30) {
+          gameLog({ text: '你已经很久没有洗澡了，浑身散发着异味...', type: 'SYSTEM' })
+        }
+      }
+
+      // 心情衰减：基础 -1，卫生<30 额外 -2，饱食<20 额外 -1
+      let moodDrop = 1
+      if (this.hygiene < 30) moodDrop += 2
+      if (this.satiety < 20) moodDrop += 1
+      if (this.mood > 0) {
+        this.mood = Math.max(0, this.mood - moodDrop)
+        if (this.mood < 20) {
+          gameLog({ text: '你感到十分烦躁，需要做些让自己开心的事...', type: 'SYSTEM' })
         }
       }
 
@@ -157,6 +186,13 @@ export const useCharacterStore = defineStore('character', {
 
       const suffix = parts.length > 0 ? `，${parts.join('、')}` : ''
       gameLog({ text: `吃了${def.name}${suffix}`, type: 'SYSTEM' })
+
+      // 吃水果时有概率产出种子
+      const seedChance = FRUIT_SEED_CHANCE[itemId]
+      if (seedChance !== undefined && Math.random() < seedChance) {
+        inventory.addItem({ id: 'seed', type: 'seed', name: '种子' }, 1)
+        gameLog({ text: `从${def.name}里取出了一粒种子`, type: 'ITEM' })
+      }
     },
 
     // 重置游戏

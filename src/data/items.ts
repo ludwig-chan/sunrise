@@ -36,6 +36,8 @@ export interface ItemDefinition {
   use?: () => ItemEffect
 }
 
+const MUSHROOM_POISON_CHANCE = 0.15
+
 export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
   apple: {
     id: 'apple',
@@ -255,10 +257,10 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
   },
   grass: {
     id: 'grass',
-    name: '草',
+    name: '干草',
     category: 'material',
     icon: { type: 'svg', path: 'grass' },
-    description: '随处可见的普通草，是制作火把的必要材料，树林和草地都有分布。',
+    description: '晒干的枯草，柔韧蓬松。可以用来制作火把（易燃），也可以搓成绳索，或用作篝火燃料。',
   },
   torch: {
     id: 'torch',
@@ -292,5 +294,57 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     icon: { type: 'svg', path: 'seaweed' },
     description: '海边采集的海藻，可以用来制作食物或药品。',
     use: () => ({ satiety: 5, health: 2 })
+  },
+  fur: {
+    id: 'fur',
+    name: '皮毛',
+    category: 'material',
+    icon: { type: 'svg', path: 'fur' },
+    description: '从猎物身上剥下的皮毛，柔软保暖，可以用来制作皮草衣物，抵御寒冷。',
+  },
+  seed: {
+    id: 'seed',
+    name: '种子',
+    category: 'food',
+    icon: { type: 'svg', path: 'seed' },
+    description: '从野果中取出的种子，可以种在农田里种出蔬菜，也可以直接嚼着吃，还可以烤成香脆的烤种子。',
+    use: () => ({ satiety: 3, energy: 2 })
+  },
+  roasted_seed: {
+    id: 'roasted_seed',
+    name: '烤种子',
+    category: 'food',
+    icon: { type: 'svg', path: 'roasted_seed' },
+    description: '用篝火烤制的香脆种子，就像嗑瓜子一样，香气四溢，让人心情愉悦。',
+    use: () => ({ satiety: 8, energy: 5, mood: 5 })
+  },
+  wild_grape: {
+    id: 'wild_grape',
+    name: '野葡萄',
+    category: 'food',
+    icon: { type: 'svg', path: 'wild_grape' },
+    description: '成串的小野葡萄，酸甜可口，富含水分，吃了心情会好一些。',
+    use: () => ({ energy: 20, satiety: 12, health: 3, mood: 5 })
+  },
+  wild_pear: {
+    id: 'wild_pear',
+    name: '野梨',
+    category: 'food',
+    icon: { type: 'svg', path: 'wild_pear' },
+    description: '树上摘下的野生梨子，清甜多汁，比苹果更解渴。',
+    use: () => ({ energy: 25, satiety: 15, health: 5, mood: 6 })
+  },
+  wild_mushroom: {
+    id: 'wild_mushroom',
+    name: '野蘑菇',
+    category: 'food',
+    icon: { type: 'svg', path: 'wild_mushroom' },
+    description: '森林里采到的野生蘑菇，鲜味浓郁，但要注意辨别是否有毒。有小概率轻微中毒（health -3）。',
+    use: () => {
+      if (Math.random() < MUSHROOM_POISON_CHANCE) {
+        return { energy: 10, satiety: 15, health: -3, mood: -5 }
+      }
+      return { energy: 15, satiety: 20, health: 5, mood: 3 }
+    }
   }
 }

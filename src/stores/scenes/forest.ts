@@ -63,7 +63,10 @@ const RESOURCE_NAMES: { [key: string]: string } = {
   branch: '树枝',
   apple: '苹果',
   berry: '浆果',
-  grass: '草'
+  grass: '干草',
+  wild_grape: '野葡萄',
+  wild_pear: '野梨',
+  wild_mushroom: '野蘑菇'
 };
 
 // 树林初始库存：采光后自然恢复，不永久枯竭
@@ -87,14 +90,26 @@ const INITIAL_STOCK = {
   berry: {
     current: 30,
     max: 30
+  },
+  wild_grape: {
+    current: 15,
+    max: 15
+  },
+  wild_pear: {
+    current: 10,
+    max: 10
+  },
+  mushroom: {
+    current: 8,
+    max: 8
   }
 } as const;
 
-// 树林探索可获得的资源（包含草，体现"树林里也有草"）
+// 树林探索可获得的资源（包含干草，体现"树林里也有草"）
 const FOREST_RESOURCES: readonly ResourceInfo[] = [
   { id: 'branch', type: 'branch', name: '树枝' },
   { id: 'ore', type: 'ore', name: '矿石' },
-  { id: 'grass', type: 'grass', name: '草' }  // 树林探索也有概率获得草
+  { id: 'grass', type: 'grass', name: '干草' }  // 树林探索也有概率获得干草
 ];
 
 const FOOD_GATHER_FAILURE_RATE = 0.4;
@@ -256,11 +271,11 @@ export const useForestSceneStore = defineStore('forestScene', {
       for (const resource of selectedResources) {
         try {
           if (resource.type === 'grass') {
-            // 草在场景 stock 中不跟踪（INITIAL_STOCK 无 grass 字段），
+            // 干草在场景 stock 中不跟踪（INITIAL_STOCK 无 grass 字段），
             // 体现"树林里草随处可见"的设定，直接随机获得 1-2 把放入背包
             const amount = Math.floor(Math.random() * 2) + 1;
-            inventory.addItem({ id: 'grass', type: 'grass', name: '草' }, amount);
-            gainedResources.push(`${amount}把草`);
+            inventory.addItem({ id: 'grass', type: 'grass', name: '干草' }, amount);
+            gainedResources.push(`${amount}把干草`);
           } else {
             const amount = await getStockAmount(this.scene.stock, resource.type, resource.expectedAmount);
             inventory.addItem(resource, amount);
@@ -283,6 +298,16 @@ export const useForestSceneStore = defineStore('forestScene', {
           timestamp: Date.now()
         });
       } else {
+        // 20% 概率额外发现一颗野蘑菇
+        if (Math.random() < 0.2) {
+          try {
+            const mushroomAmount = await getStockAmount(this.scene.stock, 'mushroom', 1);
+            inventory.addItem({ id: 'wild_mushroom', type: 'wild_mushroom', name: '野蘑菇' }, mushroomAmount);
+            gainedResources.push(`${mushroomAmount}个野蘑菇`);
+          } catch {
+            // 蘑菇库存耗尽，跳过
+          }
+        }
         const resourcesText = gainedResources.join('、');
         toast({ 
           message: `探索发现了${resourcesText}`, 
@@ -377,6 +402,28 @@ export const useForestSceneStore = defineStore('forestScene', {
         // 浆果库存不足，跳过
       }
 
+      // 有概率采集野葡萄（30% 概率）
+      if (Math.random() < 0.3) {
+        try {
+          const grapeAmount = await getStockAmount(this.scene.stock, 'wild_grape', Math.floor(Math.random() * 2) + 1);
+          inventory.addItem({ id: 'wild_grape', type: 'wild_grape', name: '野葡萄' }, grapeAmount);
+          gathered.push(`${grapeAmount}串野葡萄`);
+        } catch {
+          // 野葡萄库存不足，跳过
+        }
+      }
+
+      // 有概率采集野梨（20% 概率）
+      if (Math.random() < 0.2) {
+        try {
+          const pearAmount = await getStockAmount(this.scene.stock, 'wild_pear', Math.floor(Math.random() * 2) + 1);
+          inventory.addItem({ id: 'wild_pear', type: 'wild_pear', name: '野梨' }, pearAmount);
+          gathered.push(`${pearAmount}个野梨`);
+        } catch {
+          // 野梨库存不足，跳过
+        }
+      }
+
       if (gathered.length === 0) {
         toast({
           message: '这片区域的食物已经被采集完了，稍等会自然恢复',
@@ -396,6 +443,18 @@ export const useForestSceneStore = defineStore('forestScene', {
         gameTimestamp: useTimeStore().timestamp,
         timestamp: Date.now()
       });
+
+      // 15% 概率额外获得一粒种子
+      if (Math.random() < 0.15) {
+        inventory.addItem({ id: 'seed', type: 'seed', name: '种子' }, 1);
+        toast({ message: '意外发现了一粒种子', type: 'info' });
+        useGameLogStore().addEntry({
+          text: '意外发现了一粒种子',
+          type: 'ITEM',
+          gameTimestamp: useTimeStore().timestamp,
+          timestamp: Date.now()
+        });
+      }
 
       // 检查解锁进度
       this.checkUnlockProgress();
@@ -673,6 +732,18 @@ export const useForestSceneStore = defineStore('forestScene', {
           // 浆果每小时 +1
           if (stock.berry && stock.berry.current < stock.berry.max) {
             stock.berry.current = Math.min(stock.berry.max, stock.berry.current + 1);
+          }
+          // 野葡萄每2小时概率恢复1个
+          if (stock.wild_grape && stock.wild_grape.current < stock.wild_grape.max && Math.random() < 0.5) {
+            stock.wild_grape.current = Math.min(stock.wild_grape.max, stock.wild_grape.current + 1);
+          }
+          // 野梨每2小时概率恢复1个
+          if (stock.wild_pear && stock.wild_pear.current < stock.wild_pear.max && Math.random() < 0.5) {
+            stock.wild_pear.current = Math.min(stock.wild_pear.max, stock.wild_pear.current + 1);
+          }
+          // 蘑菇每2小时概率恢复1个
+          if (stock.mushroom && stock.mushroom.current < stock.mushroom.max && Math.random() < 0.5) {
+            stock.mushroom.current = Math.min(stock.mushroom.max, stock.mushroom.current + 1);
           }
         });
       }

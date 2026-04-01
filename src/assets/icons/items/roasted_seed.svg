@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 烤种子 - 深色烤熟的种子，有烤焦感 -->
+  <!-- 主体（深棕烤色） -->
+  <ellipse cx="10" cy="20" rx="6" ry="8" fill="#4a2c0a" transform="rotate(-15 10 20)"/>
+  <ellipse cx="10" cy="20" rx="5" ry="7" fill="#6b3e12" transform="rotate(-15 10 20)"/>
+  <!-- 第二颗 -->
+  <ellipse cx="19" cy="19" rx="6" ry="8" fill="#4a2c0a" transform="rotate(10 19 19)"/>
+  <ellipse cx="19" cy="19" rx="5" ry="7" fill="#6b3e12" transform="rotate(10 19 19)"/>
+  <!-- 第三颗 -->
+  <ellipse cx="14" cy="10" rx="5" ry="7" fill="#4a2c0a" transform="rotate(-5 14 10)"/>
+  <ellipse cx="14" cy="10" rx="4" ry="6" fill="#6b3e12" transform="rotate(-5 14 10)"/>
+  <!-- 热气/香气波纹 -->
+  <path d="M24 6 Q26 4 24 2" stroke="#e07020" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6"/>
+  <path d="M27 7 Q29 5 27 3" stroke="#e07020" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/>
+</svg>

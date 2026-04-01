@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 皮毛 - 卷起的毛皮 -->
+  <!-- 底层阴影 -->
+  <ellipse cx="16" cy="27" rx="11" ry="3" fill="#8B6040" opacity="0.3"/>
+  <!-- 主皮毛体（卷曲的毛皮） -->
+  <ellipse cx="16" cy="18" rx="12" ry="8" fill="#c49060"/>
+  <!-- 毛发纹理（深色线条） -->
+  <path d="M6 16 Q8 14 10 16 Q12 18 14 16 Q16 14 18 16 Q20 18 22 16 Q24 14 26 16" stroke="#8B5a30" stroke-width="1" fill="none"/>
+  <path d="M7 19 Q9 17 11 19 Q13 21 15 19 Q17 17 19 19 Q21 21 23 19 Q25 17 27 19" stroke="#8B5a30" stroke-width="1" fill="none"/>
+  <path d="M8 22 Q10 20 12 22 Q14 24 16 22 Q18 20 20 22 Q22 24 24 22" stroke="#7a4e28" stroke-width="1" fill="none"/>
+  <!-- 卷曲边缘 -->
+  <path d="M4 18 Q4 10 16 10 Q28 10 28 18" fill="#d4a870" stroke="#a07040" stroke-width="0.8"/>
+  <!-- 毛皮顶部高光 -->
+  <path d="M8 13 Q10 11 12 13 Q14 15 16 13 Q18 11 20 13 Q22 15 24 13" stroke="#e0c090" stroke-width="1.2" fill="none" opacity="0.7"/>
+</svg>
