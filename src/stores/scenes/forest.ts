@@ -256,7 +256,8 @@ export const useForestSceneStore = defineStore('forestScene', {
       for (const resource of selectedResources) {
         try {
           if (resource.type === 'grass') {
-            // 草不从库存扣取（无上限），直接随机获得 1-2 把
+            // 草在场景 stock 中不跟踪（INITIAL_STOCK 无 grass 字段），
+            // 体现"树林里草随处可见"的设定，直接随机获得 1-2 把放入背包
             const amount = Math.floor(Math.random() * 2) + 1;
             inventory.addItem({ id: 'grass', type: 'grass', name: '草' }, amount);
             gainedResources.push(`${amount}把草`);
@@ -466,6 +467,7 @@ export const useForestSceneStore = defineStore('forestScene', {
 
     // 获取建筑动作（根据建筑类型返回对应动作列表）
     getBuildingActions(buildingType: string): GameBuildingAction[] {
+      const character = useCharacterStore();
       switch (buildingType) {
         case 'trap':
           // 陷阱：自动触发，无手动动作（展示状态即可）
@@ -478,7 +480,29 @@ export const useForestSceneStore = defineStore('forestScene', {
               icon: '🛏️',
               duration: 1.5,
               energyCost: 0,
-              handler: async () => await this.sleep(),
+              preExecute: () => {
+                const SATIETY_COST = 20;
+                if (character.satiety <= SATIETY_COST) {
+                  toast({ message: '太饿了，睡不着...', type: 'warning' });
+                  return false;
+                }
+                // 立即消耗饱食度，进度条（睡觉动画）后产出体力
+                character.satiety = Math.max(0, character.satiety - SATIETY_COST);
+                return true;
+              },
+              handler: async () => {
+                // 饱食度已在 preExecute 中消耗，直接恢复体力
+                const ENERGY_RESTORE = 30;
+                character.energy = Math.min(100, character.energy + ENERGY_RESTORE);
+                const message = `睡了一觉，体力恢复了 +${ENERGY_RESTORE}，饱食度 -20`;
+                toast({ message, type: 'success' });
+                useGameLogStore().addEntry({
+                  text: message,
+                  type: 'SYSTEM',
+                  gameTimestamp: useTimeStore().timestamp,
+                  timestamp: Date.now()
+                });
+              },
               tooltip: '消耗饱食度恢复体力'
             }
           ];

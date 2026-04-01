@@ -773,13 +773,28 @@ export const useBaseSceneStore = defineStore('baseScene', {
               duration: 1.5,
               energyCost: 0,
               preExecute: () => {
-                if (character.satiety <= 20) {
+                const SATIETY_COST = 20;
+                if (character.satiety <= SATIETY_COST) {
                   toast({ message: '太饿了，睡不着...', type: 'warning' });
                   return false;
                 }
+                // 立即消耗饱食度，进度条（睡觉动画）后产出体力
+                character.satiety = Math.max(0, character.satiety - SATIETY_COST);
                 return true;
               },
-              handler: async () => await this.sleep(),
+              handler: async () => {
+                // 饱食度已在 preExecute 中消耗，直接产出体力
+                const ENERGY_RESTORE = 30;
+                character.energy = Math.min(100, character.energy + ENERGY_RESTORE);
+                const message = `睡了一觉，体力恢复了 +${ENERGY_RESTORE}，饱食度 -20`;
+                toast({ message, type: 'success' });
+                useGameLogStore().addEntry({
+                  text: message,
+                  type: 'SYSTEM',
+                  gameTimestamp: useTimeStore().timestamp,
+                  timestamp: Date.now()
+                });
+              },
               tooltip: '消耗饱食度恢复体力'
             }
           ];
