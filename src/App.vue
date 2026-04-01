@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterView, useRouter } from 'vue-router'
 import { useScenesStore } from './stores/scenes'
 import { onMounted, ref, onUnmounted } from 'vue'
 import Toast from './components/common/Toast.vue'
 import Background from './components/common/Background.vue'
+import WeatherEffect from './components/game/WeatherEffect.vue'
 import { emitter } from './utils/toast'
+import { emitter as gameEmitter } from './utils/eventBus'
 
 const scenesStore = useScenesStore()
+const router = useRouter()
 const toastVisible = ref(false)
 const toastMessage = ref('')
 const toastType = ref<'success' | 'info' | 'warning' | 'error'>('info')
@@ -39,6 +42,10 @@ emitter.on('hideToast', () => {
   toastVisible.value = false
 })
 
+gameEmitter.on('battle-start', () => {
+  router.push('/battle')
+})
+
 onUnmounted(() => {
   if (toastTimer) {
     clearTimeout(toastTimer)
@@ -53,6 +60,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <WeatherEffect />
   <Background />
   <RouterView />
   <Toast

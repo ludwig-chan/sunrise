@@ -6,6 +6,7 @@ import CharacterEquipmentView from '../views/CharacterEquipmentView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import FeedView from '../views/FeedView.vue'
 import LogsView from '../views/LogsView.vue'
+import BattleView from '../views/BattleView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -48,6 +49,11 @@ const router = createRouter({
       path: '/logs',
       name: 'logs',
       component: LogsView,
+    },
+    {
+      path: '/battle',
+      name: 'battle',
+      component: BattleView,
     },
   ],
 })

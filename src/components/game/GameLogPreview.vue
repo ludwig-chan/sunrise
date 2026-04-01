@@ -25,8 +25,8 @@ import type { GameLogEntry } from '@/stores/gameLog'
 const router = useRouter()
 const gameLogStore = useGameLogStore()
 
-// 最多显示5条，按时间从旧到新排列（最新在最下面）
-const MAX_ENTRIES = 5
+// 最多显示6条，按时间从旧到新排列（最新在最下面）
+const MAX_ENTRIES = 6
 // 透明度范围：最旧条目 = MIN_OPACITY，最新条目 = 1.0
 const MIN_OPACITY = 0.2
 const OPACITY_RANGE = 1 - MIN_OPACITY
@@ -59,6 +59,9 @@ function entryOpacity(index: number, total: number): number {
   background-color: rgba(255, 255, 255, 0.75);
   cursor: pointer;
   transition: box-shadow 0.2s ease, opacity 0.2s ease;
+  height: calc(6 * 1.5 * 0.8rem + 1.2rem);
+  min-height: calc(6 * 1.5 * 0.8rem + 1.2rem);
+  max-height: calc(6 * 1.5 * 0.8rem + 1.2rem);
 }
 
 .log-preview:hover {

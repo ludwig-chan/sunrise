@@ -8,8 +8,9 @@ import { useInventoryStore } from '../inventory';
 import { toast } from '../../utils/toast';
 import { useGameLogStore } from '../gameLog';
 import { emitter } from '../../utils/eventBus';
+import { showDialog } from '../../utils/dialog';
 
-// 基地可建造的建筑配方
+// 营地可建造的建筑配方
 export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
   {
     type: 'campfire',
@@ -139,9 +140,9 @@ const RESOURCE_NAMES: { [key: string]: string } = {
   seed: '种子'
 };
 
-// 基地陷阱修复消耗（建造消耗 branch:8 wood:3）
+// 营地陷阱修复消耗（建造消耗 branch:8 wood:3）
 const TRAP_REPAIR_COST: Record<string, number> = { branch: 5 };
-// 基地陷阱摧毁回收材料
+// 营地陷阱摧毁回收材料
 const TRAP_DESTROY_RETURN: Record<string, number> = { branch: 4 };
 
 // ===== 篝火燃料系统 =====
@@ -178,15 +179,15 @@ export const CAMPFIRE_COOKABLE_ITEMS: CampfireCookable[] = [
   { input: 'seed', inputName: '种子', output: 'roasted_seed', outputName: '烤种子', duration: 1, fuelCost: 5, message: '种子烤好了，香脆可口！获得了烤种子' }
 ];
 
-// 树林解锁保底次数：基地探索最多此次数后必定解锁树林
+// 树林解锁保底次数：营地探索最多此次数后必定解锁树林
 const FOREST_UNLOCK_PITY_THRESHOLD = 3;
-// 每次基地探索时随机提前解锁树林的概率
+// 每次营地探索时随机提前解锁树林的概率
 const FOREST_UNLOCK_CHANCE = 0.5;
 
 // 夜晚野兽袭击概率（无篝火/火把保护时）
 const NIGHT_ATTACK_CHANCE = 0.3;
 
-// 定义基地初始库存（基地本身无资源存储，靠探索和采集获取）
+// 定义营地初始库存（营地本身无资源存储，靠探索和采集获取）
 const INITIAL_STOCK = {
   wood: {
     current: 0,
@@ -209,7 +210,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
     _nightAttackListenerRegistered: false,
     scene: {
       id: 'base',
-      name: '基地',
+      name: '营地',
       actions: [],
       buildings: [],
       stock: JSON.parse(JSON.stringify(INITIAL_STOCK))
@@ -267,7 +268,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
       this.consumeEnergy(cost);
     },
 
-    // 探索基地周边
+    // 探索营地周边
     // 说明：树林解锁由此处触发；草地、河边等后续场景的解锁
     //       改为依赖各自场景的行为计数，见 forest.ts / grassland.ts 等。
     async explore() {
@@ -1253,14 +1254,14 @@ export const useBaseSceneStore = defineStore('baseScene', {
       // 注册夜晚野兽袭击监听（防止重复注册）
       if (!this._nightAttackListenerRegistered) {
         this._nightAttackListenerRegistered = true;
-        emitter.on('hour-passed', () => {
+        emitter.on('hour-passed', async () => {
           const timeStore = useTimeStore();
           if (timeStore.currentPeriod !== 'NIGHT') return;
 
           const currentDay = timeStore.day;
           if (this.lastNightAttackDay === currentDay) return;
 
-          // 检查保护：基地有篝火，或装备了火把
+          // 检查保护：营地有篝火，或装备了火把
           const hasCampfire = this.scene.buildings.some(b => b.type === 'campfire');
           const equipment = useEquipmentStore();
           const hasTorch = equipment.slots.accessory === 'torch';
@@ -1271,18 +1272,39 @@ export const useBaseSceneStore = defineStore('baseScene', {
 
           this.lastNightAttackDay = currentDay;
 
-          const character = useCharacterStore();
-          const damage = Math.floor(Math.random() * 11) + 10; // 10-20 伤害
-          character.health = Math.max(0, character.health - damage);
+          // 随机选择一只野兽
+          const monsterIds = ['wolf', 'boar', 'bear']
+          const monsterId = monsterIds[Math.floor(Math.random() * monsterIds.length)]
+          const { MONSTERS } = await import('../../data/monsters')
+          const monster = MONSTERS[monsterId]
 
-          const message = `夜晚，一只野兽突然袭击了你！失去了 ${damage} 点血量。（提示：建造篝火或装备火把可以驱赶野兽）`;
-          toast({ message, type: 'error' });
-          useGameLogStore().addEntry({
-            text: message,
-            type: 'SYSTEM',
-            gameTimestamp: timeStore.timestamp,
-            timestamp: Date.now()
-          });
+          const result = await showDialog({
+            message: `夜晚，一只 ${monster.icon} ${monster.name} 突然出现！`,
+            options: [
+              { text: '⚔️ 战斗', value: 'fight' },
+              { text: '🏃 逃跑', value: 'flee' }
+            ],
+            allowMultiple: true
+          })
+
+          if (result === 'fight') {
+            const { useBattleStore } = await import('../battle')
+            const battleStore = useBattleStore()
+            battleStore.startBattle(monster)
+            emitter.emit('battle-start', monsterId)
+          } else {
+            if (Math.random() < 0.7) {
+              toast({ message: '成功逃跑了！', type: 'info' })
+              useGameLogStore().addEntry({ text: '夜晚遭遇了野兽，成功逃跑了！', type: 'COMBAT', gameTimestamp: timeStore.timestamp, timestamp: Date.now() })
+            } else {
+              const character = useCharacterStore()
+              const damage = Math.floor(Math.random() * 6) + 10
+              character.health = Math.max(0, character.health - damage)
+              const message = `夜晚遭遇野兽，逃跑失败！失去了 ${damage} 点血量`
+              toast({ message, type: 'error' })
+              useGameLogStore().addEntry({ text: message, type: 'COMBAT', gameTimestamp: timeStore.timestamp, timestamp: Date.now() })
+            }
+          }
         });
       }
     }
