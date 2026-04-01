@@ -151,6 +151,13 @@ export const useRiverSceneStore = defineStore('riverScene', {
 
     // 钓鱼：60% 概率获得 1-2 条鱼，40% 概率失败
     async fishInRiver() {
+      // 检查是否有鱼竿
+      const inventory = useInventoryStore();
+      if (!inventory.hasEnough('fishing_rod', 1)) {
+        toast({ message: '需要鱼竿才能钓鱼，请先制作一根鱼竿', type: 'warning' });
+        return;
+      }
+
       // 记录行动次数
       this.riverActionCount++;
 
@@ -274,6 +281,12 @@ export const useRiverSceneStore = defineStore('riverScene', {
 
     // 精准钓鱼（渔屋建筑动作）：80% 概率获得 2-4 条鱼，额外 20% 概率获得稀有鱼
     async precisionFish() {
+      // 检查是否有鱼竿
+      if (!useInventoryStore().hasEnough('fishing_rod', 1)) {
+        toast({ message: '需要鱼竿才能钓鱼，请先制作一根鱼竿', type: 'warning' });
+        return;
+      }
+
       if (Math.random() < 0.2) {
         const message = '今天鱼不上钩，没钓到';
         toast({ message, type: 'info' });
@@ -424,6 +437,10 @@ export const useRiverSceneStore = defineStore('riverScene', {
           energyCost: 6,
           actionGroup: 'scene' as const,
           preExecute: () => {
+            if (!useInventoryStore().hasEnough('fishing_rod', 1)) {
+              toast({ message: '需要鱼竿才能钓鱼，请先制作一根鱼竿', type: 'warning' });
+              return false;
+            }
             if (character.energy < 6) {
               toast({ message: '体力不足，无法钓鱼', type: 'warning' });
               return false;
@@ -431,6 +448,8 @@ export const useRiverSceneStore = defineStore('riverScene', {
             character.energy = Math.max(0, character.energy - 6);
             return true;
           },
+          disabled: () => !useInventoryStore().hasEnough('fishing_rod', 1),
+          tooltip: '需要鱼竿才能钓鱼',
           handler: async () => await this.fishInRiver()
         },
         {

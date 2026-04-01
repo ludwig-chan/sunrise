@@ -133,16 +133,16 @@
                 v-for="action in buildingActions"
                 :key="action.name"
                 class="modal-action-item"
-                :class="{ 'is-disabled': !!action.disabled }"
+                :class="{ 'is-disabled': isActionDisabled(action) }"
               >
                 <span class="modal-action-icon">{{ action.icon || '▶' }}</span>
                 <div class="modal-action-info">
                   <span class="modal-action-text">{{ action.text }}</span>
-                  <span v-if="action.tooltip && action.disabled" class="modal-action-condition">{{ action.tooltip }}</span>
+                  <span v-if="action.tooltip && isActionDisabled(action)" class="modal-action-condition">{{ action.tooltip }}</span>
                 </div>
                 <button
                   class="modal-select-btn"
-                  :disabled="activity.isBusy || !!action.disabled"
+                  :disabled="activity.isBusy || isActionDisabled(action)"
                   @click="handleActionStart(action)"
                 >
                   开始
@@ -314,10 +314,17 @@ function formatCost(cost: Record<string, number>): string {
     .join(' + ');
 }
 
-function handleActionStart(action: GameBuildingAction) {
-  if (activity.isBusy || action.disabled) return;
+function isActionDisabled(action: GameBuildingAction): boolean {
+  if (typeof action.disabled === 'function') return action.disabled();
+  return !!action.disabled;
+}
 
-  if (character.energy < action.energyCost) {
+function handleActionStart(action: GameBuildingAction) {
+  if (activity.isBusy || isActionDisabled(action)) return;
+
+  if (action.preExecute) {
+    if (!action.preExecute()) return;
+  } else if (character.energy < action.energyCost) {
     const messages = [
       '你感到精疲力尽，需要休息一下...',
       '你的双腿像灌了铅一样沉重...',
@@ -329,6 +336,9 @@ function handleActionStart(action: GameBuildingAction) {
     });
     return;
   }
+
+  // 记录上次使用的建筑动作
+  scenes.setLastUsedBuildingAction(props.building.type, action.name);
 
   emit('close');
   activity.startActivity({

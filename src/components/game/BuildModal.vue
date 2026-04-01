@@ -51,6 +51,8 @@ import { BASE_BUILDING_ICONS } from '../../stores/scenes/base';
 import { FOREST_BUILDING_ICONS } from '../../stores/scenes/forest';
 import { RIVER_BUILDING_ICONS } from '../../stores/scenes/river';
 import { CAVE_BUILDING_ICONS } from '../../stores/scenes/cave';
+import { GRASSLAND_BUILDING_ICONS } from '../../stores/scenes/grassland';
+import { LAKESIDE_BUILDING_ICONS } from '../../stores/scenes/lakeside';
 import { toast } from '../../utils/toast';
 import type { GameBuildingRecipe } from '../../stores/scenes/types';
 
@@ -77,7 +79,7 @@ function isBuilt(recipeType: string): boolean {
 }
 
 function buildingIcon(type: string): string {
-  return BASE_BUILDING_ICONS[type] ?? FOREST_BUILDING_ICONS[type] ?? RIVER_BUILDING_ICONS[type] ?? CAVE_BUILDING_ICONS[type] ?? '🏗️';
+  return BASE_BUILDING_ICONS[type] ?? FOREST_BUILDING_ICONS[type] ?? RIVER_BUILDING_ICONS[type] ?? CAVE_BUILDING_ICONS[type] ?? GRASSLAND_BUILDING_ICONS[type] ?? LAKESIDE_BUILDING_ICONS[type] ?? '🏗️';
 }
 
 function formatCost(cost: { [key: string]: number }): string {

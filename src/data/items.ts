@@ -33,6 +33,7 @@ export interface ItemDefinition {
   description: string
   equipSlot?: EquipSlot   // 装备到哪个槽位
   equipStats?: EquipStats // 装备后的属性加成
+  expiresInHours?: number // 游戏内小时保质期（食物才有）
   use?: () => ItemEffect
 }
 
@@ -45,6 +46,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'apple' },
     description: '树林里摘的野生苹果，清甜多汁，吃了心情也会好一些。',
+    expiresInHours: 72,
     use: () => ({ energy: 30, satiety: 10, health: 5, mood: 8 })
   },
   berry: {
@@ -53,6 +55,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'berry' },
     description: '一把酸甜的野生浆果，量不多，但聊胜于无。',
+    expiresInHours: 48,
     use: () => ({ energy: 15, satiety: 5, health: 2, mood: 3 })
   },
   wood: {
@@ -118,6 +121,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'raw_meat' },
     description: '用陷阱捕获的小动物身上取下的生肉，需要烹饪后食用效果更佳。',
+    expiresInHours: 24,
     use: () => ({ energy: 10, satiety: 20, health: -5, mood: -3 })
   },
   fish: {
@@ -126,6 +130,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'fish' },
     description: '从河里钓上来的新鲜鱼，富含蛋白质，烹饪后更美味。',
+    expiresInHours: 24,
     use: () => ({ energy: 20, satiety: 15, health: 3 })
   },
   rare_fish: {
@@ -207,6 +212,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'vegetable' },
     description: '自己在农田里种出的新鲜蔬菜，营养均衡。',
+    expiresInHours: 72,
     use: () => ({ energy: 15, satiety: 20, health: 5, mood: 5 })
   },
   cooked_meat: {
@@ -215,6 +221,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'cooked_meat' },
     description: '经过烹饪的肉食，美味可口，比生肉更加安全健康。',
+    expiresInHours: 96,
     use: () => ({ energy: 30, satiety: 35, health: 10, mood: 5 })
   },
   cooked_fish: {
@@ -223,6 +230,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'cooked_fish' },
     description: '用篝火烤制的鲜鱼，外焦里嫩，鲜美可口。',
+    expiresInHours: 96,
     use: () => ({ energy: 25, satiety: 30, health: 8, mood: 5 })
   },
   fired_clay: {
@@ -253,6 +261,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'nourishing_soup' },
     description: '用蔬菜和肉炖成的滋补汤，能全面补充体力和精神。',
+    expiresInHours: 48,
     use: () => ({ health: 20, energy: 40, satiety: 40, mood: 15 })
   },
   grass: {
@@ -277,6 +286,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'lotus_root' },
     description: '湖中采到的新鲜莲藕，清脆爽口，营养丰富。',
+    expiresInHours: 48,
     use: () => ({ energy: 15, satiety: 20, health: 5 })
   },
   shellfish: {
@@ -285,6 +295,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'shellfish' },
     description: '海边捡到的新鲜贝类，富含蛋白质，味道鲜美。',
+    expiresInHours: 48,
     use: () => ({ energy: 15, satiety: 20, health: 3 })
   },
   seaweed: {
@@ -324,6 +335,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'wild_grape' },
     description: '成串的小野葡萄，酸甜可口，富含水分，吃了心情会好一些。',
+    expiresInHours: 72,
     use: () => ({ energy: 20, satiety: 12, health: 3, mood: 5 })
   },
   wild_pear: {
@@ -332,6 +344,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'wild_pear' },
     description: '树上摘下的野生梨子，清甜多汁，比苹果更解渴。',
+    expiresInHours: 72,
     use: () => ({ energy: 25, satiety: 15, health: 5, mood: 6 })
   },
   wild_mushroom: {
@@ -340,11 +353,19 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     category: 'food',
     icon: { type: 'svg', path: 'wild_mushroom' },
     description: '森林里采到的野生蘑菇，鲜味浓郁，但要注意辨别是否有毒。有小概率轻微中毒（health -3）。',
+    expiresInHours: 48,
     use: () => {
       if (Math.random() < MUSHROOM_POISON_CHANCE) {
         return { energy: 10, satiety: 15, health: -3, mood: -5 }
       }
       return { energy: 15, satiety: 20, health: 5, mood: 3 }
     }
+  },
+  fishing_rod: {
+    id: 'fishing_rod',
+    name: '鱼竿',
+    category: 'material',
+    icon: { type: 'text', char: '🎣' },
+    description: '用树枝和草绳制成的简易鱼竿，是钓鱼的必备工具。没有鱼竿就没法钓鱼。',
   }
 }

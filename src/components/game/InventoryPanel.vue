@@ -16,11 +16,12 @@
           <div
             v-for="item in filteredItems"
             :key="item.id"
-            :class="['item-cell', { selected: selectedItem?.id === item.id }]"
+            :class="['item-cell', { selected: selectedItem?.id === item.id, 'expiring-soon': item.isExpiringSoon }]"
             @click="selectItem(item)"
           >
             <ItemIcon :icon="item.icon" class="cell-icon" />
             <span v-if="item.count > 1" class="item-badge">{{ item.count }}</span>
+            <span v-if="item.isExpiringSoon" class="expiry-warning">⏰</span>
           </div>
         </template>
         <div v-else class="empty-hint">暂无物品</div>
@@ -51,6 +52,11 @@
             :disabled="selectedItem.count <= 0"
             @click="useItem(selectedItem)"
           >使用</button>
+          <button
+            class="discard-btn"
+            :disabled="selectedItem.count <= 0"
+            @click="discardItem(selectedItem)"
+          >丢弃</button>
         </div>
       </div>
     </div>
@@ -69,6 +75,11 @@ import FilterBar from '../common/FilterBar.vue'
 const inventoryStore = useInventoryStore()
 const characterStore = useCharacterStore()
 
+// 1游戏小时对应的毫秒数
+const GAME_HOUR_MS = (5 * 60 * 1000) / 24
+// 当剩余保质期不足此比例时显示警告
+const EXPIRY_WARNING_THRESHOLD = 0.25
+
 interface DisplayItem {
   id: string
   name: string
@@ -78,6 +89,9 @@ interface DisplayItem {
   hasUse: boolean
   category: string
   effect?: ItemEffect
+  expiresInHours?: number
+  acquiredAt?: number
+  isExpiringSoon?: boolean
 }
 
 const CATEGORIES = [
@@ -99,11 +113,22 @@ function onFilterChange(newValue: Set<string>) {
 // 直接读全局背包构建展示物品列表
 const allDisplayItems = computed((): DisplayItem[] => {
   const items: DisplayItem[] = []
+  const now = Date.now()
 
   for (const invItem of inventoryStore.items) {
     if (invItem.count <= 0) continue
     const def = ITEM_DEFINITIONS[invItem.id]
     if (!def) continue
+
+    let isExpiringSoon = false
+    if (def.expiresInHours && invItem.acquiredAt) {
+      const totalMs = def.expiresInHours * GAME_HOUR_MS
+      const elapsed = now - invItem.acquiredAt
+      const remaining = totalMs - elapsed
+      // 剩余不到 EXPIRY_WARNING_THRESHOLD 时显示警告
+      isExpiringSoon = remaining > 0 && remaining < totalMs * EXPIRY_WARNING_THRESHOLD
+    }
+
     items.push({
       id: invItem.id,
       name: def.name,
@@ -113,6 +138,9 @@ const allDisplayItems = computed((): DisplayItem[] => {
       hasUse: !!def.use,
       category: def.category,
       effect: def.use ? def.use() : undefined,
+      expiresInHours: def.expiresInHours,
+      acquiredAt: invItem.acquiredAt,
+      isExpiringSoon,
     })
   }
 
@@ -138,6 +166,11 @@ function useItem(item: DisplayItem) {
   if (inventoryStore.getCount(item.id) <= 0) {
     selectedItem.value = null
   }
+}
+
+function discardItem(item: DisplayItem) {
+  inventoryStore.removeItem(item.id, item.count)
+  selectedItem.value = null
 }
 </script>
 
@@ -206,6 +239,20 @@ function useItem(item: DisplayItem) {
   font-size: 1.5rem;
   width: 1.5rem;
   height: 1.5rem;
+}
+
+.item-cell.expiring-soon {
+  border-color: rgba(237, 137, 54, 0.7);
+  background: rgba(237, 137, 54, 0.08);
+}
+
+.expiry-warning {
+  position: absolute;
+  bottom: 1px;
+  left: 2px;
+  font-size: 0.55rem;
+  line-height: 1;
+  pointer-events: none;
 }
 
 .item-badge {
@@ -327,6 +374,27 @@ function useItem(item: DisplayItem) {
 }
 
 .use-btn:disabled {
+  background: rgba(160, 174, 192, 0.6);
+  cursor: not-allowed;
+}
+
+.discard-btn {
+  padding: 0.25rem 0.7rem;
+  background: rgba(245, 101, 101, 0.7);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.discard-btn:hover:not(:disabled) {
+  background: rgba(229, 62, 62, 0.85);
+}
+
+.discard-btn:disabled {
   background: rgba(160, 174, 192, 0.6);
   cursor: not-allowed;
 }

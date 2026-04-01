@@ -313,6 +313,68 @@ export const useGrasslandSceneStore = defineStore('grasslandScene', {
       const character = useCharacterStore();
       return [
         {
+          name: 'exploreGrassland',
+          text: '探索草地',
+          icon: '🔍',
+          duration: 1,
+          energyCost: 5,
+          actionGroup: 'scene' as const,
+          preExecute: () => {
+            if (character.energy < 5) {
+              toast({ message: '体力不足，无法探索草地', type: 'warning' });
+              return false;
+            }
+            character.energy = Math.max(0, character.energy - 5);
+            return true;
+          },
+          handler: async () => {
+            this.grasslandActionCount++;
+            const roll = Math.random();
+            const inventory = useInventoryStore();
+            if (roll < 0.4) {
+              // 找到树枝
+              const amount = Math.floor(Math.random() * 2) + 1;
+              try {
+                const actual = await getStockAmount(this.scene.stock, 'branch', amount);
+                inventory.addItem({ id: 'branch', type: 'branch', name: '树枝' }, actual);
+                const message = `在草地上捡到了 ${actual} 根树枝`;
+                toast({ message, type: 'success' });
+                useGameLogStore().addEntry({ text: message, type: 'ITEM', gameTimestamp: useTimeStore().timestamp, timestamp: Date.now() });
+              } catch {
+                toast({ message: '草地上暂时没有树枝了', type: 'info' });
+              }
+            } else if (roll < 0.7) {
+              // 找到浆果
+              try {
+                const actual = await getStockAmount(this.scene.stock, 'berry', 1);
+                inventory.addItem({ id: 'berry', type: 'berry', name: '浆果' }, actual);
+                const message = `在草丛中发现了 ${actual} 把浆果`;
+                toast({ message, type: 'success' });
+                useGameLogStore().addEntry({ text: message, type: 'ITEM', gameTimestamp: useTimeStore().timestamp, timestamp: Date.now() });
+              } catch {
+                toast({ message: '草地上的浆果都被摘完了', type: 'info' });
+              }
+            } else if (roll < 0.9) {
+              // 找到干草
+              const amount = Math.floor(Math.random() * 2) + 1;
+              try {
+                const actual = await getStockAmount(this.scene.stock, 'grass', amount);
+                inventory.addItem({ id: 'grass', type: 'grass', name: '干草' }, actual);
+                const message = `在草地上收集了 ${actual} 把干草`;
+                toast({ message, type: 'success' });
+                useGameLogStore().addEntry({ text: message, type: 'ITEM', gameTimestamp: useTimeStore().timestamp, timestamp: Date.now() });
+              } catch {
+                toast({ message: '草地上暂时没有更多干草了', type: 'info' });
+              }
+            } else {
+              const message = '探索了一圈草地，没有发现特别的东西';
+              toast({ message, type: 'info' });
+              useGameLogStore().addEntry({ text: message, type: 'ACTION', gameTimestamp: useTimeStore().timestamp, timestamp: Date.now() });
+            }
+            this.checkUnlockProgress();
+          }
+        },
+        {
           name: 'gatherGrass',
           text: '采干草',
           icon: '🌱',
