@@ -23,6 +23,10 @@
           <StatusIcon type="satiety" style="color: rgb(255, 152, 0)" />
           <ProgressBar :value="character.satiety" color="rgb(255, 152, 0)" />
         </div>
+        <div class="status-item temperature-item">
+          <span class="temperature-icon">🌡️</span>
+          <span class="temperature-value" :class="temperatureClass">{{ temperatureDisplay }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -40,6 +44,20 @@ const character = useCharacterStore()
 const equipment = useEquipmentStore()
 const router = useRouter()
 const mainHandIcon = computed(() => equipment.mainHandIcon)
+
+const temperatureDisplay = computed(() => {
+  const temp = character.temperature ?? 37
+  return `${temp.toFixed(1)}°C`
+})
+
+const temperatureClass = computed(() => {
+  const temp = character.temperature ?? 37
+  if (temp < 33) return 'temp-freezing'
+  if (temp < 35) return 'temp-cold'
+  if (temp > 38.5) return 'temp-fever'
+  if (temp > 38) return 'temp-warm'
+  return 'temp-normal'
+})
 
 const handleInfoClick = () => {
   router.push('/character/profile')
@@ -150,4 +168,24 @@ const handleStatsClick = () => {
 .status-item :deep(.progress-bar) {
   flex-grow: 1;
 }
+
+.temperature-item {
+  gap: 0.3rem;
+}
+
+.temperature-icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.temperature-value {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.temp-normal { color: #48bb78; }
+.temp-warm { color: #ed8936; }
+.temp-cold { color: #63b3ed; }
+.temp-freezing { color: #4299e1; font-weight: bold; }
+.temp-fever { color: #e53e3e; font-weight: bold; }
 </style>

@@ -1,13 +1,14 @@
 <template>
   <div class="log-preview" @click="router.push('/logs')">
-    <!-- Log entries -->
+    <!-- Log entries：最新在最下面，越往上越透明 -->
     <div class="log-content">
       <div v-if="displayEntries.length === 0" class="log-placeholder">暂无记录</div>
       <div
-        v-for="entry in displayEntries"
-        :key="entry.gameTimestamp"
+        v-for="(entry, index) in displayEntries"
+        :key="entry.timestamp"
         class="log-entry"
         :class="`type-${entry.type.toLowerCase()}`"
+        :style="{ opacity: entryOpacity(index, displayEntries.length) }"
       >
         【{{ entry.gameTimestamp % 24 }}时】{{ entry.text }}
       </div>
@@ -24,38 +25,27 @@ import type { GameLogEntry } from '@/stores/gameLog'
 const router = useRouter()
 const gameLogStore = useGameLogStore()
 
+// 最多显示5条，按时间从旧到新排列（最新在最下面）
+const MAX_ENTRIES = 5
+// 透明度范围：最旧条目 = MIN_OPACITY，最新条目 = 1.0
+const MIN_OPACITY = 0.2
+const OPACITY_RANGE = 1 - MIN_OPACITY
+
 const displayEntries = computed<GameLogEntry[]>(() => {
   const entries = gameLogStore.entries
   if (entries.length === 0) return []
 
-  let systemEntry: GameLogEntry | undefined
-  let actionEntry: GameLogEntry | undefined
-
-  // Single reverse pass to find the most recent SYSTEM and ACTION/ITEM entries
-  for (let i = entries.length - 1; i >= 0; i--) {
-    const e = entries[i]
-    if (!systemEntry && e.type === 'SYSTEM') systemEntry = e
-    if (!actionEntry && (e.type === 'ACTION' || e.type === 'ITEM')) actionEntry = e
-    if (systemEntry && actionEntry) break
-  }
-
-  // Use wall-clock timestamp as unique key to avoid gameTimestamp collisions
-  const picked = new Map<number, GameLogEntry>()
-  if (systemEntry) picked.set(systemEntry.timestamp, systemEntry)
-  if (actionEntry && actionEntry.timestamp !== systemEntry?.timestamp) {
-    picked.set(actionEntry.timestamp, actionEntry)
-  }
-
-  // Fill up to 3 from the most recent entries if we have room
-  for (let i = entries.length - 1; i >= 0 && picked.size < 3; i--) {
-    const e = entries[i]
-    if (!picked.has(e.timestamp)) {
-      picked.set(e.timestamp, e)
-    }
-  }
-
-  return [...picked.values()].sort((a, b) => b.gameTimestamp - a.gameTimestamp).slice(0, 3)
+  // 取最新的 MAX_ENTRIES 条，然后按时间正序排列（旧在上，新在下）
+  return entries
+    .slice(-MAX_ENTRIES)
+    .sort((a, b) => a.timestamp - b.timestamp)
 })
+
+// 透明度：最上面（旧）= MIN_OPACITY，最下面（新）= 1.0，线性插值
+function entryOpacity(index: number, total: number): number {
+  if (total <= 1) return 1
+  return MIN_OPACITY + OPACITY_RANGE * index / (total - 1)
+}
 </script>
 
 <style scoped>
@@ -91,6 +81,7 @@ const displayEntries = computed<GameLogEntry[]>(() => {
   font-size: 0.8rem;
   line-height: 1.5;
   color: #486491;
+  transition: opacity 0.3s ease;
 }
 
 .log-entry.type-system {

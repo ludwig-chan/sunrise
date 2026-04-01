@@ -6,6 +6,8 @@ import { toast } from '../utils/toast'
 import { ITEM_DEFINITIONS } from '../data/items'
 import { useTimeStore } from './time'
 import { useInventoryStore } from './inventory'
+// 注意：此处引用 base scene 仅在 actions 内部的函数体中使用，不会在模块初始化时产生循环依赖问题
+import { useBaseSceneStore } from './scenes/base'
 
 // 挂机安全保护：血量降至此值时自动暂停，防止无人操作时角色死亡
 const HEALTH_AUTO_PAUSE_THRESHOLD = 20
@@ -31,6 +33,7 @@ interface CharacterState {
   mood: number;
   hygiene: number;
   mana: number;
+  temperature: number;
 }
 
 export const useCharacterStore = defineStore('character', {
@@ -44,7 +47,8 @@ export const useCharacterStore = defineStore('character', {
     satiety: 100,
     mood: 100,
     hygiene: 100,
-    mana: 100
+    mana: 100,
+    temperature: 37
   }),
 
   actions: {
@@ -137,6 +141,54 @@ export const useCharacterStore = defineStore('character', {
       // 检查是否死亡
       if (this.health === 0) {
         await this.handleDeath()
+      }
+
+      // ===== 物品保质期检查 =====
+      // 1游戏小时 = 5*60*1000/24 毫秒（游戏速率）
+      const GAME_HOUR_MS = (5 * 60 * 1000) / 24
+      const now = Date.now()
+      const inventory = useInventoryStore()
+      const expiredIds: string[] = []
+      for (const item of inventory.items) {
+        const def = ITEM_DEFINITIONS[item.id]
+        if (!def?.expiresInHours || !item.acquiredAt) continue
+        const expireAt = item.acquiredAt + def.expiresInHours * GAME_HOUR_MS
+        if (now >= expireAt) {
+          expiredIds.push(item.id)
+        }
+      }
+      for (const id of expiredIds) {
+        const def = ITEM_DEFINITIONS[id]
+        inventory.removeItem(id, inventory.getCount(id))
+        gameLog({ text: `你的${def?.name ?? id}已经腐烂，被你扔掉了`, type: 'SYSTEM' })
+      }
+
+      // ===== 体温逻辑 =====
+      if (this.temperature === undefined) this.temperature = 37
+      // 自然趋向 37°C
+      if (this.temperature > 37) {
+        this.temperature = Math.max(37, this.temperature - 0.5)
+      } else if (this.temperature < 37) {
+        this.temperature = Math.min(37, this.temperature + 0.5)
+      }
+      // 篝火加温
+      const baseScene = useBaseSceneStore()
+      const hasCampfire = baseScene.scene.buildings.some(b => b.type === 'campfire')
+      if (hasCampfire) {
+        this.temperature = Math.min(38, this.temperature + 1)
+      }
+      // 体温过低影响
+      if (this.temperature < 33) {
+        this.health = Math.max(0, this.health - 2)
+        gameLog({ text: '你已经冻僵了，请赶快取暖！', type: 'SYSTEM' })
+      } else if (this.temperature < 35) {
+        this.energy = Math.max(0, this.energy - 3)
+        gameLog({ text: '你感到寒意袭来，体力流失加快...', type: 'SYSTEM' })
+      }
+      // 体温过高
+      if (this.temperature > 38.5) {
+        this.mood = Math.max(0, this.mood - 5)
+        gameLog({ text: '你发烧了，感觉很不舒服...', type: 'SYSTEM' })
       }
     },
 

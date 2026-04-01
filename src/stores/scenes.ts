@@ -12,7 +12,9 @@ export const useScenesStore = defineStore('scenes', {
   state: () => ({
     currentSceneId: 'base',
     unlockedScenes: ['base'] as string[], // 初始只解锁基地场景
-    lastUsedActionName: null as string | null  // 记录上次通过"更多"菜单使用的操作名称
+    lastUsedActionName: null as string | null,  // 记录上次通过"更多"菜单使用的操作名称
+    lastUsedBuildingActionName: null as string | null,  // 记录上次使用的建筑动作名称
+    lastUsedBuildingType: null as string | null  // 记录上次使用的建筑类型
   }),
 
   getters: {
@@ -201,6 +203,8 @@ export const useScenesStore = defineStore('scenes', {
       const forestScene = useForestSceneStore();
       const riverScene = useRiverSceneStore();
       const caveScene = useCaveSceneStore();
+      const grasslandScene = useGrasslandSceneStore();
+      const lakesideScene = useLakesideSceneStore();
       switch (this.currentSceneId) {
         case 'base':
           await baseScene.build(recipeType);
@@ -213,6 +217,12 @@ export const useScenesStore = defineStore('scenes', {
           break;
         case 'cave':
           await caveScene.build(recipeType);
+          break;
+        case 'grassland':
+          await grasslandScene.build(recipeType);
+          break;
+        case 'lakeside':
+          await lakesideScene.build(recipeType);
           break;
       }
     },
@@ -257,6 +267,12 @@ export const useScenesStore = defineStore('scenes', {
     // 记录上次通过"更多"菜单使用的操作
     setLastUsedAction(name: string) {
       this.lastUsedActionName = name;
+    },
+
+    // 记录上次使用的建筑动作
+    setLastUsedBuildingAction(buildingType: string, actionName: string) {
+      this.lastUsedBuildingType = buildingType;
+      this.lastUsedBuildingActionName = actionName;
     },
 
     // 修复当前场景中的某个陷阱

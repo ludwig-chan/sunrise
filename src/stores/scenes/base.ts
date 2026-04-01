@@ -155,7 +155,8 @@ export const CAMPFIRE_FUEL_ITEMS: Record<string, { name: string; value: number }
   branch: { name: '树枝', value: 10 },
   wood: { name: '木材', value: 30 },
   coal: { name: '煤炭', value: 60 },
-  grass: { name: '干草', value: 5 }
+  grass: { name: '干草', value: 5 },
+  herb: { name: '草药', value: 8 }
 };
 
 // 篝火可烤物品配置
@@ -173,9 +174,7 @@ export const CAMPFIRE_COOKABLE_ITEMS: CampfireCookable[] = [
   { input: 'raw_meat', inputName: '生肉', output: 'cooked_meat', outputName: '熟肉', duration: 1.5, fuelCost: 10, message: '烤好了一块肉，获得了熟肉' },
   { input: 'fish', inputName: '鱼', output: 'cooked_fish', outputName: '烤鱼', duration: 1.5, fuelCost: 10, message: '烤好了一条鱼，获得了烤鱼' },
   { input: 'wood', inputName: '木材', output: 'coal', outputName: '煤炭', duration: 2, fuelCost: 5, message: '将木材烧制成了煤炭' },
-  { input: 'branch', inputName: '树枝', output: 'ash', outputName: '灰烬', duration: 1, fuelCost: 0, message: '树枝被烧成了灰烬' },
   { input: 'clay', inputName: '黏土', output: 'fired_clay', outputName: '陶器', duration: 3, fuelCost: 15, message: '烧制完成，获得了陶器' },
-  { input: 'herb', inputName: '草药', output: 'ash', outputName: '灰烬', duration: 1, fuelCost: 5, message: '草药被烤焦了，变成了灰烬' },
   { input: 'seed', inputName: '种子', output: 'roasted_seed', outputName: '烤种子', duration: 1, fuelCost: 5, message: '种子烤好了，香脆可口！获得了烤种子' }
 ];
 
@@ -829,6 +828,41 @@ export const useBaseSceneStore = defineStore('baseScene', {
           },
           disabled: () => !inventory.hasEnough('branch', 1) || !inventory.hasEnough('grass', 2),
           tooltip: '需要树枝 ×1 + 干草 ×2，装备后可驱赶夜间野兽'
+        },
+        {
+          name: 'craftFishingRod',
+          text: '制作鱼竿',
+          icon: '🎣',
+          duration: 0.5,
+          energyCost: 5,
+          actionGroup: 'character',
+          preExecute: () => {
+            if (!inventory.hasEnough('branch', 3) || !inventory.hasEnough('grass', 2)) {
+              toast({ message: '需要树枝 ×3 + 干草 ×2 才能制作鱼竿', type: 'warning' });
+              return false;
+            }
+            if (character.energy < 5) {
+              toast({ message: '体力不足，无法制作鱼竿', type: 'warning' });
+              return false;
+            }
+            inventory.removeItem('branch', 3);
+            inventory.removeItem('grass', 2);
+            character.energy = Math.max(0, character.energy - 5);
+            return true;
+          },
+          handler: async () => {
+            inventory.addItem({ id: 'fishing_rod', type: 'fishing_rod', name: '鱼竿' }, 1);
+            const message = '用树枝和草绳制作了一根鱼竿！';
+            toast({ message, type: 'success' });
+            useGameLogStore().addEntry({
+              text: message,
+              type: 'ITEM',
+              gameTimestamp: useTimeStore().timestamp,
+              timestamp: Date.now()
+            });
+          },
+          disabled: () => !inventory.hasEnough('branch', 3) || !inventory.hasEnough('grass', 2),
+          tooltip: '需要树枝 ×3 + 干草 ×2，钓鱼时必须携带鱼竿'
         }
       ];
     },

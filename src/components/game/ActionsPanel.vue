@@ -55,7 +55,19 @@
         </Transition>
       </div>
       <!-- 建造 -->
-      <button class="action-btn" @click="showBuildModal = true">建造</button>
+      <div class="action-btn-group build-btn-group" :class="{ 'has-last': lastBuildingAction }">
+        <button class="action-btn-segment action-btn-build" @click="showBuildModal = true">建造</button>
+        <Transition name="btn-slide">
+          <button
+            v-if="lastBuildingAction"
+            class="action-btn-segment action-btn-last-build"
+            :class="{ 'is-disabled': isLastBuildingDisabled }"
+            :disabled="isLastBuildingDisabled"
+            :title="lastBuildingActionLabel"
+            @click="handleLastBuildingAction"
+          >{{ lastBuildingAction.text }}</button>
+        </Transition>
+      </div>
     </div>
 
     <!-- 行动选择弹窗 -->
@@ -112,7 +124,7 @@ import { useCharacterStore } from '../../stores/character'
 import { useScenesStore } from '../../stores/scenes'
 import { useActivityStore } from '../../stores/activity'
 import { toast } from '../../utils/toast'
-import type { GameAction } from '../../stores/scenes/types'
+import type { GameAction, GameBuildingAction } from '../../stores/scenes/types'
 import BuildModal from './BuildModal.vue'
 
 const character = useCharacterStore();
@@ -130,7 +142,9 @@ const DEFAULT_ACTION_MAP: Record<string, string> = {
   base: 'explore',
   forest: 'explore',
   river: 'fishInRiver',
-  cave: 'gatherCoal'
+  cave: 'gatherCoal',
+  grassland: 'exploreGrassland',
+  lakeside: 'fishInLake'
 };
 
 // 当前场景的默认动作
@@ -161,6 +175,52 @@ const phase = computed((): 1 | 2 | 3 => {
 function isDisabled(action: GameAction): boolean {
   if (typeof action.disabled === 'function') return action.disabled();
   return !!action.disabled;
+}
+
+// 上次建筑动作（上次在建筑中执行的动作）
+const lastBuildingAction = computed((): GameBuildingAction | null => {
+  if (!scenes.lastUsedBuildingType || !scenes.lastUsedBuildingActionName) return null;
+  // 检查该建筑是否仍在当前场景中存在
+  const buildingExists = scenes.currentScene.buildings.some(
+    b => b.type === scenes.lastUsedBuildingType
+  );
+  if (!buildingExists) return null;
+  const actions = scenes.getBuildingActions(scenes.lastUsedBuildingType);
+  return actions.find(a => a.name === scenes.lastUsedBuildingActionName) ?? null;
+});
+
+const lastBuildingActionLabel = computed(() => {
+  if (!lastBuildingAction.value) return '';
+  return `上次操作：${lastBuildingAction.value.text}`;
+});
+
+const isLastBuildingDisabled = computed(() => {
+  if (!lastBuildingAction.value) return true;
+  if (activity.isBusy) return true;
+  const action = lastBuildingAction.value;
+  if (typeof action.disabled === 'function') return action.disabled();
+  return !!action.disabled;
+});
+
+function handleLastBuildingAction() {
+  if (!lastBuildingAction.value || isLastBuildingDisabled.value) return;
+  const action = lastBuildingAction.value;
+
+  if (action.preExecute) {
+    if (!action.preExecute()) return;
+  } else if (character.energy < action.energyCost) {
+    toast({ message: '体力不足，无法执行该操作', type: 'warning' });
+    return;
+  }
+
+  activity.startActivity({
+    name: action.name,
+    label: action.text,
+    icon: action.icon || '▶',
+    startedAt: Date.now(),
+    duration: action.duration * 1000,
+    onComplete: action.handler
+  });
 }
 
 function updateProgress() {
@@ -379,6 +439,32 @@ function cancelActivity() {
 
 .action-btn:hover {
   background: #e2e8f0;
+}
+
+/* 建造按钮组（含上次建筑操作） */
+.build-btn-group {
+  display: flex;
+  border: 1px solid #4a5568;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.action-btn-build {
+  flex: 2;
+}
+
+.has-last .action-btn-build {
+  flex: 1;
+}
+
+.action-btn-last-build {
+  flex: 1;
+  background: #e8f4fd;
+  color: #2d3748;
+}
+
+.action-btn-last-build:hover:not(:disabled):not(.is-disabled) {
+  background: #d1ecfb;
 }
 
 /* 当前行动区 */
