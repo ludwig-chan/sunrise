@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 铁锭 - 金属灰色块 -->
+  <!-- 主体 -->
+  <rect x="4" y="12" width="24" height="12" fill="#9090a0"/>
+  <rect x="5" y="11" width="22" height="14" fill="#a0a0b0"/>
+  <!-- 顶面（较亮） -->
+  <rect x="5" y="9" width="22" height="3" fill="#c0c0d0"/>
+  <rect x="6" y="8" width="20" height="4" fill="#c8c8d8"/>
+  <!-- 高光 -->
+  <rect x="7" y="10" width="8" height="2" fill="#d8d8e8"/>
+  <rect x="8" y="11" width="5" height="1" fill="#e0e0f0"/>
+  <!-- 阴影面 -->
+  <rect x="24" y="12" width="3" height="12" fill="#707080"/>
+  <rect x="5" y="23" width="22" height="2" fill="#606070"/>
+  <!-- 金属纹路 -->
+  <rect x="6" y="14" width="16" height="2" fill="#9898a8"/>
+  <rect x="6" y="19" width="14" height="2" fill="#9898a8"/>
+  <!-- 斜切边 -->
+  <rect x="5" y="11" width="2" height="2" fill="#c0c0d0"/>
+  <rect x="25" y="9" width="2" height="4" fill="#b0b0c0"/>
+</svg>

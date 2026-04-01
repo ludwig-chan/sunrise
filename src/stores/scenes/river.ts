@@ -3,6 +3,7 @@ import type { GameScene, GameBuildingRecipe, GameBuildingAction } from './types'
 import { useEquipmentStore } from '../equipment';
 import { useCharacterStore } from '../character';
 import { useTimeStore } from '../time';
+import { useScenesStore } from '../scenes';
 import { getStockAmount } from '../../utils/resourceUtils';
 import { useInventoryStore } from '../inventory';
 import { toast } from '../../utils/toast';
@@ -61,6 +62,9 @@ const INITIAL_STOCK = {
   herb: { current: 15, max: 15 }
 } as const;
 
+// 湖边解锁阈值：在河边完成 3 次钓鱼/采草/采集后解锁湖边
+const LAKESIDE_UNLOCK_THRESHOLD = 3;
+
 export const useRiverSceneStore = defineStore('riverScene', {
   state: () => ({
     scene: {
@@ -71,6 +75,8 @@ export const useRiverSceneStore = defineStore('riverScene', {
       stock: JSON.parse(JSON.stringify(INITIAL_STOCK))
     } as GameScene,
     waterWheelHoursElapsed: 0,
+    // 河边行动次数计数，达到阈值后解锁湖边
+    riverActionCount: 0,
     _waterWheelListenerRegistered: false
   }),
 
@@ -93,6 +99,9 @@ export const useRiverSceneStore = defineStore('riverScene', {
 
       // 重置水车计时
       this.waterWheelHoursElapsed = 0
+
+      // 重置行动计数
+      this.riverActionCount = 0
     },
 
     // 检查体力值是否足够
@@ -123,8 +132,28 @@ export const useRiverSceneStore = defineStore('riverScene', {
       this.consumeEnergy(cost);
     },
 
+    // 检查并触发湖边解锁
+    // 湖边：在河边完成 3 次行动后可解锁
+    checkUnlockProgress() {
+      const scenes = useScenesStore();
+      if (!scenes.unlockedScenes.includes('lakeside') && this.riverActionCount >= LAKESIDE_UNLOCK_THRESHOLD) {
+        scenes.unlockScene('lakeside');
+        const msg = '顺着河流深入，前方视野开阔，出现了一片波光粼粼的湖泊…';
+        toast({ message: msg, type: 'info' });
+        useGameLogStore().addEntry({
+          text: msg,
+          type: 'ACTION',
+          gameTimestamp: useTimeStore().timestamp,
+          timestamp: Date.now()
+        });
+      }
+    },
+
     // 钓鱼：60% 概率获得 1-2 条鱼，40% 概率失败
     async fishInRiver() {
+      // 记录行动次数
+      this.riverActionCount++;
+
       if (Math.random() < 0.4) {
         const message = '鱼线动了但没钓上来...';
         toast({ message, type: 'info' });
@@ -134,6 +163,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
           gameTimestamp: useTimeStore().timestamp,
           timestamp: Date.now()
         });
+        this.checkUnlockProgress();
         return;
       }
 
@@ -153,6 +183,8 @@ export const useRiverSceneStore = defineStore('riverScene', {
         const message = '河里的鱼已经被钓光了，等等再来吧';
         toast({ message, type: 'warning' });
       }
+      // 检查解锁湖边
+      this.checkUnlockProgress();
     },
 
     // 挖泥：从 stock 获得 1 块黏土
@@ -382,7 +414,7 @@ export const useRiverSceneStore = defineStore('riverScene', {
 
     // 获取场景基础动作
     getActionConfig() {
-      const equipment = useEquipmentStore();
+      const character = useCharacterStore();
       return [
         {
           name: 'fishInRiver',
@@ -391,7 +423,15 @@ export const useRiverSceneStore = defineStore('riverScene', {
           duration: 1.5,
           energyCost: 6,
           actionGroup: 'scene' as const,
-          handler: async () => await this.withEnergyCost(6, async () => await this.fishInRiver())
+          preExecute: () => {
+            if (character.energy < 6) {
+              toast({ message: '体力不足，无法钓鱼', type: 'warning' });
+              return false;
+            }
+            character.energy = Math.max(0, character.energy - 6);
+            return true;
+          },
+          handler: async () => await this.fishInRiver()
         },
         {
           name: 'digClay',
@@ -400,7 +440,15 @@ export const useRiverSceneStore = defineStore('riverScene', {
           duration: 1,
           energyCost: 8,
           actionGroup: 'scene' as const,
-          handler: async () => await this.withEnergyCost(8, async () => await this.digClay())
+          preExecute: () => {
+            if (character.energy < 8) {
+              toast({ message: '体力不足，无法挖泥', type: 'warning' });
+              return false;
+            }
+            character.energy = Math.max(0, character.energy - 8);
+            return true;
+          },
+          handler: async () => await this.digClay()
         },
         {
           name: 'gatherStone',
@@ -409,7 +457,15 @@ export const useRiverSceneStore = defineStore('riverScene', {
           duration: 0.5,
           energyCost: 4,
           actionGroup: 'scene' as const,
-          handler: async () => await this.withEnergyCost(4, async () => await this.gatherStone())
+          preExecute: () => {
+            if (character.energy < 4) {
+              toast({ message: '体力不足，无法捡石头', type: 'warning' });
+              return false;
+            }
+            character.energy = Math.max(0, character.energy - 4);
+            return true;
+          },
+          handler: async () => await this.gatherStone()
         },
         {
           name: 'harvestHerb',
@@ -418,7 +474,15 @@ export const useRiverSceneStore = defineStore('riverScene', {
           duration: 1,
           energyCost: 7,
           actionGroup: 'scene' as const,
-          handler: async () => await this.withEnergyCost(7, async () => await this.harvestHerb())
+          preExecute: () => {
+            if (character.energy < 7) {
+              toast({ message: '体力不足，无法采草药', type: 'warning' });
+              return false;
+            }
+            character.energy = Math.max(0, character.energy - 7);
+            return true;
+          },
+          handler: async () => await this.harvestHerb()
         },
         {
           name: 'bathe',

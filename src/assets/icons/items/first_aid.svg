@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 急救包 - 红十字包 -->
+  <!-- 包主体 -->
+  <rect x="4" y="8" width="24" height="18" fill="#e8e8e8"/>
+  <rect x="5" y="7" width="22" height="20" fill="#f0f0f0"/>
+  <!-- 红十字 -->
+  <rect x="12" y="10" width="8" height="14" fill="#e03030"/>
+  <rect x="10" y="14" width="12" height="6" fill="#e03030"/>
+  <!-- 十字高光 -->
+  <rect x="12" y="11" width="3" height="4" fill="#f05050"/>
+  <rect x="11" y="14" width="3" height="2" fill="#f05050"/>
+  <!-- 包边框 -->
+  <rect x="4" y="7" width="24" height="1" fill="#c0c0c0"/>
+  <rect x="4" y="25" width="24" height="1" fill="#b0b0b0"/>
+  <rect x="4" y="7" width="1" height="19" fill="#c0c0c0"/>
+  <rect x="27" y="7" width="1" height="19" fill="#c0c0c0"/>
+  <!-- 扣环 -->
+  <rect x="10" y="5" width="4" height="3" fill="#8a5028"/>
+  <rect x="18" y="5" width="4" height="3" fill="#8a5028"/>
+  <!-- 背带 -->
+  <rect x="11" y="3" width="10" height="3" fill="#9a5a30"/>
+</svg>

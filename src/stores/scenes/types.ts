@@ -3,7 +3,17 @@ export interface GameAction {
   text: string;
   icon?: string; // emoji 图标，用于列表展示
   duration: number;
-  energyCost: number; // 新增: 该动作需要消耗的体力值
+  energyCost: number; // 该动作需要消耗的体力值
+  /**
+   * 进度条开始前的预执行钩子（可选）。
+   * 用于在进度动画启动之前完成：
+   *   1. 条件校验（材料、体力等）
+   *   2. 资源和体力的即时消耗
+   * 返回 true 表示校验通过、消耗已完成，可以继续播放进度条；
+   * 返回 false 表示条件不足，已弹出 toast 提示，进度条不启动。
+   * 若未定义此字段，则沿用旧逻辑（UI 层仅做体力检查，handler 内部再做资源处理）。
+   */
+  preExecute?: () => boolean;
   handler: () => Promise<void>;
   disabled?: boolean | (() => boolean);
   tooltip?: string;

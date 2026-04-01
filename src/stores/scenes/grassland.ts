@@ -2,10 +2,12 @@ import { defineStore } from 'pinia';
 import type { GameScene, GameBuildingRecipe, GameBuildingAction } from './types';
 import { useCharacterStore } from '../character';
 import { useTimeStore } from '../time';
+import { useScenesStore } from '../scenes';
 import { getStockAmount, hasStock } from '../../utils/resourceUtils';
 import { useInventoryStore } from '../inventory';
 import { toast } from '../../utils/toast';
 import { useGameLogStore } from '../gameLog';
+import { emitter } from '../../utils/eventBus';
 
 const RESOURCE_NAMES: { [key: string]: string } = {
   grass: '草',
@@ -21,6 +23,10 @@ const INITIAL_STOCK = {
 
 const FOOD_GATHER_FAILURE_RATE = 0.35;
 
+// 草地行动阈值：在草地完成 3 次行动后，解锁河边
+// 含义：走遍草地后发现附近有河流
+const RIVER_UNLOCK_THRESHOLD = 3;
+
 export const useGrasslandSceneStore = defineStore('grasslandScene', {
   state: () => ({
     scene: {
@@ -29,7 +35,10 @@ export const useGrasslandSceneStore = defineStore('grasslandScene', {
       actions: [],
       buildings: [],
       stock: JSON.parse(JSON.stringify(INITIAL_STOCK))
-    } as GameScene
+    } as GameScene,
+    // 草地行动次数计数，达到阈值后解锁河边
+    grasslandActionCount: 0,
+    _recoveryListenerRegistered: false
   }),
 
   getters: {
@@ -41,6 +50,7 @@ export const useGrasslandSceneStore = defineStore('grasslandScene', {
     reset() {
       this.scene.buildings = [];
       this.scene.stock = JSON.parse(JSON.stringify(INITIAL_STOCK));
+      this.grasslandActionCount = 0;
       this.scene.actions = [];
     },
 
@@ -64,7 +74,27 @@ export const useGrasslandSceneStore = defineStore('grasslandScene', {
       this.consumeEnergy(cost);
     },
 
+    // 检查并触发河边解锁
+    // 河边：在草地完成 3 次行动（采草/觅食）后可解锁
+    checkUnlockProgress() {
+      const scenes = useScenesStore();
+      if (!scenes.unlockedScenes.includes('river') && this.grasslandActionCount >= RIVER_UNLOCK_THRESHOLD) {
+        scenes.unlockScene('river');
+        const msg = '穿越草地时，远处隐约听到了潺潺的水声，顺着声音走去，发现了一条清澈的小河…';
+        toast({ message: msg, type: 'info' });
+        useGameLogStore().addEntry({
+          text: msg,
+          type: 'ACTION',
+          gameTimestamp: useTimeStore().timestamp,
+          timestamp: Date.now()
+        });
+      }
+    },
+
     async gatherGrass() {
+      // 记录行动次数
+      this.grasslandActionCount++;
+
       try {
         const amount = Math.floor(Math.random() * 3) + 1; // 1-3
         const actualAmount = await getStockAmount(this.scene.stock, 'grass', amount);
@@ -78,14 +108,19 @@ export const useGrasslandSceneStore = defineStore('grasslandScene', {
           timestamp: Date.now()
         });
         if (!hasStock(this.scene.stock, 'grass')) {
-          toast({ message: '草地上的草已经被采光了', type: 'warning' });
+          toast({ message: '草地上的草暂时被采光了，稍后会慢慢恢复', type: 'warning' });
         }
       } catch {
-        toast({ message: '草地上已经没有更多草了', type: 'warning' });
+        toast({ message: '草地上暂时没有更多草了，稍等片刻会自然恢复', type: 'warning' });
       }
+
+      this.checkUnlockProgress();
     },
 
     async gatherFood() {
+      // 记录行动次数
+      this.grasslandActionCount++;
+
       if (Math.random() < FOOD_GATHER_FAILURE_RATE) {
         const message = '翻找了一会儿，没有发现可以吃的东西';
         toast({ message, type: 'info' });
@@ -95,6 +130,7 @@ export const useGrasslandSceneStore = defineStore('grasslandScene', {
           gameTimestamp: useTimeStore().timestamp,
           timestamp: Date.now()
         });
+        this.checkUnlockProgress();
         return;
       }
       try {
@@ -109,8 +145,10 @@ export const useGrasslandSceneStore = defineStore('grasslandScene', {
           timestamp: Date.now()
         });
       } catch {
-        toast({ message: '草地上的浆果已经采完了，等待自然恢复', type: 'warning' });
+        toast({ message: '草地上的浆果已经采完了，稍等会自然恢复', type: 'warning' });
       }
+
+      this.checkUnlockProgress();
     },
 
     getBuildingActions(_buildingType: string): GameBuildingAction[] {
@@ -118,6 +156,7 @@ export const useGrasslandSceneStore = defineStore('grasslandScene', {
     },
 
     getActionConfig() {
+      const character = useCharacterStore();
       return [
         {
           name: 'gatherGrass',
@@ -126,7 +165,15 @@ export const useGrasslandSceneStore = defineStore('grasslandScene', {
           duration: 0.5,
           energyCost: 3,
           actionGroup: 'scene' as const,
-          handler: async () => await this.withEnergyCost(3, async () => await this.gatherGrass())
+          preExecute: () => {
+            if (character.energy < 3) {
+              toast({ message: '体力不足，无法采草', type: 'warning' });
+              return false;
+            }
+            character.energy = Math.max(0, character.energy - 3);
+            return true;
+          },
+          handler: async () => await this.gatherGrass()
         },
         {
           name: 'gatherFood',
@@ -135,7 +182,15 @@ export const useGrasslandSceneStore = defineStore('grasslandScene', {
           duration: 1,
           energyCost: 5,
           actionGroup: 'scene' as const,
-          handler: async () => await this.withEnergyCost(5, async () => await this.gatherFood())
+          preExecute: () => {
+            if (character.energy < 5) {
+              toast({ message: '体力不足，无法觅食', type: 'warning' });
+              return false;
+            }
+            character.energy = Math.max(0, character.energy - 5);
+            return true;
+          },
+          handler: async () => await this.gatherFood()
         }
       ];
     },
@@ -145,8 +200,31 @@ export const useGrasslandSceneStore = defineStore('grasslandScene', {
       if (!this.scene.stock) {
         this.scene.stock = JSON.parse(JSON.stringify(INITIAL_STOCK));
       }
+
+      // 注册资源自动恢复监听（防止重复注册）
+      // 每游戏小时：草 +2、浆果 +1（不超过最大值）
+      if (!this._recoveryListenerRegistered) {
+        this._recoveryListenerRegistered = true;
+        emitter.on('hour-passed', () => {
+          const stock = this.scene.stock;
+          // 草每小时恢复2把（草地是草的主要来源，恢复较快）
+          if (stock.grass && stock.grass.current < stock.grass.max) {
+            stock.grass.current = Math.min(stock.grass.max, stock.grass.current + 2);
+          }
+          // 浆果每2小时恢复1个（随机）
+          if (stock.berry && stock.berry.current < stock.berry.max && Math.random() < 0.5) {
+            stock.berry.current = Math.min(stock.berry.max, stock.berry.current + 1);
+          }
+          // 树枝每小时恢复1个
+          if (stock.branch && stock.branch.current < stock.branch.max) {
+            stock.branch.current = Math.min(stock.branch.max, stock.branch.current + 1);
+          }
+        });
+      }
     }
   },
 
-  persist: true
+  persist: {
+    omit: ['_recoveryListenerRegistered']
+  }
 });

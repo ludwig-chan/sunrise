@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 骨头 - 白色哑铃形骨头 -->
+  <!-- 左端圆球 -->
+  <rect x="3" y="8" width="8" height="8" fill="#f0ece0"/>
+  <rect x="4" y="7" width="6" height="10" fill="#f8f4e8"/>
+  <rect x="3" y="9" width="8" height="6" fill="#f8f4e8"/>
+  <rect x="4" y="8" width="2" height="2" fill="#ffffff"/>
+  <!-- 右端圆球 -->
+  <rect x="21" y="16" width="8" height="8" fill="#f0ece0"/>
+  <rect x="22" y="15" width="6" height="10" fill="#f8f4e8"/>
+  <rect x="21" y="17" width="8" height="6" fill="#f8f4e8"/>
+  <rect x="22" y="17" width="2" height="2" fill="#ffffff"/>
+  <!-- 骨干 -->
+  <rect x="9" y="13" width="14" height="6" fill="#e8e4d8"/>
+  <rect x="8" y="14" width="16" height="4" fill="#f0ece0"/>
+  <!-- 骨干高光 -->
+  <rect x="9" y="14" width="12" height="1" fill="#f8f4e8"/>
+  <!-- 阴影 -->
+  <rect x="4" y="14" width="6" height="2" fill="#d8d4c8"/>
+  <rect x="22" y="16" width="6" height="2" fill="#d8d4c8"/>
+</svg>
