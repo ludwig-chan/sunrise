@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 野梨 -->
+  <!-- 梗 -->
+  <rect x="15" y="2" width="2" height="5" rx="1" fill="#5a7a20"/>
+  <!-- 叶子 -->
+  <ellipse cx="19" cy="5" rx="3.5" ry="2" fill="#6a9a25" transform="rotate(30 19 5)"/>
+  <!-- 梨主体（下宽上窄） -->
+  <path d="M16 7 Q21 10 23 18 Q25 26 16 30 Q7 26 9 18 Q11 10 16 7 Z" fill="#cfc038"/>
+  <path d="M16 7 Q21 10 23 18 Q25 26 16 30 Q7 26 9 18 Q11 10 16 7 Z" fill="none" stroke="#a89020" stroke-width="0.5"/>
+  <!-- 高光 -->
+  <ellipse cx="12" cy="16" rx="2" ry="3.5" fill="#e8e060" opacity="0.5"/>
+</svg>

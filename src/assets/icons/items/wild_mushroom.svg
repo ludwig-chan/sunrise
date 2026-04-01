@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 野蘑菇 -->
+  <!-- 菌柄 -->
+  <rect x="13" y="19" width="6" height="10" rx="2" fill="#e8d5b0"/>
+  <rect x="14" y="19" width="2" height="10" fill="#f0dfc0" opacity="0.5"/>
+  <!-- 菌伞（半圆形，红色带白点） -->
+  <path d="M4 20 Q4 6 16 6 Q28 6 28 20 Z" fill="#cc3020"/>
+  <!-- 白色斑点 -->
+  <circle cx="10" cy="13" r="2.5" fill="white" opacity="0.9"/>
+  <circle cx="16" cy="9" r="2" fill="white" opacity="0.9"/>
+  <circle cx="22" cy="13" r="2.5" fill="white" opacity="0.9"/>
+  <circle cx="13" cy="17" r="1.5" fill="white" opacity="0.9"/>
+  <circle cx="19" cy="17" r="1.5" fill="white" opacity="0.9"/>
+  <!-- 菌伞边缘 -->
+  <path d="M4 20 Q4 6 16 6 Q28 6 28 20 Z" fill="none" stroke="#991810" stroke-width="0.8"/>
+  <!-- 菌裙 -->
+  <path d="M4 20 Q16 24 28 20" stroke="#d44030" stroke-width="1.5" fill="none"/>
+</svg>

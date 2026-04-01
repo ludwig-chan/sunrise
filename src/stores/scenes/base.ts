@@ -53,8 +53,8 @@ export const BASE_BUILDING_RECIPES: GameBuildingRecipe[] = [
   },
   {
     type: 'herbShop',
-    name: '药铺',
-    description: '用草药制作各种药品，恢复体力和健康',
+    name: '草药作坊',
+    description: '用草药制作各种药品和补品，在荒野中维持生存',
     cost: { wood: 12, branch: 8 },
     duration: 1,
     energyCost: 15
@@ -77,7 +77,7 @@ export const BASE_BUILDING_ICONS: Record<string, string> = {
   cookingTable: '🍳',
   storageBox: '📦',
   farmPlot: '🌾',
-  herbShop: '🏪',
+  herbShop: '⚗️',
   trap: '🪤'
 };
 
@@ -134,8 +134,9 @@ const RESOURCE_NAMES: { [key: string]: string } = {
   tool: '工具',
   first_aid: '急救包',
   nourishing_soup: '滋补汤',
-  grass: '草',
-  torch: '火把'
+  grass: '干草',
+  torch: '火把',
+  seed: '种子'
 };
 
 // 基地陷阱修复消耗（建造消耗 branch:8 wood:3）
@@ -153,7 +154,8 @@ const TORCH_DURABILITY_INCREMENT = 100;
 export const CAMPFIRE_FUEL_ITEMS: Record<string, { name: string; value: number }> = {
   branch: { name: '树枝', value: 10 },
   wood: { name: '木材', value: 30 },
-  coal: { name: '煤炭', value: 60 }
+  coal: { name: '煤炭', value: 60 },
+  grass: { name: '干草', value: 5 }
 };
 
 // 篝火可烤物品配置
@@ -173,7 +175,8 @@ export const CAMPFIRE_COOKABLE_ITEMS: CampfireCookable[] = [
   { input: 'wood', inputName: '木材', output: 'coal', outputName: '煤炭', duration: 2, fuelCost: 5, message: '将木材烧制成了煤炭' },
   { input: 'branch', inputName: '树枝', output: 'ash', outputName: '灰烬', duration: 1, fuelCost: 0, message: '树枝被烧成了灰烬' },
   { input: 'clay', inputName: '黏土', output: 'fired_clay', outputName: '陶器', duration: 3, fuelCost: 15, message: '烧制完成，获得了陶器' },
-  { input: 'herb', inputName: '草药', output: 'ash', outputName: '灰烬', duration: 1, fuelCost: 5, message: '草药被烤焦了，变成了灰烬' }
+  { input: 'herb', inputName: '草药', output: 'ash', outputName: '灰烬', duration: 1, fuelCost: 5, message: '草药被烤焦了，变成了灰烬' },
+  { input: 'seed', inputName: '种子', output: 'roasted_seed', outputName: '烤种子', duration: 1, fuelCost: 5, message: '种子烤好了，香脆可口！获得了烤种子' }
 ];
 
 // 树林解锁保底次数：基地探索最多此次数后必定解锁树林
@@ -292,12 +295,12 @@ export const useBaseSceneStore = defineStore('baseScene', {
         }
       }
 
-      // 树林已解锁后：30% 概率发现少量资源（树枝/矿石/草），其余普通消息
+      // 树林已解锁后：30% 概率发现少量资源（树枝/矿石/干草），其余普通消息
       if (eventRoll < 0.3) {
         const resources = [
           { id: 'branch', name: '树枝' },
           { id: 'ore', name: '矿石' },
-          { id: 'grass', name: '草' }
+          { id: 'grass', name: '干草' }
         ];
         const picked = resources[Math.floor(Math.random() * resources.length)];
         const amount = Math.floor(Math.random() * 2) + 1; // 1-2 个
@@ -513,7 +516,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
     getCookableOutputDef(outputId: string): string {
       const names: Record<string, string> = {
         cooked_meat: '熟肉', cooked_fish: '烤鱼', coal: '煤炭',
-        ash: '灰烬', fired_clay: '陶器'
+        ash: '灰烬', fired_clay: '陶器', roasted_seed: '烤种子'
       };
       return names[outputId] ?? outputId;
     },
@@ -541,11 +544,11 @@ export const useBaseSceneStore = defineStore('baseScene', {
     // 种植蔬菜（农田建筑动作）
     async plantVegetable() {
       const inventory = useInventoryStore();
-      if (!inventory.hasEnough('branch', 1)) {
-        toast({ message: '需要树枝 ×1 才能种植蔬菜', type: 'warning' });
+      if (!inventory.hasEnough('seed', 1)) {
+        toast({ message: '需要种子 ×1 才能种植蔬菜', type: 'warning' });
         return;
       }
-      inventory.removeItem('branch', 1);
+      inventory.removeItem('seed', 1);
       const amount = Math.floor(Math.random() * 2) + 1; // 1-2
       inventory.addItem({ id: 'vegetable', type: 'vegetable', name: '蔬菜' }, amount);
       const message = `在农田里种出了 ${amount} 株蔬菜！`;
@@ -641,18 +644,18 @@ export const useBaseSceneStore = defineStore('baseScene', {
       });
     },
 
-    // 制作火把：消耗 树枝×1 + 草×2，火把直接进入装备系统（不占背包）
+    // 制作火把：消耗 树枝×1 + 干草×2，火把直接进入装备系统（不占背包）
     async craftTorch() {
       const inventory = useInventoryStore();
       const equipment = useEquipmentStore();
       if (!inventory.hasEnough('branch', 1) || !inventory.hasEnough('grass', 2)) {
-        toast({ message: '需要树枝 ×1 + 草 ×2 才能制作火把', type: 'warning' });
+        toast({ message: '需要树枝 ×1 + 干草 ×2 才能制作火把', type: 'warning' });
         return;
       }
       inventory.removeItem('branch', 1);
       inventory.removeItem('grass', 2);
       this.addTorchDurability(equipment);
-      const message = '用树枝和草制作了一个火把，可在装备页面装备到饰品槽';
+      const message = '用树枝和干草制作了一个火把，可在装备页面装备到饰品槽';
       toast({ message, type: 'success' });
       useGameLogStore().addEntry({
         text: message,
@@ -800,7 +803,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
           actionGroup: 'character',
           preExecute: () => {
             if (!inventory.hasEnough('branch', 1) || !inventory.hasEnough('grass', 2)) {
-              toast({ message: '需要树枝 ×1 + 草 ×2 才能制作火把', type: 'warning' });
+              toast({ message: '需要树枝 ×1 + 干草 ×2 才能制作火把', type: 'warning' });
               return false;
             }
             if (character.energy < 3) {
@@ -815,7 +818,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
           handler: async () => {
             // 材料已在 preExecute 中消耗，火把加入装备库存
             this.addTorchDurability(equipment);
-            const message = '用树枝和草制作了一个火把，可在装备页面装备到饰品槽';
+            const message = '用树枝和干草制作了一个火把，可在装备页面装备到饰品槽';
             toast({ message, type: 'success' });
             useGameLogStore().addEntry({
               text: message,
@@ -825,7 +828,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
             });
           },
           disabled: () => !inventory.hasEnough('branch', 1) || !inventory.hasEnough('grass', 2),
-          tooltip: '需要树枝 ×1 + 草 ×2，装备后可驱赶夜间野兽'
+          tooltip: '需要树枝 ×1 + 干草 ×2，装备后可驱赶夜间野兽'
         }
       ];
     },
@@ -930,15 +933,15 @@ export const useBaseSceneStore = defineStore('baseScene', {
               duration: 2,
               energyCost: 8,
               preExecute: () => {
-                if (!inventory.hasEnough('branch', 1)) {
-                  toast({ message: '需要树枝 ×1 才能种植蔬菜', type: 'warning' });
+                if (!inventory.hasEnough('seed', 1)) {
+                  toast({ message: '需要种子 ×1 才能种植蔬菜', type: 'warning' });
                   return false;
                 }
                 if (character.energy < 8) {
                   toast({ message: '体力不足，无法种植蔬菜', type: 'warning' });
                   return false;
                 }
-                inventory.removeItem('branch', 1);
+                inventory.removeItem('seed', 1);
                 character.energy = Math.max(0, character.energy - 8);
                 return true;
               },
@@ -954,8 +957,8 @@ export const useBaseSceneStore = defineStore('baseScene', {
                   timestamp: Date.now()
                 });
               },
-              tooltip: '需要树枝 ×1',
-              disabled: () => !inventory.hasEnough('branch', 1)
+              tooltip: '需要种子 ×1',
+              disabled: () => !inventory.hasEnough('seed', 1)
             }
           ];
         case 'herbShop':
