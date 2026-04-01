@@ -45,7 +45,7 @@ export const useBattleStore = defineStore('battle', {
       this.monsterMaxHp = monster.hp
       this.turn = 'player'
       this.result = null
-      this.log = [`遭遇了${monster.name}${monster.icon}，战斗开始！`]
+      this.log = [`遭遇了${monster.icon} ${monster.name}，战斗开始！`]
     },
 
     useSkill(skillId: string): boolean {

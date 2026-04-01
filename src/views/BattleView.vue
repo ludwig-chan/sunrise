@@ -94,7 +94,7 @@ const playerHpPercent = computed(() => {
 })
 
 const playerEnergyPercent = computed(() => {
-  return Math.max(0, battleStore.playerEnergy)
+  return Math.max(0, (battleStore.playerEnergy / 100) * 100)
 })
 
 function useSkill(skillId: string) {
