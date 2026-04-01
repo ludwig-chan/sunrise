@@ -83,8 +83,8 @@
               <span class="modal-action-icon">🍖</span>
               <div class="modal-action-info">
                 <span class="modal-action-text">烤制物品</span>
-                <span v-if="campfireFuel === 0" class="modal-action-condition">燃料不足</span>
-                <span v-else-if="!hasCookableItems" class="modal-action-condition">背包中没有可烤物品</span>
+                <span v-if="!hasCookableItems && campfireFuel === 0" class="modal-action-condition">篝火已熄灭，请添加燃料</span>
+                <span v-else-if="!hasCookableItems" class="modal-action-condition">背包中没有可烤物品（或燃料不足）</span>
               </div>
               <button class="modal-select-btn" :disabled="activity.isBusy || !hasCookableItems" @click="showCookSelector = true">选择</button>
             </div>
@@ -250,15 +250,14 @@ const fuelItemsHint = computed(() => {
   return '树枝(+10) / 木材(+30) / 煤炭(+60)';
 });
 
-// 背包中可烤的物品
+// 背包中可烤的物品（需要有足够燃料）
 const availableCookItems = computed(() => {
-  return CAMPFIRE_COOKABLE_ITEMS.filter(c => {
-    if (c.input === 'diamond') return inventoryStore.getCount(c.input) > 0;
-    return inventoryStore.getCount(c.input) > 0 && campfireFuel.value >= c.fuelCost;
-  });
+  return CAMPFIRE_COOKABLE_ITEMS.filter(c =>
+    inventoryStore.getCount(c.input) > 0 && campfireFuel.value >= c.fuelCost
+  );
 });
 
-const hasCookableItems = computed(() => CAMPFIRE_COOKABLE_ITEMS.some(c => inventoryStore.getCount(c.input) > 0));
+const hasCookableItems = computed(() => availableCookItems.value.length > 0);
 
 function handleAddFuel(fuelItemId: string) {
   showFuelSelector.value = false;

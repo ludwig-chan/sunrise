@@ -173,8 +173,7 @@ export const CAMPFIRE_COOKABLE_ITEMS: CampfireCookable[] = [
   { input: 'wood', inputName: '木材', output: 'coal', outputName: '煤炭', duration: 2, fuelCost: 5, message: '将木材烧制成了煤炭' },
   { input: 'branch', inputName: '树枝', output: 'ash', outputName: '灰烬', duration: 1, fuelCost: 0, message: '树枝被烧成了灰烬' },
   { input: 'clay', inputName: '黏土', output: 'fired_clay', outputName: '陶器', duration: 3, fuelCost: 15, message: '烧制完成，获得了陶器' },
-  { input: 'herb', inputName: '草药', output: 'ash', outputName: '灰烬', duration: 1, fuelCost: 5, message: '草药被烤焦了，变成了灰烬' },
-  { input: 'diamond', inputName: '钻石', output: null, outputName: '钻石', duration: 1, fuelCost: 0, message: '钻石无法被烤化，原路返回' }
+  { input: 'herb', inputName: '草药', output: 'ash', outputName: '灰烬', duration: 1, fuelCost: 5, message: '草药被烤焦了，变成了灰烬' }
 ];
 
 // 树林解锁保底次数：基地探索最多此次数后必定解锁树林
@@ -480,12 +479,6 @@ export const useBaseSceneStore = defineStore('baseScene', {
       const inventory = useInventoryStore();
       const character = useCharacterStore();
       const currentFuel = building.fuelValue ?? 0;
-
-      // 特殊：钻石烤不化，不消耗燃料，直接返回
-      if (cookable.input === 'diamond') {
-        toast({ message: '钻石无法被烤化，它完好无损地回来了', type: 'info' });
-        return null;
-      }
 
       if (!inventory.hasEnough(cookable.input, 1)) {
         toast({ message: `背包中没有${cookable.inputName}`, type: 'warning' });
