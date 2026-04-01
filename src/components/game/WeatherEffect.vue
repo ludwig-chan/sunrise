@@ -55,7 +55,11 @@ const visible = ref(false)
 let hideTimer: number | null = null
 
 function showEffect(newWeather: string) {
-  if (newWeather === 'SUNNY') return
+  if (newWeather === 'SUNNY') {
+    visible.value = false
+    weather.value = null
+    return
+  }
   weather.value = newWeather
   visible.value = true
   if (hideTimer) clearTimeout(hideTimer)

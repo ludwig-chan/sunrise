@@ -111,8 +111,8 @@ export const useBattleStore = defineStore('battle', {
         const msg = `被${this.monster?.name}击败了...`
         this.log.push(msg)
         gameLogStore.addEntry({ text: msg, type: 'COMBAT', gameTimestamp: timeStore.timestamp, timestamp: Date.now() })
-        // Sync player HP (can go to 0, character handles death separately)
-        character.health = Math.max(1, this.playerHp)
+        // Sync player HP (character handles death separately)
+        character.health = Math.max(0, this.playerHp)
         character.energy = Math.max(0, this.playerEnergy)
       }
     },
