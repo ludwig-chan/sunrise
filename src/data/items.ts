@@ -36,6 +36,8 @@ export interface ItemDefinition {
   use?: () => ItemEffect
 }
 
+const MUSHROOM_POISON_CHANCE = 0.15
+
 export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
   apple: {
     id: 'apple',
@@ -339,7 +341,7 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     icon: { type: 'svg', path: 'wild_mushroom' },
     description: '森林里采到的野生蘑菇，鲜味浓郁，但要注意辨别是否有毒。有小概率轻微中毒（health -3）。',
     use: () => {
-      if (Math.random() < 0.15) {
+      if (Math.random() < MUSHROOM_POISON_CHANCE) {
         return { energy: 10, satiety: 15, health: -3, mood: -5 }
       }
       return { energy: 15, satiety: 20, health: 5, mood: 3 }

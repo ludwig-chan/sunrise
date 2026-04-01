@@ -10,6 +10,14 @@ import { useInventoryStore } from './inventory'
 // 挂机安全保护：血量降至此值时自动暂停，防止无人操作时角色死亡
 const HEALTH_AUTO_PAUSE_THRESHOLD = 20
 
+// 吃水果时有概率产出种子（水果id → 种子掉落概率）
+const FRUIT_SEED_CHANCE: Record<string, number> = {
+  apple: 0.4,
+  berry: 0.15,
+  wild_grape: 0.25,
+  wild_pear: 0.35,
+}
+
 type Gender = 'male' | 'female'
 
 interface CharacterState {
@@ -180,12 +188,6 @@ export const useCharacterStore = defineStore('character', {
       gameLog({ text: `吃了${def.name}${suffix}`, type: 'SYSTEM' })
 
       // 吃水果时有概率产出种子
-      const FRUIT_SEED_CHANCE: Record<string, number> = {
-        apple: 0.4,
-        berry: 0.15,
-        wild_grape: 0.25,
-        wild_pear: 0.35,
-      }
       const seedChance = FRUIT_SEED_CHANCE[itemId]
       if (seedChance !== undefined && Math.random() < seedChance) {
         inventory.addItem({ id: 'seed', type: 'seed', name: '种子' }, 1)
