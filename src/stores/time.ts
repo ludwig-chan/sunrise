@@ -162,6 +162,7 @@ export const useTimeStore = defineStore('time', {
         const newWeather = this.generateWeather(this.season)
         if (newWeather !== this.weather) {
           this.updateWeather(newWeather)
+          emitter.emit('weather-changed', newWeather)
           
           // 生成天气变化提示
           let weatherMessage = ''

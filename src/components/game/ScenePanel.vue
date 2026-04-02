@@ -6,7 +6,7 @@
         :key="scene.id"
         class="scene-option"
         :class="{ active: modelValue === scene.id }"
-        @click="emit('update:modelValue', scene.id)"
+        @click="handleSceneSwitch(scene.id)"
       >
         {{ scene.name }}
       </span>
@@ -15,12 +15,17 @@
 </template>
 
 <script setup lang="ts">
+import { useCharacterStore } from '../../stores/character'
+import { toast } from '../../utils/toast'
+import { useGameLogStore } from '../../stores/gameLog'
+import { useTimeStore } from '../../stores/time'
+
 export interface Scene {
   id: string;
   name: string;
 }
 
-defineProps<{
+const props = defineProps<{
   modelValue: string;
   scenes: Scene[];
 }>();
@@ -28,6 +33,38 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
 }>();
+
+const character = useCharacterStore()
+const gameLogStore = useGameLogStore()
+const timeStore = useTimeStore()
+
+function handleSceneSwitch(sceneId: string) {
+  if (sceneId === props.modelValue) return
+  // Free to return to base (营地)
+  if (sceneId === 'base') {
+    emit('update:modelValue', sceneId)
+    gameLogStore.addEntry({
+      text: '回到了营地',
+      type: 'ACTION',
+      gameTimestamp: timeStore.timestamp,
+      timestamp: Date.now()
+    })
+    return
+  }
+  if (character.energy < 5) {
+    toast({ message: '太累了，没有力气移动到其他地方', type: 'warning' })
+    return
+  }
+  character.energy = Math.max(0, character.energy - 5)
+  const scene = props.scenes.find(s => s.id === sceneId)
+  gameLogStore.addEntry({
+    text: `前往了${scene?.name ?? sceneId}，消耗了5点体力`,
+    type: 'ACTION',
+    gameTimestamp: timeStore.timestamp,
+    timestamp: Date.now()
+  })
+  emit('update:modelValue', sceneId)
+}
 </script>
 
 <style scoped>

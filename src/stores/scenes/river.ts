@@ -23,7 +23,7 @@ export const RIVER_BUILDING_RECIPES: GameBuildingRecipe[] = [
   {
     type: 'waterWheel',
     name: '水车',
-    description: '建造水车，每6小时自动为基地补充水资源（恢复库存）',
+    description: '建造水车，每6小时自动为营地补充水资源（恢复库存）',
     cost: { wood: 20, stone: 10 },
     duration: 1.5,
     energyCost: 20

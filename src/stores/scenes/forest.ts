@@ -14,6 +14,8 @@ import { useInventoryStore } from '../inventory';
 import { toast } from '../../utils/toast';
 import { useGameLogStore } from '../gameLog';
 import { emitter } from '../../utils/eventBus';
+import { MONSTERS } from '../../data/monsters';
+import { showDialog } from '../../utils/dialog';
 
 // 树林可建造的建筑配方
 export const FOREST_BUILDING_RECIPES: GameBuildingRecipe[] = [
@@ -259,6 +261,40 @@ export const useForestSceneStore = defineStore('forestScene', {
     async explore() {
       // 记录行动次数，用于场景解锁判定
       this.forestActionCount++;
+
+      // 30% 概率遭遇野兽
+      if (Math.random() < 0.3) {
+        const monsterIds = ['wolf', 'boar']
+        const monsterId = monsterIds[Math.floor(Math.random() * monsterIds.length)]
+        const monster = MONSTERS[monsterId]
+        const result = await showDialog({
+          message: `遭遇了 ${monster.icon} ${monster.name}！`,
+          options: [
+            { text: '⚔️ 战斗', value: 'fight' },
+            { text: '🏃 逃跑', value: 'flee' }
+          ],
+          allowMultiple: true
+        })
+        if (result === 'fight') {
+          const { useBattleStore } = await import('../battle')
+          const battleStore = useBattleStore()
+          battleStore.startBattle(monster)
+          emitter.emit('battle-start', monsterId)
+          return
+        } else {
+          if (Math.random() < 0.7) {
+            toast({ message: '成功逃跑了！', type: 'info' })
+            useGameLogStore().addEntry({ text: '遭遇了野兽，成功逃跑了！', type: 'COMBAT', gameTimestamp: useTimeStore().timestamp, timestamp: Date.now() })
+          } else {
+            const damage = Math.floor(Math.random() * 6) + 10 // 10-15
+            const character = useCharacterStore()
+            character.health = Math.max(0, character.health - damage)
+            toast({ message: `逃跑失败！被抓伤，失去了 ${damage} 点血量`, type: 'error' })
+            useGameLogStore().addEntry({ text: `遭遇了野兽，逃跑失败！失去了 ${damage} 点血量`, type: 'COMBAT', gameTimestamp: useTimeStore().timestamp, timestamp: Date.now() })
+          }
+          return
+        }
+      }
 
       // 草地探索资源（包含草，树林里也有草可以顺手捡到）
       // 临时扩展 stock 以支持无上限的 grass（直接放入背包不从库存扣）

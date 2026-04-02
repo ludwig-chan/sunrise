@@ -11,7 +11,7 @@ import type { GameScene, GameAction, GameBuildingRecipe, GameBuildingAction, Act
 export const useScenesStore = defineStore('scenes', {
   state: () => ({
     currentSceneId: 'base',
-    unlockedScenes: ['base'] as string[], // 初始只解锁基地场景
+    unlockedScenes: ['base'] as string[], // 初始只解锁营地场景
     lastUsedActionName: null as string | null,  // 记录上次通过"更多"菜单使用的操作名称
     lastUsedBuildingActionName: null as string | null,  // 记录上次使用的建筑动作名称
     lastUsedBuildingType: null as string | null  // 记录上次使用的建筑类型
@@ -184,9 +184,9 @@ export const useScenesStore = defineStore('scenes', {
       lakesideScene.reset();
       seasideScene.reset();
       
-      // 重置解锁状态，只保留基地场景
+      // 重置解锁状态，只保留营地场景
       this.unlockedScenes = ['base'];
-      // 重置当前场景为基地
+      // 重置当前场景为营地
       this.currentSceneId = 'base';
     },
 

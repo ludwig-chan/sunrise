@@ -1,7 +1,7 @@
 <template>
   <div class="player-status translucent-white">
     <div class="basic-info" @click="handleInfoClick">
-      <div class="avatar" @click.stop="handleAvatarClick">👤</div>
+      <div class="avatar" :style="temperatureBorderStyle" @click.stop="handleAvatarClick">👤</div>
       <div class="info-text">
         <div class="info-item name">{{ character.name }}</div>
         <div class="info-item equip-icons" v-if="mainHandIcon">
@@ -22,10 +22,6 @@
         <div class="status-item">
           <StatusIcon type="satiety" style="color: rgb(255, 152, 0)" />
           <ProgressBar :value="character.satiety" color="rgb(255, 152, 0)" />
-        </div>
-        <div class="status-item temperature-item">
-          <span class="temperature-icon">🌡️</span>
-          <span class="temperature-value" :class="temperatureClass">{{ temperatureDisplay }}</span>
         </div>
       </div>
     </div>
@@ -57,6 +53,30 @@ const temperatureClass = computed(() => {
   if (temp > 38.5) return 'temp-fever'
   if (temp > 38) return 'temp-warm'
   return 'temp-normal'
+})
+
+const temperatureBorderStyle = computed(() => {
+  const temp = character.temperature ?? 37
+  let color: string
+  let animation = ''
+  if (temp < 33) {
+    color = '#4299e1'
+    animation = 'pulse-cold 1.5s ease-in-out infinite'
+  } else if (temp < 35) {
+    color = '#63b3ed'
+  } else if (temp > 38.5) {
+    color = '#e53e3e'
+    animation = 'pulse-hot 1.5s ease-in-out infinite'
+  } else if (temp > 38) {
+    color = '#ed8936'
+  } else {
+    color = '#48bb78'
+  }
+  return {
+    border: `3px solid ${color}`,
+    animation: animation || undefined,
+    boxShadow: `0 0 6px ${color}40`
+  }
 })
 
 const handleInfoClick = () => {
@@ -188,4 +208,14 @@ const handleStatsClick = () => {
 .temp-cold { color: #63b3ed; }
 .temp-freezing { color: #4299e1; font-weight: bold; }
 .temp-fever { color: #e53e3e; font-weight: bold; }
+
+@keyframes pulse-cold {
+  0%, 100% { box-shadow: 0 0 6px #4299e140; }
+  50% { box-shadow: 0 0 14px #4299e1aa; }
+}
+
+@keyframes pulse-hot {
+  0%, 100% { box-shadow: 0 0 6px #e53e3e40; }
+  50% { box-shadow: 0 0 14px #e53e3eaa; }
+}
 </style>
