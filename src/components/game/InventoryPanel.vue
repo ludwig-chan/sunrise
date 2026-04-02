@@ -31,6 +31,7 @@
     <!-- 底部详情抽屉 -->
     <div :class="['detail-drawer', { open: selectedItem !== null }]">
       <div v-if="selectedItem" class="drawer-content">
+        <button class="close-btn" @click="selectedItem = null">✕</button>
         <div class="drawer-left">
           <ItemIcon :icon="selectedItem.icon" class="drawer-icon" />
         </div>
@@ -44,20 +45,19 @@
           </div>
           <div class="drawer-desc">{{ selectedItem.description }}</div>
         </div>
-        <div class="drawer-right">
-          <button class="close-btn" @click="selectedItem = null">✕</button>
-          <button
-            v-if="selectedItem.hasUse"
-            class="use-btn"
-            :disabled="selectedItem.count <= 0"
-            @click="useItem(selectedItem)"
-          >使用</button>
-          <button
-            class="discard-btn"
-            :disabled="selectedItem.count <= 0"
-            @click="discardItem(selectedItem)"
-          >丢弃</button>
-        </div>
+      </div>
+      <div v-if="selectedItem" class="drawer-actions">
+        <button
+          v-if="selectedItem.hasUse"
+          class="use-btn"
+          :disabled="selectedItem.count <= 0"
+          @click="useItem(selectedItem)"
+        >使用</button>
+        <button
+          class="discard-btn"
+          :disabled="selectedItem.count <= 0"
+          @click="discardItem(selectedItem)"
+        >丢弃</button>
       </div>
     </div>
   </div>
@@ -71,6 +71,7 @@ import { ITEM_DEFINITIONS, type ItemIcon as ItemIconType, type ItemEffect } from
 import ItemIcon from '../common/ItemIcon.vue'
 import StatusIcon from '../common/StatusIcon.vue'
 import FilterBar from '../common/FilterBar.vue'
+import { confirm } from '@/utils/dialog'
 
 const inventoryStore = useInventoryStore()
 const characterStore = useCharacterStore()
@@ -168,7 +169,9 @@ function useItem(item: DisplayItem) {
   }
 }
 
-function discardItem(item: DisplayItem) {
+async function discardItem(item: DisplayItem) {
+  const confirmed = await confirm(`确定丢弃「${item.name}」×${item.count}？此操作不可恢复。`)
+  if (!confirmed) return
   inventoryStore.removeItem(item.id, item.count)
   selectedItem.value = null
 }
@@ -277,11 +280,12 @@ function discardItem(item: DisplayItem) {
 }
 
 .detail-drawer.open {
-  max-height: 150px;
+  max-height: 200px;
   border-top-color: rgba(0, 0, 0, 0.08);
 }
 
 .drawer-content {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -335,15 +339,17 @@ function discardItem(item: DisplayItem) {
   overflow-wrap: break-word;
 }
 
-.drawer-right {
-  flex-shrink: 0;
+.drawer-actions {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.2rem 0.2rem 0.4rem;
 }
 
 .close-btn {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
   background: none;
   border: none;
   color: #aaa;

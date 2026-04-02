@@ -2,8 +2,8 @@
   <main class="game-container">
     <header class="header">
       <GameDateTime />
-      <GameLogPreview />
       <PlayerStatus />
+      <GameLogPreview />
     </header>
     <div class="middle-section">
       <OperationArea />
