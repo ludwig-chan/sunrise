@@ -100,6 +100,9 @@ export const useTimeStore = defineStore('time', {
         // 检查陷阱捕获
         useBaseSceneStore().checkTrap()
 
+        // 检查农田生长
+        useBaseSceneStore().checkFarmPlot()
+
         // 触发每小时事件
         emitter.emit('hour-passed')
 

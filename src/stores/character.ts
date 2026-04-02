@@ -20,6 +20,14 @@ const FRUIT_SEED_CHANCE: Record<string, number> = {
   wild_pear: 0.35,
 }
 
+// 吃水果时产出的种子类型（水果id → 种子itemId）
+const FRUIT_SEED_TYPE: Record<string, string> = {
+  apple: 'seed_apple',
+  berry: 'seed_berry',
+  wild_grape: 'seed_wild_grape',
+  wild_pear: 'seed_wild_pear',
+}
+
 type Gender = 'male' | 'female'
 
 interface CharacterState {
@@ -242,7 +250,8 @@ export const useCharacterStore = defineStore('character', {
       // 吃水果时有概率产出种子
       const seedChance = FRUIT_SEED_CHANCE[itemId]
       if (seedChance !== undefined && Math.random() < seedChance) {
-        inventory.addItem({ id: 'seed', type: 'seed', name: '种子' }, 1)
+        const seedId = FRUIT_SEED_TYPE[itemId] ?? 'seed'
+        inventory.addItem({ id: seedId, type: 'seed', name: '种子' }, 1)
         gameLog({ text: `从${def.name}里取出了一粒种子`, type: 'ITEM' })
       }
     },

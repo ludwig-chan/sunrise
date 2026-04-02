@@ -7,19 +7,43 @@
       <div
         v-for="(building, index) in buildings"
         :key="`${building.type}-${index}`"
-        class="building-card"
+        class="building-card-group"
         :class="{
-          'building-card--damaged': building.type === 'trap' && building.trapDamaged,
-          'building-card--has-animal': building.type === 'trap' && building.trapAnimal
+          'building-card-group--damaged': building.type === 'trap' && building.trapDamaged,
+          'building-card-group--has-animal': building.type === 'trap' && building.trapAnimal,
+          'has-last': !!getLastAction(building)
         }"
-        role="button"
-        tabindex="0"
-        @click="openBuildingModal(building)"
-        @keydown.enter="openBuildingModal(building)"
       >
-        <span class="building-card-name">{{ building.name }}</span>
-        <span v-if="building.type === 'trap' && building.trapAnimal" class="building-card-badge">🐾</span>
-        <span v-else-if="building.type === 'trap' && building.trapDamaged" class="building-card-badge building-card-badge--warn">⚠️</span>
+        <!-- 主按钮 -->
+        <div
+          class="building-card"
+          role="button"
+          tabindex="0"
+          @click="openBuildingModal(building)"
+          @keydown.enter="openBuildingModal(building)"
+        >
+          <span class="building-card-name">{{ building.name }}</span>
+          <span v-if="building.type === 'trap' && building.trapAnimal" class="building-card-badge">🐾</span>
+          <span v-else-if="building.type === 'trap' && building.trapDamaged" class="building-card-badge building-card-badge--warn">⚠️</span>
+          <span v-else-if="building.type === 'farmPlot' && building.farmState === 'growing'" class="building-card-badge building-card-badge--grow">🌱</span>
+          <span v-else-if="building.type === 'farmPlot' && building.farmState === 'ready'" class="building-card-badge building-card-badge--ready">🌾</span>
+        </div>
+
+        <!-- 上次操作快捷按钮（若有） -->
+        <Transition name="btn-slide">
+          <div
+            v-if="getLastAction(building)"
+            class="building-last-action"
+            :class="{ 'is-disabled': isLastActionDisabled(building) }"
+            role="button"
+            tabindex="0"
+            :title="getLastAction(building)?.text"
+            @click="executeLastAction(building)"
+            @keydown.enter="executeLastAction(building)"
+          >
+            <span class="building-last-action-text">{{ getLastAction(building)?.text }}</span>
+          </div>
+        </Transition>
       </div>
 
       <!-- 无建筑时的占位提示 -->
@@ -43,15 +67,109 @@
 import { ref } from 'vue';
 import BuildingModal from './BuildingModal.vue';
 import type { GameBuilding } from '../../stores/scenes/types';
+import { useScenesStore } from '../../stores/scenes';
+import { useActivityStore } from '../../stores/activity';
+import { useBaseSceneStore, CAMPFIRE_FUEL_ITEMS, CAMPFIRE_COOKABLE_ITEMS } from '../../stores/scenes/base';
+import { useInventoryStore } from '../../stores/inventory';
+import { useCharacterStore } from '../../stores/character';
+import { toast } from '../../utils/toast';
 
 defineProps<{
   buildings: GameBuilding[]
 }>();
 
+const scenes = useScenesStore();
+const activity = useActivityStore();
+const baseScene = useBaseSceneStore();
+const inventory = useInventoryStore();
+const character = useCharacterStore();
+
 const selectedBuilding = ref<GameBuilding | null>(null);
 
 function openBuildingModal(building: GameBuilding) {
   selectedBuilding.value = building;
+}
+
+function getLastAction(building: GameBuilding) {
+  return scenes.lastUsedBuildingActions[building.type] ?? null;
+}
+
+function isLastActionDisabled(building: GameBuilding): boolean {
+  if (activity.isBusy) return true;
+  const last = getLastAction(building);
+  if (!last) return true;
+
+  // Special campfire actions
+  if (building.type === 'campfire') {
+    if (last.name.startsWith('addFuel:')) {
+      const fuelId = last.name.slice('addFuel:'.length);
+      return inventory.getCount(fuelId) < 1 || (building.fuelValue ?? 0) >= 200;
+    }
+    if (last.name.startsWith('cook:')) {
+      const inputId = last.name.slice('cook:'.length);
+      const cookable = CAMPFIRE_COOKABLE_ITEMS.find(c => c.input === inputId);
+      return !cookable || inventory.getCount(inputId) < 1 || (building.fuelValue ?? 0) < cookable.fuelCost;
+    }
+  }
+
+  // Regular building actions
+  const actions = scenes.getBuildingActions(building.type);
+  const action = actions.find(a => a.name === last.name);
+  if (!action) return true;
+  if (typeof action.disabled === 'function') return action.disabled();
+  return !!action.disabled;
+}
+
+function executeLastAction(building: GameBuilding) {
+  if (isLastActionDisabled(building)) return;
+  const last = getLastAction(building);
+  if (!last) return;
+
+  // Special campfire actions
+  if (building.type === 'campfire') {
+    if (last.name.startsWith('addFuel:')) {
+      const fuelId = last.name.slice('addFuel:'.length);
+      baseScene.addCampfireFuel(building, fuelId);
+      return;
+    }
+    if (last.name.startsWith('cook:')) {
+      const inputId = last.name.slice('cook:'.length);
+      const cookable = CAMPFIRE_COOKABLE_ITEMS.find(c => c.input === inputId);
+      if (!cookable) return;
+      const handler = baseScene.startCampfireCook(building, cookable);
+      if (!handler) return;
+      activity.startActivity({
+        name: `campfire_cook_${cookable.input}`,
+        label: `烤制${cookable.inputName}`,
+        icon: '🔥',
+        startedAt: Date.now(),
+        duration: cookable.duration * 1000,
+        onComplete: handler
+      });
+      return;
+    }
+  }
+
+  // Regular building actions
+  const actions = scenes.getBuildingActions(building.type);
+  const action = actions.find(a => a.name === last.name);
+  if (!action) return;
+
+  if (action.preExecute) {
+    if (!action.preExecute()) return;
+  } else if (character.energy < action.energyCost) {
+    toast({ message: '体力不足，无法执行该操作', type: 'warning' });
+    return;
+  }
+
+  activity.startActivity({
+    name: action.name,
+    label: action.text,
+    icon: action.icon || '▶',
+    startedAt: Date.now(),
+    duration: action.duration * 1000,
+    onComplete: action.handler
+  });
 }
 </script>
 
@@ -68,6 +186,24 @@ function openBuildingModal(building: GameBuilding) {
   gap: 0.5rem;
 }
 
+/* 建筑卡片组（主按钮 + 可选的上次操作按钮） */
+.building-card-group {
+  display: flex;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.building-card-group--damaged {
+  border-color: rgba(252, 129, 74, 0.5);
+}
+
+.building-card-group--has-animal {
+  border-color: rgba(104, 211, 145, 0.5);
+}
+
 .building-card {
   display: flex;
   flex-direction: column;
@@ -77,8 +213,7 @@ function openBuildingModal(building: GameBuilding) {
   min-height: 48px;
   padding: 0.4rem 0.3rem;
   background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 8px;
+  border: none;
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
   text-align: center;
@@ -87,20 +222,13 @@ function openBuildingModal(building: GameBuilding) {
 
 .building-card:hover {
   background: rgba(255, 255, 255, 0.22);
-  transform: translateY(-1px);
 }
 
-.building-card:active {
-  transform: translateY(0);
-}
-
-.building-card--damaged {
-  border-color: rgba(252, 129, 74, 0.5);
+.building-card-group--damaged .building-card {
   background: rgba(252, 129, 74, 0.06);
 }
 
-.building-card--has-animal {
-  border-color: rgba(104, 211, 145, 0.5);
+.building-card-group--has-animal .building-card {
   background: rgba(104, 211, 145, 0.06);
 }
 
@@ -119,6 +247,62 @@ function openBuildingModal(building: GameBuilding) {
 
 .building-card-badge--warn {
   filter: hue-rotate(0deg);
+}
+
+.building-card-badge--grow {
+  color: #48bb78;
+}
+
+.building-card-badge--ready {
+  color: #f6ad55;
+}
+
+/* 上次操作快捷按钮 */
+.building-last-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.5rem;
+  min-width: 52px;
+  max-width: 80px;
+  background: rgba(209, 236, 251, 0.85);
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.building-last-action:hover:not(.is-disabled) {
+  background: rgba(177, 219, 243, 0.9);
+}
+
+.building-last-action.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.building-last-action-text {
+  font-size: 0.62rem;
+  color: #2b6cb0;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  word-break: break-all;
+}
+
+/* 滑入动画 */
+.btn-slide-enter-active,
+.btn-slide-leave-active {
+  transition: max-width 0.3s ease, opacity 0.25s ease;
+  max-width: 100px;
+  overflow: hidden;
+}
+
+.btn-slide-enter-from,
+.btn-slide-leave-to {
+  max-width: 0;
+  opacity: 0;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .no-buildings {

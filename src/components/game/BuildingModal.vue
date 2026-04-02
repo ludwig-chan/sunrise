@@ -52,9 +52,48 @@
             </div>
           </template>
 
+          <!-- 农田专属区块 -->
+          <template v-else-if="building.type === 'farmPlot'">
+            <div class="section-title">农田状态</div>
+
+            <!-- 生长中 -->
+            <div v-if="building.farmState === 'growing'" class="farm-section farm-growing">
+              <div class="farm-growing-title">🌱 生长中...</div>
+              <div class="farm-grow-bar-wrap">
+                <div class="farm-grow-bar-fill" :style="{ width: `${farmGrowPercent}%` }"></div>
+              </div>
+              <div class="farm-grow-hint">预计还需 {{ farmGrowRemaining }} 秒</div>
+            </div>
+
+            <!-- 可收获 -->
+            <div v-else-if="building.farmState === 'ready'" class="farm-section farm-ready">
+              <div class="farm-ready-title">🌾 可以收获了！</div>
+              <div class="farm-actions">
+                <button class="farm-harvest-btn" :disabled="false" @click="handleFarmHarvest">收获</button>
+              </div>
+            </div>
+
+            <!-- 空置 -->
+            <div v-else class="farm-section farm-empty">
+              <div class="farm-empty-title">农田空置中</div>
+              <div class="section-title" style="margin-top: 0.5rem;">操作</div>
+              <div class="modal-action-item">
+                <span class="modal-action-icon">🌱</span>
+                <div class="modal-action-info">
+                  <span class="modal-action-text">种植</span>
+                  <span class="modal-action-condition">{{ plantHint }}</span>
+                </div>
+                <button
+                  class="modal-select-btn"
+                  :disabled="activity.isBusy || !canPlant"
+                  @click="handlePlantSeed"
+                >开始</button>
+              </div>
+            </div>
+          </template>
+
           <!-- 篝火专属区块 -->
-          <template v-else-if="building.type === 'campfire'">
-            <!-- 燃料状态 -->
+          <template v-else-if="building.type === 'campfire'">            <!-- 燃料状态 -->
             <div class="section-title">篝火状态</div>
             <div class="campfire-fuel-section">
               <div class="fuel-label">
@@ -117,7 +156,7 @@
                 <div class="sub-selector-title">选择要烤制的物品</div>
                 <div v-for="item in availableCookItems" :key="item.input" class="sub-selector-item" @click="handleCookItem(item)">
                   <span>{{ item.inputName }}</span>
-                  <span class="sub-item-count">×{{ inventoryStore.getCount(item.input) }}</span>
+                  <span class="sub-item-count">×{{ item.input === 'seed' ? SEED_ITEM_IDS.reduce((s, id) => s + inventoryStore.getCount(id), 0) : inventoryStore.getCount(item.input) }}</span>
                   <span class="sub-item-hint">→ {{ item.outputName }}（{{ item.duration }}s，燃料-{{ item.fuelCost }}）</span>
                 </div>
                 <button class="sub-selector-cancel" @click="showCookSelector = false">取消</button>
@@ -204,7 +243,7 @@ import { ref, computed } from 'vue';
 import { useScenesStore } from '../../stores/scenes';
 import { useActivityStore } from '../../stores/activity';
 import { useCharacterStore } from '../../stores/character';
-import { BASE_BUILDING_UPGRADES, CAMPFIRE_MAX_FUEL, CAMPFIRE_FUEL_ITEMS, CAMPFIRE_COOKABLE_ITEMS, useBaseSceneStore } from '../../stores/scenes/base';
+import { BASE_BUILDING_UPGRADES, CAMPFIRE_MAX_FUEL, CAMPFIRE_FUEL_ITEMS, CAMPFIRE_COOKABLE_ITEMS, SEED_ITEM_IDS, useBaseSceneStore } from '../../stores/scenes/base';
 import type { CampfireCookable } from '../../stores/scenes/base';
 import { useInventoryStore } from '../../stores/inventory';
 import { toast } from '../../utils/toast';
@@ -252,9 +291,13 @@ const fuelItemsHint = computed(() => {
 
 // 背包中可烤的物品（需要有足够燃料）
 const availableCookItems = computed(() => {
-  return CAMPFIRE_COOKABLE_ITEMS.filter(c =>
-    inventoryStore.getCount(c.input) > 0 && campfireFuel.value >= c.fuelCost
-  );
+  return CAMPFIRE_COOKABLE_ITEMS.filter(c => {
+    // 种子类物品：任意种子类型均可
+    const count = c.input === 'seed'
+      ? SEED_ITEM_IDS.reduce((sum, id) => sum + inventoryStore.getCount(id), 0)
+      : inventoryStore.getCount(c.input);
+    return count > 0 && campfireFuel.value >= c.fuelCost;
+  });
 });
 
 const hasCookableItems = computed(() => availableCookItems.value.length > 0);
@@ -262,6 +305,9 @@ const hasCookableItems = computed(() => availableCookItems.value.length > 0);
 function handleAddFuel(fuelItemId: string) {
   showFuelSelector.value = false;
   baseScene.addCampfireFuel(props.building, fuelItemId);
+  // 记录上次使用的建筑动作
+  const fuelName = CAMPFIRE_FUEL_ITEMS[fuelItemId]?.name ?? fuelItemId;
+  scenes.setLastUsedBuildingAction(props.building.type, `addFuel:${fuelItemId}`, `添加燃料：${fuelName}`);
 }
 
 function handleCookItem(cookable: CampfireCookable) {
@@ -270,6 +316,9 @@ function handleCookItem(cookable: CampfireCookable) {
 
   const handler = baseScene.startCampfireCook(props.building, cookable);
   if (!handler) return;
+
+  // 记录上次使用的建筑动作
+  scenes.setLastUsedBuildingAction(props.building.type, `cook:${cookable.input}`, `烤制：${cookable.inputName}`);
 
   emit('close');
   activity.startActivity({
@@ -280,6 +329,43 @@ function handleCookItem(cookable: CampfireCookable) {
     duration: cookable.duration * 1000,
     onComplete: handler
   });
+}
+
+// ===== 农田相关 =====
+const canPlant = computed(() => {
+  return SEED_ITEM_IDS.some(id => inventoryStore.getCount(id) > 0);
+});
+
+const plantHint = computed(() => {
+  if (!canPlant.value) return '背包中没有种子';
+  return '需要种子 ×1，体力 -8';
+});
+
+// 生长进度（0-100）
+const farmGrowPercent = computed(() => {
+  if (props.building.farmState !== 'growing' || !props.building.farmPlantedAt || !props.building.farmGrowDuration) return 0;
+  const elapsed = Date.now() - props.building.farmPlantedAt;
+  return Math.min(100, Math.round((elapsed / props.building.farmGrowDuration) * 100));
+});
+
+// 剩余生长时间（秒）
+const farmGrowRemaining = computed(() => {
+  if (props.building.farmState !== 'growing' || !props.building.farmPlantedAt || !props.building.farmGrowDuration) return 0;
+  const elapsed = Date.now() - props.building.farmPlantedAt;
+  const remaining = props.building.farmGrowDuration - elapsed;
+  return Math.max(0, Math.ceil(remaining / 1000));
+});
+
+function handlePlantSeed() {
+  if (activity.isBusy) return;
+  // startPlanting deducts seed and energy, then sets farm state to 'growing'.
+  // The farm uses its own built-in grow timer UI (not an activity progress bar).
+  baseScene.startPlanting(props.building);
+}
+
+function handleFarmHarvest() {
+  baseScene.harvestFarm(props.building);
+  emit('close');
 }
 
 // 获取该建筑的可用动作
@@ -338,7 +424,7 @@ function handleActionStart(action: GameBuildingAction) {
   }
 
   // 记录上次使用的建筑动作
-  scenes.setLastUsedBuildingAction(props.building.type, action.name);
+  scenes.setLastUsedBuildingAction(props.building.type, action.name, action.text);
 
   emit('close');
   activity.startActivity({
@@ -900,5 +986,87 @@ function handleTrapDestroy() {
 
 .trap-destroy-btn:hover {
   background: rgba(252, 129, 74, 0.25);
+}
+
+/* 农田区 */
+.farm-section {
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.farm-empty {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.farm-empty-title {
+  font-size: 0.9rem;
+  color: #a0aec0;
+}
+
+.farm-growing {
+  background: rgba(104, 211, 145, 0.06);
+  border: 1px solid rgba(104, 211, 145, 0.25);
+}
+
+.farm-growing-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #68d391;
+}
+
+.farm-grow-bar-wrap {
+  height: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.farm-grow-bar-fill {
+  height: 100%;
+  background: linear-gradient(to right, #68d391, #48bb78);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.farm-grow-hint {
+  font-size: 0.75rem;
+  color: #a0aec0;
+}
+
+.farm-ready {
+  background: rgba(246, 173, 85, 0.08);
+  border: 1px solid rgba(246, 173, 85, 0.35);
+}
+
+.farm-ready-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f6ad55;
+}
+
+.farm-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.farm-harvest-btn {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid rgba(246, 173, 85, 0.5);
+  background: rgba(246, 173, 85, 0.2);
+  color: #f6ad55;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.farm-harvest-btn:hover {
+  background: rgba(246, 173, 85, 0.35);
 }
 </style>

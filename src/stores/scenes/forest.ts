@@ -480,9 +480,11 @@ export const useForestSceneStore = defineStore('forestScene', {
         timestamp: Date.now()
       });
 
-      // 15% 概率额外获得一粒种子
+      // 15% 概率额外获得一粒种子（野外种子类型随机）
       if (Math.random() < 0.15) {
-        inventory.addItem({ id: 'seed', type: 'seed', name: '种子' }, 1);
+        const wildSeedTypes = ['seed_apple', 'seed_berry', 'seed_wild_grape', 'seed_wild_pear', 'seed_unknown'];
+        const seedId = wildSeedTypes[Math.floor(Math.random() * wildSeedTypes.length)];
+        inventory.addItem({ id: seedId, type: 'seed', name: '种子' }, 1);
         toast({ message: '意外发现了一粒种子', type: 'info' });
         useGameLogStore().addEntry({
           text: '意外发现了一粒种子',

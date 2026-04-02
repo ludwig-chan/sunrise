@@ -72,6 +72,11 @@ export interface GameBuilding {
   trapDamaged?: boolean;     // 陷阱是否已损坏，需要修复才能继续使用
   // 篝火燃料值（仅 campfire 类型建筑使用）
   fuelValue?: number;  // 当前燃料值，最大 200
+  // 农田种植状态（仅 farmPlot 类型建筑使用）
+  farmState?: 'growing' | 'ready';  // 当前生长阶段
+  farmPlantedAt?: number;           // 种下种子的时间戳（ms）
+  farmGrowDuration?: number;        // 生长所需时间（ms）
+  farmSeedType?: string;            // 种下的种子类型
 }
 
 // UI 分组动作（供 ActionsPanel 分组展示）

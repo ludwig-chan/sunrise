@@ -1,6 +1,8 @@
 import { useCharacterStore } from '../stores/character'
 import { useTimeStore } from '../stores/time'
 import { useScenesStore } from '../stores/scenes'
+import { useInventoryStore } from '../stores/inventory'
+import { useGameLogStore } from '../stores/gameLog'
 import { gameLog, emitter } from './eventBus'
 
 /**
@@ -26,6 +28,14 @@ export async function restartGame() {
   // 重置角色状态
   const character = useCharacterStore()
   character.$reset()
+
+  // 清空游戏日志
+  const gameLogStore = useGameLogStore()
+  gameLogStore.clearEntries()
+
+  // 清空物品栏
+  const inventory = useInventoryStore()
+  inventory.items = []
 
   // 清空游戏消息
   emitter.emit('clear-messages')
