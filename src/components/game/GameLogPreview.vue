@@ -63,6 +63,9 @@ function entryOpacity(index: number, total: number): number {
   height: var(--log-height);
   min-height: var(--log-height);
   max-height: var(--log-height);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
 .log-preview:hover {

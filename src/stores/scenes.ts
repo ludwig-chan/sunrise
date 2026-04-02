@@ -14,7 +14,9 @@ export const useScenesStore = defineStore('scenes', {
     unlockedScenes: ['base'] as string[], // 初始只解锁营地场景
     lastUsedActionName: null as string | null,  // 记录上次通过"更多"菜单使用的操作名称
     lastUsedBuildingActionName: null as string | null,  // 记录上次使用的建筑动作名称
-    lastUsedBuildingType: null as string | null  // 记录上次使用的建筑类型
+    lastUsedBuildingType: null as string | null,  // 记录上次使用的建筑类型
+    // 每个建筑类型的上次操作（buildingType → {name, text}）
+    lastUsedBuildingActions: {} as Record<string, { name: string; text: string }>
   }),
 
   getters: {
@@ -270,9 +272,13 @@ export const useScenesStore = defineStore('scenes', {
     },
 
     // 记录上次使用的建筑动作
-    setLastUsedBuildingAction(buildingType: string, actionName: string) {
+    setLastUsedBuildingAction(buildingType: string, actionName: string, actionText?: string) {
       this.lastUsedBuildingType = buildingType;
       this.lastUsedBuildingActionName = actionName;
+      // 同时更新 per-building 记录
+      if (actionText) {
+        this.lastUsedBuildingActions[buildingType] = { name: actionName, text: actionText };
+      }
     },
 
     // 修复当前场景中的某个陷阱

@@ -321,6 +321,46 @@ export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = {
     description: '从野果中取出的种子，可以种在农田里种出蔬菜，也可以直接嚼着吃，还可以烤成香脆的烤种子。',
     use: () => ({ satiety: 3, energy: 2 })
   },
+  seed_apple: {
+    id: 'seed_apple',
+    name: '种子',
+    category: 'food',
+    icon: { type: 'svg', path: 'seed' },
+    description: '从苹果里取出的种子，种在农田里会长出苹果，也可以直接嚼着吃。',
+    use: () => ({ satiety: 3, energy: 2 })
+  },
+  seed_berry: {
+    id: 'seed_berry',
+    name: '种子',
+    category: 'food',
+    icon: { type: 'svg', path: 'seed' },
+    description: '从浆果里取出的种子，种在农田里会长出浆果，也可以直接嚼着吃。',
+    use: () => ({ satiety: 3, energy: 2 })
+  },
+  seed_wild_grape: {
+    id: 'seed_wild_grape',
+    name: '种子',
+    category: 'food',
+    icon: { type: 'svg', path: 'seed' },
+    description: '从野葡萄里取出的种子，种在农田里会长出野葡萄，也可以直接嚼着吃。',
+    use: () => ({ satiety: 3, energy: 2 })
+  },
+  seed_wild_pear: {
+    id: 'seed_wild_pear',
+    name: '种子',
+    category: 'food',
+    icon: { type: 'svg', path: 'seed' },
+    description: '从野梨里取出的种子，种在农田里会长出野梨，也可以直接嚼着吃。',
+    use: () => ({ satiety: 3, energy: 2 })
+  },
+  seed_unknown: {
+    id: 'seed_unknown',
+    name: '种子',
+    category: 'food',
+    icon: { type: 'svg', path: 'seed' },
+    description: '在野外捡到的不明种子，种在农田里会长出不知名的植物，也可以直接嚼着吃。',
+    use: () => ({ satiety: 3, energy: 2 })
+  },
   roasted_seed: {
     id: 'roasted_seed',
     name: '烤种子',

@@ -140,6 +140,23 @@ const RESOURCE_NAMES: { [key: string]: string } = {
   seed: '种子'
 };
 
+// ===== 农田种子系统 =====
+// 农田生长所需时间（毫秒）：3 游戏小时（默认速率下约 30 秒）
+export const FARM_GROW_DURATION_MS = 30000;
+
+// 所有种子 item ID 的集合（用于检查是否持有任何种子）
+export const SEED_ITEM_IDS = ['seed', 'seed_apple', 'seed_berry', 'seed_wild_grape', 'seed_wild_pear', 'seed_unknown'];
+
+// 种子类型 → 作物映射
+const SEED_CROP_MAP: Record<string, { id: string; name: string; minCount: number; maxCount: number }> = {
+  seed_apple:      { id: 'apple',      name: '苹果',   minCount: 1, maxCount: 2 },
+  seed_berry:      { id: 'berry',      name: '浆果',   minCount: 2, maxCount: 3 },
+  seed_wild_grape: { id: 'wild_grape', name: '野葡萄', minCount: 2, maxCount: 3 },
+  seed_wild_pear:  { id: 'wild_pear',  name: '野梨',   minCount: 1, maxCount: 2 },
+  seed_unknown:    { id: 'vegetable',  name: '蔬菜',   minCount: 1, maxCount: 2 },
+  seed:            { id: 'vegetable',  name: '蔬菜',   minCount: 1, maxCount: 2 },
+};
+
 // 营地陷阱修复消耗（建造消耗 branch:8 wood:3）
 const TRAP_REPAIR_COST: Record<string, number> = { branch: 5 };
 // 营地陷阱摧毁回收材料
@@ -483,7 +500,12 @@ export const useBaseSceneStore = defineStore('baseScene', {
       const character = useCharacterStore();
       const currentFuel = building.fuelValue ?? 0;
 
-      if (!inventory.hasEnough(cookable.input, 1)) {
+      // 种子类物品需特殊处理：任意种子类型均可烤制，优先使用最先找到的种子
+      const actualInputId = cookable.input === 'seed'
+        ? (this.getAvailableSeedId() ?? 'seed')
+        : cookable.input;
+
+      if (!inventory.hasEnough(actualInputId, 1)) {
         toast({ message: `背包中没有${cookable.inputName}`, type: 'warning' });
         return null;
       }
@@ -497,7 +519,7 @@ export const useBaseSceneStore = defineStore('baseScene', {
       }
 
       // 立即消耗：材料 + 燃料 + 体力
-      inventory.removeItem(cookable.input, 1);
+      inventory.removeItem(actualInputId, 1);
       building.fuelValue = Math.max(0, currentFuel - cookable.fuelCost);
       character.energy = Math.max(0, character.energy - 3);
 
@@ -960,42 +982,8 @@ export const useBaseSceneStore = defineStore('baseScene', {
           // 储藏箱无动作，只显示库存
           return [];
         case 'farmPlot':
-          return [
-            {
-              name: 'plantVegetable',
-              text: '种植蔬菜',
-              icon: '🥬',
-              duration: 2,
-              energyCost: 8,
-              preExecute: () => {
-                if (!inventory.hasEnough('seed', 1)) {
-                  toast({ message: '需要种子 ×1 才能种植蔬菜', type: 'warning' });
-                  return false;
-                }
-                if (character.energy < 8) {
-                  toast({ message: '体力不足，无法种植蔬菜', type: 'warning' });
-                  return false;
-                }
-                inventory.removeItem('seed', 1);
-                character.energy = Math.max(0, character.energy - 8);
-                return true;
-              },
-              handler: async () => {
-                const amount = Math.floor(Math.random() * 2) + 1; // 1-2
-                inventory.addItem({ id: 'vegetable', type: 'vegetable', name: '蔬菜' }, amount);
-                const message = `在农田里种出了 ${amount} 株蔬菜！`;
-                toast({ message, type: 'success' });
-                useGameLogStore().addEntry({
-                  text: message,
-                  type: 'ITEM',
-                  gameTimestamp: useTimeStore().timestamp,
-                  timestamp: Date.now()
-                });
-              },
-              tooltip: '需要种子 ×1',
-              disabled: () => !inventory.hasEnough('seed', 1)
-            }
-          ];
+          // 农田通过专属弹窗 UI 交互（种植/等待生长/收获）
+          return [];
         case 'herbShop':
           return [
             {
@@ -1243,6 +1231,89 @@ export const useBaseSceneStore = defineStore('baseScene', {
       useGameLogStore().addEntry({
         text: `摧毁了陷阱，回收了 ${returnText}`,
         type: 'ACTION',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+    },
+
+    // 农田生长检查（每次游戏 tick 触发）
+    checkFarmPlot() {
+      const farms = this.scene.buildings.filter(b => b.type === 'farmPlot');
+      if (farms.length === 0) return;
+      const now = Date.now();
+      for (const farm of farms) {
+        if (farm.farmState !== 'growing') continue;
+        if (!farm.farmPlantedAt || !farm.farmGrowDuration) continue;
+        if (now - farm.farmPlantedAt >= farm.farmGrowDuration) {
+          farm.farmState = 'ready';
+          toast({ message: '农田里的植物已成熟，可以收获了！', type: 'success' });
+          useGameLogStore().addEntry({
+            text: '农田里的植物已成熟，可以收获了！',
+            type: 'ITEM',
+            gameTimestamp: useTimeStore().timestamp,
+            timestamp: Date.now()
+          });
+        }
+      }
+    },
+
+    // 种植种子（农田建筑专属，由 BuildingModal 调用）
+    // 返回种子 ID（若有），或 null（背包中无任何种子）
+    getAvailableSeedId(): string | null {
+      const inventory = useInventoryStore();
+      for (const seedId of SEED_ITEM_IDS) {
+        if (inventory.hasEnough(seedId, 1)) return seedId;
+      }
+      return null;
+    },
+
+    // 开始种植：扣除种子和体力，启动生长计时器
+    startPlanting(building: import('./types').GameBuilding): boolean {
+      const inventory = useInventoryStore();
+      const character = useCharacterStore();
+      const seedId = this.getAvailableSeedId();
+      if (!seedId) {
+        toast({ message: '需要种子 ×1 才能种植，请先获得种子', type: 'warning' });
+        return false;
+      }
+      if (character.energy < 8) {
+        toast({ message: '体力不足，无法种植', type: 'warning' });
+        return false;
+      }
+      inventory.removeItem(seedId, 1);
+      character.energy = Math.max(0, character.energy - 8);
+      building.farmSeedType = seedId;
+      building.farmPlantedAt = Date.now();
+      building.farmGrowDuration = FARM_GROW_DURATION_MS;
+      building.farmState = 'growing';
+      const message = '你在农田里种下了一粒种子，等待它慢慢生长...';
+      toast({ message, type: 'info' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'ACTION',
+        gameTimestamp: useTimeStore().timestamp,
+        timestamp: Date.now()
+      });
+      return true;
+    },
+
+    // 收获农田作物
+    harvestFarm(building: import('./types').GameBuilding) {
+      if (building.farmState !== 'ready') return;
+      const seedType = building.farmSeedType ?? 'seed';
+      const cropConfig = SEED_CROP_MAP[seedType] ?? SEED_CROP_MAP['seed'];
+      const amount = Math.floor(Math.random() * (cropConfig.maxCount - cropConfig.minCount + 1)) + cropConfig.minCount;
+      useInventoryStore().addItem({ id: cropConfig.id, type: cropConfig.id, name: cropConfig.name }, amount);
+      // 重置农田状态
+      building.farmState = undefined;
+      building.farmPlantedAt = undefined;
+      building.farmGrowDuration = undefined;
+      building.farmSeedType = undefined;
+      const message = `收获了 ${amount} 个${cropConfig.name}！`;
+      toast({ message, type: 'success' });
+      useGameLogStore().addEntry({
+        text: message,
+        type: 'ITEM',
         gameTimestamp: useTimeStore().timestamp,
         timestamp: Date.now()
       });

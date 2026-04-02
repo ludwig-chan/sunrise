@@ -48,7 +48,7 @@ export const useBattleStore = defineStore('battle', {
       this.log = [`遭遇了${monster.icon} ${monster.name}，战斗开始！`]
     },
 
-    useSkill(skillId: string): boolean {
+    async useSkill(skillId: string): Promise<boolean> {
       if (this.turn !== 'player' || this.result !== null) return false
       const skill = PLAYER_SKILLS.find(s => s.id === skillId)
       if (!skill) return false
@@ -67,8 +67,9 @@ export const useBattleStore = defineStore('battle', {
         return true
       }
 
-      // Monster counter-attack
+      // Monster counter-attack after a short delay (turn-based feel)
       this.turn = 'monster'
+      await new Promise(resolve => setTimeout(resolve, 800))
       this.monsterCounterAttack()
       return true
     },
