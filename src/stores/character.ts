@@ -72,12 +72,12 @@ export const useCharacterStore = defineStore('character', {
     
     // 处理每小时状态变化
     async hourlyUpdate() {
-      // 饱食度消耗：每小时 -1
+      // 饱食度消耗：每小时 -2（约 50 游戏小时 = 现实 8 分钟后归零）
       if (this.satiety > 0) {
-        this.satiety = Math.max(0, this.satiety - 1)
+        this.satiety = Math.max(0, this.satiety - 2)
         
-        // 当饱食度降至0时发出提示
-        if (this.satiety === 0) {
+        // 当饱食度降至 2 以下时提前提示
+        if (this.satiety <= 2) {
           gameLog({
             text: '你感到饥肠辘辘...',
             type: 'SYSTEM'

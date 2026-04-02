@@ -181,21 +181,20 @@ function discardItem(item: DisplayItem) {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  flex: 1;
 }
 
-/* 过滤标签栏 */
+/* 过滤标签栏：固定在顶部 */
 .inventory-filter-bar {
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   margin-bottom: 0.5rem;
   padding-bottom: 0.3rem;
+  flex-shrink: 0;
 }
 
 /* 主体布局 */
 .inventory-body {
   display: flex;
-  flex: 1;
-  min-height: 0;
+  height: 160px;
   overflow: hidden;
 }
 

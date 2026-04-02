@@ -15,18 +15,46 @@
         }"
       >
         <!-- 主按钮 -->
-        <div
-          class="building-card"
-          role="button"
-          tabindex="0"
-          @click="openBuildingModal(building)"
-          @keydown.enter="openBuildingModal(building)"
-        >
-          <span class="building-card-name">{{ building.name }}</span>
-          <span v-if="building.type === 'trap' && building.trapAnimal" class="building-card-badge">🐾</span>
-          <span v-else-if="building.type === 'trap' && building.trapDamaged" class="building-card-badge building-card-badge--warn">⚠️</span>
-          <span v-else-if="building.type === 'farmPlot' && building.farmState === 'growing'" class="building-card-badge building-card-badge--grow">🌱</span>
-          <span v-else-if="building.type === 'farmPlot' && building.farmState === 'ready'" class="building-card-badge building-card-badge--ready">🌾</span>
+        <div class="building-card-wrapper">
+          <div
+            class="building-card"
+            role="button"
+            tabindex="0"
+            @click="openBuildingModal(building)"
+            @keydown.enter="openBuildingModal(building)"
+          >
+            <span class="building-card-name">{{ building.name }}</span>
+            <span v-if="building.type === 'trap' && building.trapAnimal" class="building-card-badge">🐾</span>
+            <span v-else-if="building.type === 'trap' && building.trapDamaged" class="building-card-badge building-card-badge--warn">⚠️</span>
+            <span v-else-if="building.type === 'farmPlot' && building.farmState === 'growing'" class="building-card-badge building-card-badge--grow">🌱</span>
+            <span v-else-if="building.type === 'farmPlot' && building.farmState === 'ready'" class="building-card-badge building-card-badge--ready">🌾</span>
+          </div>
+
+          <!-- 篝火燃料条 -->
+          <div v-if="building.type === 'campfire'" class="building-status-bar" :title="`燃料：${building.fuelValue ?? 0}/${CAMPFIRE_MAX_FUEL}`">
+            <div
+              class="building-status-fill campfire-fuel"
+              :style="{ width: `${Math.min(100, ((building.fuelValue ?? 0) / CAMPFIRE_MAX_FUEL) * 100)}%` }"
+              :class="{ 'fuel-full': (building.fuelValue ?? 0) >= CAMPFIRE_MAX_FUEL }"
+            />
+          </div>
+
+          <!-- 农田生长进度条 -->
+          <div v-else-if="building.type === 'farmPlot'" class="building-status-bar" :title="farmBarTitle(building)">
+            <div
+              class="building-status-fill farm-progress"
+              :style="{ width: `${farmProgress(building)}%` }"
+              :class="farmBarClass(building)"
+            />
+          </div>
+
+          <!-- 状态文字 -->
+          <div v-if="building.type === 'campfire'" class="building-status-text">
+            燃料 {{ building.fuelValue ?? 0 }}/{{ CAMPFIRE_MAX_FUEL }}
+          </div>
+          <div v-else-if="building.type === 'farmPlot'" class="building-status-text">
+            {{ farmBarTitle(building) }}
+          </div>
         </div>
 
         <!-- 上次操作快捷按钮（若有） -->
@@ -64,12 +92,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import BuildingModal from './BuildingModal.vue';
 import type { GameBuilding } from '../../stores/scenes/types';
 import { useScenesStore } from '../../stores/scenes';
 import { useActivityStore } from '../../stores/activity';
-import { useBaseSceneStore, CAMPFIRE_FUEL_ITEMS, CAMPFIRE_COOKABLE_ITEMS } from '../../stores/scenes/base';
+import { useBaseSceneStore, CAMPFIRE_FUEL_ITEMS, CAMPFIRE_COOKABLE_ITEMS, CAMPFIRE_MAX_FUEL } from '../../stores/scenes/base';
 import { useInventoryStore } from '../../stores/inventory';
 import { useCharacterStore } from '../../stores/character';
 import { toast } from '../../utils/toast';
@@ -86,8 +114,44 @@ const character = useCharacterStore();
 
 const selectedBuilding = ref<GameBuilding | null>(null);
 
+// 用于农田进度条实时刷新
+const now = ref(Date.now());
+let nowTimer: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  nowTimer = setInterval(() => { now.value = Date.now() }, 1000);
+});
+
+onUnmounted(() => {
+  if (nowTimer !== null) clearInterval(nowTimer);
+});
+
 function openBuildingModal(building: GameBuilding) {
   selectedBuilding.value = building;
+}
+
+// 农田进度（0~100）
+function farmProgress(building: GameBuilding): number {
+  if (building.farmState === 'ready') return 100;
+  if (building.farmState === 'growing' && building.farmPlantedAt && building.farmGrowDuration) {
+    const pct = ((now.value - building.farmPlantedAt) / building.farmGrowDuration) * 100;
+    return Math.min(99, Math.max(0, pct));
+  }
+  return 0;
+}
+
+// 农田进度条的 CSS class
+function farmBarClass(building: GameBuilding): string {
+  if (building.farmState === 'ready') return 'farm-ready';
+  if (building.farmState === 'growing') return 'farm-growing';
+  return 'farm-empty';
+}
+
+// 农田状态文字
+function farmBarTitle(building: GameBuilding): string {
+  if (building.farmState === 'ready') return '可收获';
+  if (building.farmState === 'growing') return `生长中 ${Math.floor(farmProgress(building))}%`;
+  return '空置';
 }
 
 function getLastAction(building: GameBuilding) {
@@ -204,6 +268,12 @@ function executeLastAction(building: GameBuilding) {
   border-color: rgba(104, 211, 145, 0.5);
 }
 
+/* 主按钮 + 状态条的外层容器 */
+.building-card-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
 .building-card {
   display: flex;
   flex-direction: column;
@@ -255,6 +325,56 @@ function executeLastAction(building: GameBuilding) {
 
 .building-card-badge--ready {
   color: #f6ad55;
+}
+
+/* 状态条轨道 */
+.building-status-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* 状态条填充 */
+.building-status-fill {
+  height: 100%;
+  border-radius: 0 2px 2px 0;
+  transition: width 1s linear;
+}
+
+/* 篝火燃料条：橙红渐变，满格绿色 */
+.campfire-fuel {
+  background: linear-gradient(90deg, #fc8181, #f6ad55);
+}
+
+.campfire-fuel.fuel-full {
+  background: #48bb78;
+}
+
+/* 农田生长条 */
+.farm-growing {
+  background: #68d391;
+}
+
+.farm-ready {
+  background: #f6ad55;
+}
+
+.farm-empty {
+  background: #cbd5e0;
+}
+
+/* 状态文字 */
+.building-status-text {
+  font-size: 0.55rem;
+  color: #718096;
+  text-align: center;
+  padding: 1px 2px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 68px;
 }
 
 /* 上次操作快捷按钮 */

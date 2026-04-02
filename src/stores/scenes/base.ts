@@ -141,8 +141,9 @@ const RESOURCE_NAMES: { [key: string]: string } = {
 };
 
 // ===== 农田种子系统 =====
-// 农田生长所需时间（毫秒）：3 游戏小时（默认速率下约 30 秒）
-export const FARM_GROW_DURATION_MS = 30000;
+// 农田生长所需时间（毫秒）：约 3 游戏天（游戏1天 = 24小时 × 10秒/小时 = 240秒）
+// 3天 × 24小时 × 10000毫秒/小时 = 720000ms（约 12 分钟现实时间）
+export const FARM_GROW_DURATION_MS = 720000;
 
 // 所有种子 item ID 的集合（用于检查是否持有任何种子）
 export const SEED_ITEM_IDS = ['seed', 'seed_apple', 'seed_berry', 'seed_wild_grape', 'seed_wild_pear', 'seed_unknown'];
@@ -201,8 +202,8 @@ const FOREST_UNLOCK_PITY_THRESHOLD = 3;
 // 每次营地探索时随机提前解锁树林的概率
 const FOREST_UNLOCK_CHANCE = 0.5;
 
-// 夜晚野兽袭击概率（无篝火/火把保护时）
-const NIGHT_ATTACK_CHANCE = 0.3;
+// 夜晚野兽袭击概率（无篝火/火把保护时，降低难度减少新手死亡）
+const NIGHT_ATTACK_CHANCE = 0.15;
 
 // 定义营地初始库存（营地本身无资源存储，靠探索和采集获取）
 const INITIAL_STOCK = {
@@ -421,12 +422,14 @@ export const useBaseSceneStore = defineStore('baseScene', {
       });
     },
 
-    // 休息：小幅恢复体力（人物动作，随时可用）
+    // 休息：小幅恢复体力和血量（人物动作，随时可用）
     async rest() {
       const character = useCharacterStore();
       const ENERGY_RESTORE = 8;
+      const HEALTH_RESTORE = 3; // 休息小幅恢复血量
       character.energy = Math.min(100, character.energy + ENERGY_RESTORE);
-      const message = `稍作休息，体力恢复了 +${ENERGY_RESTORE}`;
+      character.health = Math.min(100, character.health + HEALTH_RESTORE);
+      const message = `稍作休息，体力恢复了 +${ENERGY_RESTORE}，血量恢复了 +${HEALTH_RESTORE}`;
       toast({ message, type: 'info' });
       useGameLogStore().addEntry({
         text: message,
