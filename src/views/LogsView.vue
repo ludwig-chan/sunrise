@@ -79,7 +79,7 @@ const MESSAGE_TYPES: MessageType[] = ['SYSTEM', 'COMBAT', 'DIALOGUE', 'ACTION', 
 const MESSAGE_TYPE_ITEMS = MESSAGE_TYPES.map(t => ({ key: t, label: messageTypeNames[t] }))
 const selectedTypes = ref<Set<string>>(new Set())
 
-// 白天/夜晚检测：NIGHT = 深色背景
+// 白天/夜晚检测：NIGHT = 深色背景，其他时段 = 浅色背景
 const isNight = computed(() => timeStore.currentPeriod === 'NIGHT')
 
 const filteredEntries = computed(() => {

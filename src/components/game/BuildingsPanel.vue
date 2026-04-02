@@ -135,6 +135,7 @@ function farmProgress(building: GameBuilding): number {
   if (building.farmState === 'ready') return 100;
   if (building.farmState === 'growing' && building.farmPlantedAt && building.farmGrowDuration) {
     const pct = ((now.value - building.farmPlantedAt) / building.farmGrowDuration) * 100;
+    // 最高显示 99%，以区别于 ready 状态（满格金色条）
     return Math.min(99, Math.max(0, pct));
   }
   return 0;
