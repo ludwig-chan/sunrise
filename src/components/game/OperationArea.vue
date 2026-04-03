@@ -1,6 +1,7 @@
 <template>
   <div class="operation-area">
     <InventoryPanel />
+    <EnvironmentCard />
     <div class="panels-container">
       <BuildingsPanel :buildings="scenesStore.currentScene.buildings" />
       <ActionsPanel />
@@ -12,6 +13,7 @@
 import ActionsPanel from './ActionsPanel.vue';
 import BuildingsPanel from './BuildingsPanel.vue';
 import InventoryPanel from './InventoryPanel.vue';
+import EnvironmentCard from './EnvironmentCard.vue';
 import { useScenesStore } from "../../stores/scenes";
 
 const scenesStore = useScenesStore();
@@ -26,10 +28,9 @@ const scenesStore = useScenesStore();
   gap: 1rem;
 }
 
-/* 让背包栏撑满剩余高度 */
+/* 背包栏：固定高度，不再撑满剩余高度 */
 :deep(.inventory-panel) {
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
 }
 
 .panels-container {

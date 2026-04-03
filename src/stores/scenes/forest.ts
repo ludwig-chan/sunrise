@@ -262,8 +262,8 @@ export const useForestSceneStore = defineStore('forestScene', {
       // 记录行动次数，用于场景解锁判定
       this.forestActionCount++;
 
-      // 30% 概率遭遇野兽
-      if (Math.random() < 0.3) {
+      // 10% 概率遭遇野兽（降低难度，减少新手死亡率）
+      if (Math.random() < 0.1) {
         const monsterIds = ['wolf', 'boar']
         const monsterId = monsterIds[Math.floor(Math.random() * monsterIds.length)]
         const monster = MONSTERS[monsterId]

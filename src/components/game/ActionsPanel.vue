@@ -323,6 +323,7 @@ function cancelActivity() {
   flex-direction: column;
   gap: 0.5rem;
   justify-content: center;
+  min-height: 7rem;
 }
 
 /* 空闲状态：两个按钮竖排 */

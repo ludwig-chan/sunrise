@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import { useTimeStore } from '@/stores/time'
 import { useGameLogStore } from '@/stores/gameLog'
 import type { GameLogEntry } from '@/stores/gameLog'
@@ -73,12 +73,13 @@ const timeStore = useTimeStore()
 const gameLogStore = useGameLogStore()
 
 const searchText = ref('')
+const logContainer = ref<HTMLElement | null>(null)
 
 const MESSAGE_TYPES: MessageType[] = ['SYSTEM', 'COMBAT', 'DIALOGUE', 'ACTION', 'ITEM']
 const MESSAGE_TYPE_ITEMS = MESSAGE_TYPES.map(t => ({ key: t, label: messageTypeNames[t] }))
 const selectedTypes = ref<Set<string>>(new Set())
 
-// Day/night detection: NIGHT = dark background, others = light
+// 白天/夜晚检测：NIGHT = 深色背景，其他时段 = 浅色背景
 const isNight = computed(() => timeStore.currentPeriod === 'NIGHT')
 
 const filteredEntries = computed(() => {
@@ -90,6 +91,25 @@ const filteredEntries = computed(() => {
       entry.text.toLowerCase().includes(searchText.value.toLowerCase())
     return matchesType && matchesSearch
   })
+})
+
+// 滚动到日志底部
+function scrollToBottom() {
+  nextTick(() => {
+    if (logContainer.value) {
+      logContainer.value.scrollTop = logContainer.value.scrollHeight
+    }
+  })
+}
+
+// 进入页面时自动滚到底部
+onMounted(() => {
+  scrollToBottom()
+})
+
+// 筛选/搜索变化后重新滚到底部
+watch(filteredEntries, () => {
+  scrollToBottom()
 })
 
 function shouldShowDateDivider(current: GameLogEntry, previous: GameLogEntry | undefined) {
@@ -173,6 +193,18 @@ function hailStyle(i: number): Record<string, string> {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-bottom: 0.4rem;
+}
+
+.is-day .logs-toolbar {
+  background: rgba(230, 240, 255, 0.95);
+}
+
+.is-night .logs-toolbar {
+  background: rgba(15, 20, 45, 0.95);
 }
 
 .log-search {
