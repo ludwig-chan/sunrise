@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 简化的太阳和地平线设计 -->
+  <g fill="#000000">    <!-- 地平线 -->
+    <rect x="20" y="90" width="160" height="4" />
+
+    <!-- 太阳半圆 -->
+    <path d="M65,90 A35,35 0 0,1 135,90" stroke="#000000" stroke-width="2" fill="#000000" />
+
+    <!-- 五个均匀分布的光芒圆点 -->
+    <circle cx="100" cy="45" r="5" />
+    <circle cx="70" cy="60" r="5" />
+    <circle cx="130" cy="60" r="5" />
+    <circle cx="50" cy="85" r="5" />
+    <circle cx="150" cy="85" r="5" />    <!-- 由两个四分之一圆弧组成的波浪线 -->
+    <path d="M60,120
+             A25,25 0 0,1 100,120
+             A25,25 0 0,0 140,120"
+      stroke="#000000"
+      stroke-width="4"
+      fill="none" />
+  </g>
+</svg>

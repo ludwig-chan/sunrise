@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 草药包 - 绑扎的草药束 -->
+  <!-- 主体圆包 -->
+  <rect x="6" y="10" width="20" height="14" fill="#5a9830"/>
+  <rect x="5" y="11" width="22" height="12" fill="#6aaa38"/>
+  <!-- 叶子纹理 -->
+  <rect x="7" y="12" width="5" height="4" fill="#7abb48"/>
+  <rect x="15" y="13" width="6" height="4" fill="#7abb48"/>
+  <rect x="10" y="18" width="8" height="3" fill="#5a9830"/>
+  <!-- 绑带 -->
+  <rect x="5" y="16" width="22" height="2" fill="#8a5028"/>
+  <rect x="14" y="10" width="4" height="14" fill="#9a5a30"/>
+  <!-- 高光 -->
+  <rect x="7" y="11" width="3" height="2" fill="#90cc50"/>
+  <rect x="19" y="11" width="3" height="2" fill="#90cc50"/>
+  <!-- 底部 -->
+  <rect x="6" y="23" width="20" height="2" fill="#4a8820"/>
+</svg>

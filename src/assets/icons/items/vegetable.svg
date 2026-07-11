@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 蔬菜 - 绿色白菜 -->
+  <!-- 外叶 -->
+  <rect x="4" y="14" width="24" height="10" fill="#4a9830"/>
+  <rect x="5" y="12" width="22" height="12" fill="#5aa838"/>
+  <rect x="6" y="11" width="20" height="12" fill="#5aa838"/>
+  <!-- 中叶 -->
+  <rect x="8" y="12" width="16" height="10" fill="#6abb45"/>
+  <rect x="9" y="11" width="14" height="11" fill="#7acc50"/>
+  <!-- 内叶 -->
+  <rect x="11" y="12" width="10" height="9" fill="#90dd60"/>
+  <rect x="12" y="11" width="8" height="9" fill="#a0ee70"/>
+  <!-- 菜心 -->
+  <rect x="13" y="13" width="6" height="6" fill="#e8f8a0"/>
+  <rect x="14" y="12" width="4" height="7" fill="#f0ffc0"/>
+  <!-- 外叶卷边 -->
+  <rect x="5" y="22" width="22" height="2" fill="#4a8828"/>
+  <rect x="6" y="24" width="20" height="1" fill="#3a7820"/>
+  <!-- 茎根 -->
+  <rect x="14" y="22" width="4" height="6" fill="#3a7820"/>
+  <rect x="15" y="23" width="2" height="5" fill="#4a9830"/>
+</svg>

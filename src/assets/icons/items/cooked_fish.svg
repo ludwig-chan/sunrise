@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 烤鱼 - 橙褐色鱼身带烤纹 -->
+  <rect x="2" y="11" width="3" height="3" fill="#a84820"/>
+  <rect x="2" y="18" width="3" height="3" fill="#a84820"/>
+  <rect x="3" y="10" width="3" height="2" fill="#c05a28"/>
+  <rect x="3" y="20" width="3" height="2" fill="#c05a28"/>
+  <rect x="4" y="13" width="3" height="6" fill="#c05a28"/>
+  <rect x="6" y="11" width="19" height="10" fill="#b85020"/>
+  <rect x="7" y="10" width="17" height="12" fill="#c86030"/>
+  <rect x="8" y="9" width="15" height="14" fill="#c86030"/>
+  <rect x="10" y="11" width="2" height="10" fill="#7a2808"/>
+  <rect x="16" y="11" width="2" height="10" fill="#7a2808"/>
+  <rect x="22" y="11" width="2" height="10" fill="#7a2808"/>
+  <rect x="9" y="17" width="12" height="3" fill="#d87838"/>
+  <rect x="9" y="11" width="5" height="3" fill="#e08848"/>
+  <rect x="10" y="12" width="3" height="2" fill="#e89858"/>
+  <rect x="22" y="13" width="3" height="3" fill="#ffffff"/>
+  <rect x="23" y="14" width="2" height="2" fill="#1a1a1a"/>
+  <rect x="23" y="14" width="1" height="1" fill="#000000"/>
+  <rect x="7" y="22" width="16" height="1" fill="#8a2808"/>
+</svg>

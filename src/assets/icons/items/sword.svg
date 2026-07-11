@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 木剑 - 棕色木剑 -->
+  <!-- 剑刃 -->
+  <rect x="14" y="4" width="4" height="20" fill="#c89050"/>
+  <rect x="15" y="3" width="2" height="22" fill="#d8a060"/>
+  <rect x="14" y="4" width="2" height="20" fill="#e0b070"/>
+  <!-- 剑尖 -->
+  <rect x="15" y="2" width="2" height="3" fill="#d8a060"/>
+  <rect x="15" y="1" width="2" height="2" fill="#c89050"/>
+  <rect x="16" y="2" width="1" height="1" fill="#c89050"/>
+  <!-- 护手 -->
+  <rect x="8" y="22" width="16" height="3" fill="#7a4520"/>
+  <rect x="9" y="21" width="14" height="5" fill="#8a5028"/>
+  <rect x="9" y="21" width="14" height="1" fill="#aa6838"/>
+  <!-- 剑柄 -->
+  <rect x="13" y="25" width="6" height="6" fill="#7a4520"/>
+  <rect x="14" y="26" width="4" height="5" fill="#8a5028"/>
+  <!-- 高光 -->
+  <rect x="14" y="5" width="1" height="16" fill="#e8c080"/>
+</svg>

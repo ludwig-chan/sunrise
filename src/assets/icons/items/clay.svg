@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+  <!-- 黏土 - 土黄棕色块 -->
+  <!-- 主体 -->
+  <rect x="4" y="10" width="24" height="16" fill="#b08040"/>
+  <rect x="5" y="9" width="22" height="18" fill="#c08848"/>
+  <!-- 光泽（湿润感） -->
+  <rect x="6" y="11" width="8" height="5" fill="#d09a58"/>
+  <rect x="7" y="12" width="5" height="3" fill="#e0aa68"/>
+  <rect x="7" y="12" width="3" height="2" fill="#f0c080"/>
+  <!-- 手印纹理 -->
+  <rect x="15" y="14" width="3" height="6" fill="#a07030"/>
+  <rect x="14" y="15" width="5" height="4" fill="#a07030"/>
+  <!-- 右侧阴影 -->
+  <rect x="22" y="11" width="4" height="14" fill="#907028"/>
+  <rect x="4" y="23" width="24" height="3" fill="#906a20"/>
+  <!-- 边框 -->
+  <rect x="4" y="9" width="24" height="1" fill="#c89048"/>
+  <rect x="4" y="26" width="24" height="1" fill="#806020"/>
+</svg>
