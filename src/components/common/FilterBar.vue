@@ -18,7 +18,7 @@
 
 <script setup lang="ts">
 const props = defineProps<{
-  items: Array<{ key: string; label: string }>
+  items: ReadonlyArray<{ key: string; label: string }>
   modelValue: Set<string>
 }>()
 
